@@ -24,17 +24,18 @@ def read(*names, **kwargs):
 
 
 setup(
-    name='dvg-debug-functions',
+    name='dvg-qdeviceio',
     version='0.0.1',
     license='MIT',
-    description='Provides functions for printing debug information to the terminal output.',
+    description='PyQt5 module to provide the base framework for multithreaded communication and periodical data acquisition for an I/O device.',
     long_description='%s\n%s' % (
-        re.compile('^.. start-badges.*^.. end-badges', re.M | re.S).sub('', read('README.rst')),
-        re.sub(':[a-z]+:`~?(.*?)`', r'``\1``', read('CHANGELOG.rst'))
+        re.compile('^.. start-badges.*^.. end-badges', re.M | re.S).sub('', read('README.md')),
+        re.sub(':[a-z]+:`~?(.*?)`', r'``\1``', read('CHANGELOG.md'))
     ),
+    long_description_content_type='text/markdown',
     author='Dennis van Gils',
     author_email='vangils.dennis@gmail.com',
-    url='https://github.com/Dennis-van-Gils/python-dvg-debug-functions',
+    url='https://github.com/Dennis-van-Gils/python-dvg-qdeviceio',
     packages=find_packages('src'),
     package_dir={'': 'src'},
     py_modules=[splitext(basename(path))[0] for path in glob('src/*.py')],
@@ -43,46 +44,43 @@ setup(
     classifiers=[
         # complete classifier list: http://pypi.python.org/pypi?%3Aaction=list_classifiers
         'Development Status :: 5 - Production/Stable',
-        'Intended Audience :: Developers',
         'License :: OSI Approved :: MIT License',
-        'Operating System :: Unix',
-        'Operating System :: POSIX',
-        'Operating System :: Microsoft :: Windows',
+        'Intended Audience :: Developers',
+        'Intended Audience :: Science/Research',
+        'Operating System :: OS Independent',
         'Programming Language :: Python',
-        'Programming Language :: Python :: 2.7',
         'Programming Language :: Python :: 3',
         'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
-        'Programming Language :: Python :: Implementation :: CPython',
-        'Programming Language :: Python :: Implementation :: PyPy',
+        'Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)',
+        'Topic :: Software Development :: Libraries :: Application Frameworks',
         # uncomment if you test on these interpreters:
         # 'Programming Language :: Python :: Implementation :: IronPython',
         # 'Programming Language :: Python :: Implementation :: Jython',
         # 'Programming Language :: Python :: Implementation :: Stackless',
-        'Topic :: Utilities',
     ],
     project_urls={
-        'Documentation': 'https://python-dvg-debug-functions.readthedocs.io/',
-        'Changelog': 'https://python-dvg-debug-functions.readthedocs.io/en/latest/changelog.html',
-        'Issue Tracker': 'https://github.com/Dennis-van-Gils/python-dvg-debug-functions/issues',
+        'Issue Tracker': 'https://github.com/Dennis-van-Gils/python-dvg-qdeviceio/issues',
     },
     keywords=[
         # eg: 'keyword1', 'keyword2', 'keyword3',
+        'PyQt5', 'multithread', 'device I/O', 'automation', 'laboratory', 'science',
     ],
-    python_requires='>=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*',
+    python_requires='>=3.5',
     install_requires=[
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
+        'pyqt5>=5.9.2,<5.13',
+        'numpy>=1.16.4',
+        'dvg-debug-functions>=1.0.0',
     ],
     extras_require={
+        'dev': [
+            'pytest-cov',
+        ]
         # eg:
         #   'rst': ['docutils>=0.11'],
         #   ':python_version=="2.6"': ['argparse'],
-    },
-    entry_points={
-        'console_scripts': [
-            'dvg-debug-functions = dvg_debug_functions.cli:main',
-        ]
     },
 )
