@@ -40,9 +40,9 @@ MAIN CONTENTS:
 """
 __author__      = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
-__url__         = "https://github.com/Dennis-van-Gils/DvG_dev_Arduino"
-__date__        = "01-04-2019"
-__version__     = "1.3.3"
+__url__         = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
+__date__        = "25-05-2020"
+__version__     = "1.0.0"   # This version 1.0.0 as released on PyPI is identical to my 'alpha' version 1.3.3, before I figured out proper versioning and the use of PyPI.
 
 from enum import IntEnum, unique
 import queue
