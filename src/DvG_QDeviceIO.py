@@ -42,7 +42,7 @@ __author__      = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__         = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
 __date__        = "25-05-2020"
-__version__     = "1.0.0"   # This version 1.0.0 as released on PyPI is identical to my 'alpha' version 1.3.3, before I figured out proper versioning and the use of PyPI.
+__version__     = "1.0.0"   # This DvG_QDeviceIO.py v1.0.0 is identical to the alpha-prototype DvG_dev_Base__pyqt_lib.py v1.3.3
 
 from enum import IntEnum, unique
 import queue
