@@ -7,7 +7,7 @@ MAIN CONTENTS:
 --------------
 
     Class:
-        Dev_Base_pyqt(...)
+        QDeviceIO(...)
             Methods:
                 attach_device(...)
                 create_worker_DAQ()
@@ -79,10 +79,10 @@ class InnerClassDescriptor(object):
         return Wrapper
 
 # ------------------------------------------------------------------------------
-#   Dev_Base_pyqt
+#   QDeviceIO
 # ------------------------------------------------------------------------------
 
-class Dev_Base_pyqt(QtCore.QObject):
+class QDeviceIO(QtCore.QObject):
     """This class provides the base framework for multithreaded communication
     and periodical data acquisition for an I/O device.
 
@@ -100,7 +100,7 @@ class Dev_Base_pyqt(QtCore.QObject):
     This class can be mixed into your own specific device_pyqt class definition.
     Hint: Look up 'mixin class' for Python.
     E.g., when writing your own Arduino device pyqt library:
-        class Arduino_pyqt(Dev_Base_pyqt_lib.Dev_Base_pyqt, QtCore.QObject):
+        class Arduino_pyqt(DvG_QDeviceIO.QDeviceIO, QtCore.QObject):
 
     Methods:
         attach_device(...)
@@ -171,7 +171,7 @@ class Dev_Base_pyqt(QtCore.QObject):
     signal_connection_lost = QtCore.pyqtSignal()
 
     def __init__(self, parent):
-        super(Dev_Base_pyqt, self).__init__(parent=parent)
+        super(QDeviceIO, self).__init__(parent=parent)
 
         #TODO 17-05-2020: Test for dev.name and create default value when not
         #existing
