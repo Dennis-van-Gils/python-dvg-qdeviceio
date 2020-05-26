@@ -170,7 +170,7 @@ class QDeviceIO(QtCore.QObject):
     signal_DAQ_suspended   = QtCore.pyqtSignal()
     signal_connection_lost = QtCore.pyqtSignal()
 
-    def __init__(self, parent):
+    def __init__(self, parent=None):
         super(QDeviceIO, self).__init__(parent=parent)
 
         #TODO 17-05-2020: Test for dev.name and create default value when not
