@@ -293,7 +293,8 @@ class QDeviceIO(QtCore.QObject):
     #   Close threads
     # --------------------------------------------------------------------------
 
-    def close_thread_worker_DAQ(self):
+    def close_thread_worker_DAQ(self) -> bool:
+        # TODO 26-05-2020: Document the new boolean return value
         if self.thread_DAQ is not None:
             
             if (self.worker_DAQ.trigger_by ==
@@ -310,20 +311,34 @@ class QDeviceIO(QtCore.QObject):
             self.thread_DAQ.quit()
             print("Closing thread %s " %
                   "{:.<16}".format(self.thread_DAQ.objectName()), end='')
-            if self.thread_DAQ.wait(2000): print("done.\n", end='')
-            else: print("FAILED.\n", end='')
+            if self.thread_DAQ.wait(2000):
+                print("done.\n", end='')
+                return True
+            else:
+                print("FAILED.\n", end='')
+                return False
+            
+        else: return True
 
-    def close_thread_worker_send(self):
+    def close_thread_worker_send(self) -> bool:
+        # TODO 26-05-2020: Document the new boolean return value
         if self.thread_send is not None:
             self.worker_send.stop()
             self.worker_send.qwc.wakeAll()
             self.thread_send.quit()
             print("Closing thread %s " %
                   "{:.<16}".format(self.thread_send.objectName()), end='')
-            if self.thread_send.wait(2000): print("done.\n", end='')
-            else: print("FAILED.\n", end='')
+            if self.thread_send.wait(2000):
+                print("done.\n", end='')
+                return True
+            else:
+                print("FAILED.\n", end='')
+                return False
+            
+        else: return True
 
     def close_all_threads(self):
+        # TODO 26-05-2020: Return success boolean
         if hasattr(self, 'thread_DAQ') : self.close_thread_worker_DAQ()
         if hasattr(self, 'thread_send'): self.close_thread_worker_send()
 
@@ -455,13 +470,13 @@ class QDeviceIO(QtCore.QObject):
             self.prev_tick_DAQ_rate = 0
 
             if self.DEBUG:
-                dprint("Worker_DAQ  %s init: thread %s" %
+                dprint("Worker_DAQ  %s: init @ thread %s" %
                        (self.dev.name, curThreadName()), self.DEBUG_color)
 
         @QtCore.pyqtSlot()
         def run(self):
             if self.DEBUG:
-                dprint("Worker_DAQ  %s run : thread %s" %
+                dprint("Worker_DAQ  %s: run  @ thread %s" %
                        (self.dev.name, curThreadName()), self.DEBUG_color)
 
             # INTERNAL TIMER
@@ -694,13 +709,13 @@ class QDeviceIO(QtCore.QObject):
             self.queue.put(self.sentinel)
 
             if self.DEBUG:
-                dprint("Worker_send %s init: thread %s" %
+                dprint("Worker_send %s: init @ thread %s" %
                        (self.dev.name, curThreadName()), self.DEBUG_color)
 
         @QtCore.pyqtSlot()
         def run(self):
             if self.DEBUG:
-                dprint("Worker_send %s run : thread %s" %
+                dprint("Worker_send %s: run  @ thread %s" %
                        (self.dev.name, curThreadName()), self.DEBUG_color)
 
             while self.running:
