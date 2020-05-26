@@ -3,4 +3,4 @@
 [![Coverage Status](https://coveralls.io/repos/github/Dennis-van-Gils/python-python-dvg-qdeviceio/badge.svg?branch=master)](https://coveralls.io/github/Dennis-van-Gils/python-python-dvg-qdeviceio?branch=master)
 
 # DvG_QDeviceIO
-PyQt5 framework for multithreaded communication and periodical data acquisition for an I/O device.
+PyQt5 module containing the framework for multithreaded communication and periodical data acquisition for an I/O device.
