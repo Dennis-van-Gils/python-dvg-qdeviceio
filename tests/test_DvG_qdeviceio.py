@@ -1,63 +1,77 @@
-import DvG_QDeviceIO
-from PyQt5 import QtCore, QtWidgets as QtWid
-import time
 import sys
-
-from unittest import mock
-import io
-
-
-
-class Counter():
-    val = 0
-counter = Counter()
+import time
+from PyQt5 import QtCore, QtWidgets
+import DvG_QDeviceIO
 
 
 
-def print_counter():
-    print(counter.val)
-    counter.val += 1
-    return True
-
-
+class FakeDevice():
+    def __init__(self):
+        # Required members
+        self.name = "FakeDev"
+        self.mutex = QtCore.QMutex()
+        self.is_alive = True
+        
+        # Member for testing
+        self.counter = 0
+        
+    def set_alive(self, is_alive = True):
+        self.is_alive = is_alive
+    
 
     
 def create_QApplication():
     QtCore.QThread.currentThread().setObjectName('MAIN')    # For DEBUG info
 
     app = 0    # Work-around for kernel crash when using Spyder IDE
-    app = QtWid.QApplication(sys.argv)
+    app = QtWidgets.QApplication(sys.argv)
     return app
     
 
 
-def test_defaults_Worker_DAQ():
+def test_1():
     app = create_QApplication()
-    qdevio = DvG_QDeviceIO.QDeviceIO()
     
     # Simulate a device
-    qdevio.dev.name = "FakeDev"
-    qdevio.dev.is_alive = True
+    dev = FakeDevice()
+    def DAQ_function():
+        if dev.is_alive:
+            dev.counter += 1
+            print(dev.counter)
+        return dev.is_alive
+    #def alt_process_jobs_function(self, func, args):
+        
+    
+    qdevio = DvG_QDeviceIO.QDeviceIO()
+    qdevio.attach_device(dev)
     
     qdevio.create_worker_DAQ(
-        DAQ_update_interval_ms=1000,
-        DAQ_function_to_run_each_update=print_counter,
+        DAQ_update_interval_ms=100,
+        DAQ_function_to_run_each_update=DAQ_function,
         DAQ_critical_not_alive_count=1,
         DAQ_timer_type=QtCore.Qt.CoarseTimer,
         DAQ_trigger_by=DvG_QDeviceIO.DAQ_trigger.INTERNAL_TIMER,
         calc_DAQ_rate_every_N_iter = 25,
         DEBUG=True)
     
-    qdevio.start_thread_worker_DAQ()
+    qdevio.create_worker_send()
     
-    time.sleep(3.5)
+    qdevio.start_thread_worker_DAQ()
+    qdevio.start_thread_worker_send()
+    
+    # Simulate device runtime
+    time.sleep(0.35)
     
     print("About to quit")
     app.processEvents()
-    qdevio.close_thread_worker_DAQ()    
+    assert qdevio.close_thread_worker_DAQ() == True
+    assert qdevio.close_thread_worker_send() == True
     app.quit()
     
-if __name__ == "__main__":
-    test_defaults_Worker_DAQ()
+    assert dev.counter == 3
     
-    test_defaults_Worker_DAQ()
+    
+    
+if __name__ == "__main__":
+    test_1()
+    test_1()

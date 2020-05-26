@@ -1,0 +1,10 @@
+pip install pytest-cov
+pip install check-manifest
+
+python setup.py bdist_wheel
+pip install --no-deps -e .
+pytest --cov-report term-missing --cov=src -vv
+python setup.py sdist
+check-manifest --create
+python setup.py bdist_wheel sdist
+twine upload dist/*
