@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""PyQt5 module to provide the base framework for multithreaded communication
-and periodical data acquisition for an I/O device.
+"""PyQt5 framework for multithreaded communication and periodical data
+acquisition for an I/O device.
 
 MAIN CONTENTS:
 --------------

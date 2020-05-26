@@ -27,7 +27,7 @@ setup(
     name='dvg-qdeviceio',
     version='0.0.1',
     license='MIT',
-    description='PyQt5 module to provide the base framework for multithreaded communication and periodical data acquisition for an I/O device.',
+    description='PyQt5 framework for multithreaded communication and periodical data acquisition for an I/O device.',
     long_description='%s\n%s' % (
         re.compile('^.. start-badges.*^.. end-badges', re.M | re.S).sub('', read('README.md')),
         re.sub(':[a-z]+:`~?(.*?)`', r'``\1``', read('CHANGELOG.md'))
@@ -71,9 +71,9 @@ setup(
     python_requires='>=3.5',
     install_requires=[
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
-        'pyqt5>=5.9.2,<5.13',
-        'numpy>=1.16.4',
-        'dvg-debug-functions>=1.0.0',
+        'pyqt5>=5.9.2,<6',
+        'numpy>=1.16.4,<2',
+        'dvg-debug-functions>=1.0.1',
     ],
     extras_require={
         'dev': [
