@@ -22,8 +22,8 @@ class FakeDevice():
     
 def create_QApplication():
     QtCore.QThread.currentThread().setObjectName('MAIN')    # For DEBUG info
-
-    app = 0    # Work-around for kernel crash when using Spyder IDE
+    print()     # Esthetics for pytest output
+    app = 0     # Work-around for kernel crash when using Spyder IDE
     app = QtWidgets.QApplication(sys.argv)
     return app
     
@@ -38,11 +38,12 @@ def test_Worker_DAQ__INTERNAL_TIMER():
         if dev.is_alive:
             dev.counter += 1
             print(dev.counter)
-        return dev.is_alive        
+        return dev.is_alive
     
     qdevio = DvG_QDeviceIO.QDeviceIO()
     qdevio.attach_device(dev)
     
+    # Worker_DAQ in mode INTERNAL TIMER
     qdevio.create_worker_DAQ(
         DAQ_update_interval_ms          = 100,
         DAQ_function_to_run_each_update = DAQ_function,
@@ -51,11 +52,10 @@ def test_Worker_DAQ__INTERNAL_TIMER():
         DAQ_trigger_by                  = DvG_QDeviceIO.DAQ_trigger.INTERNAL_TIMER,
         calc_DAQ_rate_every_N_iter      = 25,
         DEBUG                           = True)
-        
     qdevio.start_thread_worker_DAQ()
     
     # Simulate device runtime
-    time.sleep(0.35)
+    time.sleep(.35)
     
     print("About to quit")
     app.processEvents()
@@ -75,32 +75,30 @@ def test_Worker_DAQ__CONTINUOUS():
         if dev.is_alive:
             dev.counter += 1
             print(dev.counter)
-            time.sleep(0.1)
+            time.sleep(.1)
         return dev.is_alive        
     
     qdevio = DvG_QDeviceIO.QDeviceIO()
     qdevio.attach_device(dev)
     
+    # Worker_DAQ in mode CONTINUOUS
     qdevio.create_worker_DAQ(
-        DAQ_update_interval_ms          = 100,
         DAQ_function_to_run_each_update = DAQ_function,
         DAQ_critical_not_alive_count    = 1,
         DAQ_timer_type                  = QtCore.Qt.CoarseTimer,
         DAQ_trigger_by                  = DvG_QDeviceIO.DAQ_trigger.CONTINUOUS,
-        calc_DAQ_rate_every_N_iter      = 25,
+        calc_DAQ_rate_every_N_iter      = 5,
         DEBUG                           = True)
-        
     qdevio.start_thread_worker_DAQ()
     
     # Simulate device runtime
-    qdevio.worker_DAQ.schedule_suspend(True)
-    time.sleep(1)
+    time.sleep(.1)  # suspended
     qdevio.worker_DAQ.schedule_suspend(False)
-    time.sleep(1)
+    time.sleep(.3)  # running
     qdevio.worker_DAQ.schedule_suspend(True)
-    time.sleep(1)
+    time.sleep(.1)  # suspended
     qdevio.worker_DAQ.schedule_suspend(False)
-    time.sleep(1)
+    time.sleep(.3)  # running
     
     print("About to quit")
     app.processEvents()
