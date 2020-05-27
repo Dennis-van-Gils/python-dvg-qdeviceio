@@ -47,6 +47,13 @@ __version__     = "1.0.0"   # This DvG_QDeviceIO.py v1.0.0 is identical to the a
 from enum import IntEnum, unique
 import queue
 import time as Time
+import sys
+
+# Needed to get proper code coverage when using pytest-cov
+# See https://github.com/nedbat/coveragepy/issues/686
+if 'pytest' in sys.modules:
+    print("\npytest detected\n")
+    import threading
 
 import numpy as np
 from PyQt5 import QtCore
@@ -58,15 +65,6 @@ def curThreadName(): return QtCore.QThread.currentThread().objectName()
 @unique
 class DAQ_trigger(IntEnum):
     [INTERNAL_TIMER, EXTERNAL_WAKE_UP_CALL, CONTINUOUS] = range(3)
-
-# Custom decorator
-def run_once(f):
-    def wrapper(*args, **kwargs):
-        if not wrapper.has_run:
-            wrapper.has_run = True
-            return f(*args, **kwargs)
-    wrapper.has_run = False
-    return wrapper
 
 # ------------------------------------------------------------------------------
 #   InnerClassDescriptor
@@ -482,17 +480,11 @@ class QDeviceIO(QtCore.QObject):
                 dprint("Worker_DAQ  %s: init @ thread %s" %
                        (self.dev.name, curThreadName()), self.DEBUG_color)
 
-        #@run_once
-        def _setup_pytest_coverage_for_run(self):
-            # Needed to get proper code coverage when using pytest-cov
-            # See https://github.com/nedbat/coveragepy/issues/686
-            print("yolo")
-            import threading, sys
-            sys.settrace(threading._trace_hook)
-
         @QtCore.pyqtSlot()
         def run(self):
-            if self.DEBUG: self._setup_pytest_coverage_for_run()
+            if 'pytest' in sys.modules:
+                # Needed to get proper code coverage when using pytest-cov
+                sys.settrace(threading._trace_hook)
             self._run()
             
         def _run(self):            
@@ -561,17 +553,11 @@ class QDeviceIO(QtCore.QObject):
             """
             self.running = False # Regardless of checking 'self.trigger_by'
 
-        #@run_once
-        def _setup_pytest_coverage_for_update(self):
-            # Needed to get proper code coverage when using pytest-cov
-            # See https://github.com/nedbat/coveragepy/issues/686
-            print("yolo")
-            import threading, sys
-            sys.settrace(threading._trace_hook)
-
         @QtCore.pyqtSlot()
         def update(self):
-            if self.DEBUG: self._setup_pytest_coverage_for_update()
+            if 'pytest' in sys.modules:
+                # Needed to get proper code coverage when using pytest-cov
+                sys.settrace(threading._trace_hook)
             self._update()
         
         def _update(self):
