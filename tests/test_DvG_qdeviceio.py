@@ -4,7 +4,10 @@ from PyQt5 import QtCore, QtWidgets
 import DvG_QDeviceIO
 
 
-
+#TODO: Separate FakeDevice into multiple versions, like:
+# FakeDevice_slaved_to_external_timer
+# FakeDevice_master_of_asynchronous_....
+# FakeDevice_master_of_...
 class FakeDevice():
     def __init__(self):
         # Required members
