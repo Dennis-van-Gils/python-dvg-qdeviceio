@@ -49,11 +49,24 @@ import queue
 import time as Time
 import sys
 
-# Needed to get proper code coverage when using pytest-cov
+# Needed to get proper code coverage of QThreads when using 'pytest-cov'
 # See https://github.com/nedbat/coveragepy/issues/686
+# I will use a custom decorator '@pytest_resolve_trace' for this
 if 'pytest' in sys.modules:
-    print("\npytest detected\n")
     import threading
+    print("\nPYTEST detected")
+    print("--> Methods decorated with @pytest_resolve_trace will get traced\n")
+    running_pytest = True
+else:
+    running_pytest = False
+
+from functools import wraps
+def pytest_resolve_trace(fn):
+    @wraps(fn)
+    def wrapped(*args, **kwargs):
+        if running_pytest: sys.settrace(threading._trace_hook)
+        fn(*args, **kwargs)
+    return wrapped    
 
 import numpy as np
 from PyQt5 import QtCore
@@ -453,9 +466,9 @@ class QDeviceIO(QtCore.QObject):
             self.running = True
             
             # Members specifically for CONTINUOUS
-            #self.running = True # Already defined above
-            self.suspend = True
-            self.suspended = True
+            #self.running = True   # (Already defined above)
+            self.suspend = True    # Start with the worker suspended and
+            self.suspended = False # immediately trigger 'signal_DAQ_suspended'
 
             # INTERNAL TIMER
             if self.trigger_by == DAQ_trigger.INTERNAL_TIMER:
@@ -480,14 +493,9 @@ class QDeviceIO(QtCore.QObject):
                 dprint("Worker_DAQ  %s: init @ thread %s" %
                        (self.dev.name, curThreadName()), self.DEBUG_color)
 
+        @pytest_resolve_trace
         @QtCore.pyqtSlot()
-        def run(self):
-            if 'pytest' in sys.modules:
-                # Needed to get proper code coverage when using pytest-cov
-                sys.settrace(threading._trace_hook)
-            self._run()
-            
-        def _run(self):            
+        def run(self):            
             if self.DEBUG:
                 dprint("Worker_DAQ  %s: run  @ thread %s" %
                        (self.dev.name, curThreadName()), self.DEBUG_color)
@@ -553,14 +561,9 @@ class QDeviceIO(QtCore.QObject):
             """
             self.running = False # Regardless of checking 'self.trigger_by'
 
+        @pytest_resolve_trace
         @QtCore.pyqtSlot()
         def update(self):
-            if 'pytest' in sys.modules:
-                # Needed to get proper code coverage when using pytest-cov
-                sys.settrace(threading._trace_hook)
-            self._update()
-        
-        def _update(self):
             locker = QtCore.QMutexLocker(self.dev.mutex)
             self.outer.DAQ_update_counter += 1
 
