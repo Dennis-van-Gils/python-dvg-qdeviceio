@@ -47,24 +47,26 @@ __version__     = "1.0.0"   # This DvG_QDeviceIO.py v1.0.0 is identical to the a
 from enum import IntEnum, unique
 import queue
 import time as Time
+
+# Code coverage tools 'coverage' and 'pytest-cov' don't seem to correctly trace 
+# code which is inside methods called from within QThreads, see
+# https://github.com/nedbat/coveragepy/issues/686
+# To mitigate this problem, I use a custom decorator '@coverage_resolve_trace' 
+# to be hung onto those method definitions. This will prepend the decorated
+# method code with 'sys.settrace(threading._trace_hook)' when a code
+# coverage test is detected. When no coverage test is detected, it will just
+# pass the original method untouched.
 import sys
-
-# Needed to get proper code coverage of QThreads when using 'pytest-cov'
-# See https://github.com/nedbat/coveragepy/issues/686
-# I will use a custom decorator '@pytest_resolve_trace' for this
-if 'pytest' in sys.modules:
-    import threading
-    print("\nPYTEST detected")
-    print("--> Methods decorated with @pytest_resolve_trace will get traced\n")
-    running_pytest = True
-else:
-    running_pytest = False
-
+import threading
 from functools import wraps
-def pytest_resolve_trace(fn):
+
+running_coverage = 'coverage' in sys.modules
+if running_coverage: print("\nCode coverage test detected\n")
+
+def coverage_resolve_trace(fn):
     @wraps(fn)
     def wrapped(*args, **kwargs):
-        if running_pytest: sys.settrace(threading._trace_hook)
+        if running_coverage: sys.settrace(threading._trace_hook)
         fn(*args, **kwargs)
     return wrapped    
 
@@ -493,7 +495,7 @@ class QDeviceIO(QtCore.QObject):
                 dprint("Worker_DAQ  %s: init @ thread %s" %
                        (self.dev.name, curThreadName()), self.DEBUG_color)
 
-        @pytest_resolve_trace
+        @coverage_resolve_trace
         @QtCore.pyqtSlot()
         def run(self):            
             if self.DEBUG:
@@ -546,6 +548,7 @@ class QDeviceIO(QtCore.QObject):
         @QtCore.pyqtSlot(bool)
         def schedule_suspend(self, state=True):
             """Only useful with DAQ_trigger.CONTINUOUS
+            TODO: Rename method to 'schedule_set_suspend_to(...)'
             """
             if self.trigger_by == DAQ_trigger.CONTINUOUS:
                 self.suspend = state
@@ -561,7 +564,7 @@ class QDeviceIO(QtCore.QObject):
             """
             self.running = False # Regardless of checking 'self.trigger_by'
 
-        @pytest_resolve_trace
+        @coverage_resolve_trace
         @QtCore.pyqtSlot()
         def update(self):
             locker = QtCore.QMutexLocker(self.dev.mutex)
