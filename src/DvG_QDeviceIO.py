@@ -739,6 +739,7 @@ class QDeviceIO(QtCore.QObject):
                 dprint("Worker_send %s: init @ thread %s" %
                        (self.dev.name, curThreadName()), self.DEBUG_color)
 
+        @coverage_resolve_trace
         @QtCore.pyqtSlot()
         def run(self):
             if self.DEBUG:
