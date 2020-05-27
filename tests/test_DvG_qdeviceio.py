@@ -18,6 +18,10 @@ class FakeDevice():
     def set_alive(self, is_alive = True):
         self.is_alive = is_alive
     
+    def fake_query(self):
+        self.counter += 1
+        return self.counter
+
 
     
 def create_QApplication():
@@ -147,52 +151,44 @@ def test_Worker_DAQ__EXTERNAL_WAKE_UP_CALL():
     assert dev.counter == 3
 
     
-"""
-def test_Worker_DAQ__Internal_timer():
+
+def test_Worker_send():
     app = create_QApplication()
     
     # Simulate a device
     dev = FakeDevice()
-    def DAQ_function():
-        if dev.is_alive:
-            dev.counter += 1
-            print(dev.counter)
-        return dev.is_alive
-    #def alt_process_jobs_function(self, func, args):
-        
+    #def alt_process_jobs_function(self, func, args):        
     
     qdevio = DvG_QDeviceIO.QDeviceIO()
     qdevio.attach_device(dev)
     
-    qdevio.create_worker_DAQ(
-        DAQ_update_interval_ms=100,
-        DAQ_function_to_run_each_update=DAQ_function,
-        DAQ_critical_not_alive_count=1,
-        DAQ_timer_type=QtCore.Qt.CoarseTimer,
-        DAQ_trigger_by=DvG_QDeviceIO.DAQ_trigger.INTERNAL_TIMER,
-        calc_DAQ_rate_every_N_iter = 25,
-        DEBUG=True)
-    
-    qdevio.create_worker_send()
-    
-    qdevio.start_thread_worker_DAQ()
+    qdevio.create_worker_send(DEBUG=True)
     qdevio.start_thread_worker_send()
     
     # Simulate device runtime
-    time.sleep(0.35)
+    qdevio.worker_send.add_to_queue(dev.fake_query)
+    time.sleep(0.1)
+    qdevio.worker_send.process_queue()
+    time.sleep(0.1)
+    qdevio.worker_send.queued_instruction(dev.fake_query)
+    time.sleep(0.1)
+    qdevio.worker_send.add_to_queue(dev.fake_query)
+    time.sleep(0.1)
+    qdevio.worker_send.process_queue()
+    time.sleep(0.1)
     
+    sys.stdout.flush()
     print("About to quit")
     app.processEvents()
-    assert qdevio.close_thread_worker_DAQ() == True
     assert qdevio.close_thread_worker_send() == True
     app.quit()
     
     assert dev.counter == 3
-"""
     
     
     
 if __name__ == "__main__":
     #test_Worker_DAQ__INTERNAL_TIMER()
     #test_Worker_DAQ__CONTINUOUS()
-    test_Worker_DAQ__EXTERNAL_WAKE_UP_CALL()
+    #test_Worker_DAQ__EXTERNAL_WAKE_UP_CALL()
+    test_Worker_send()
