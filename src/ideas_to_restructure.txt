@@ -26,5 +26,5 @@ class QDeviceIO(QtCore.QObject):
         
     class Worker_DAQ()
         def run()
-            Should be renamed into 'event_loop_function'
+            Should be renamed into 'start_'
     
