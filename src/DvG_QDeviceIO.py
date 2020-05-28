@@ -271,9 +271,11 @@ class QDeviceIO(QtCore.QObject):
 
         Returns True when successful, False otherwise.
         
+        XXX DON'T
         TODO: embed this method directly into create_worker_DAQ and make sure to
         start up in the idle state. Another call to worker_DAQ.start should
         get the acquisition going.
+        XXX instead rename to start_worker_DAQ(), like wise rename stop_thread_worker_send to stop_worker_send
         """
         if hasattr(self, 'thread_DAQ'):
             if self.thread_DAQ is not None:
