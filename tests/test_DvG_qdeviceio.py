@@ -4,9 +4,31 @@ from PyQt5 import QtCore, QtWidgets
 import DvG_QDeviceIO
 
 
-#TODO: Separate FakeDevice into multiple versions, like:
-# FakeDevice_slaved_to_external_timer
-# FakeDevice_master_of_asynchronous_....
+"""TODO: Separate FakeDevice into multiple versions, like:
+
+DAQ_trigger.INTERNAL_TIMER
+    I/O device slaved to an external timer originating from Worker_DAQ
+
+DAQ_trigger.EXTERNAL_WAKE_UP_CALL
+    Typical use case: Multiple I/O devices that are slaved to a common single
+    external timer originating from a higher scope Python module than 
+    this 'DvG_QdeviceIO' module.
+    See Keysight_N8700_PSU for an example.
+    
+    def simultaneously_trigger_update_multiple_devices():
+        for qdevio in qdevios:
+            qdevio.worker_DAQ.wake_up()
+            
+    timer_qdevios = QtCore.QTimer()
+    timer_qdevios.timeout.connect(simultaneously_trigger_update_multiple_devices)
+    timer_qdevios.start(UPDATE_INTERVAL_MS)
+
+DAQ_trigger.CONTINUOUS
+    I/O device acting as a master and outputting a continuous stream of data.
+    Typical use case
+    
+"""
+
 # FakeDevice_master_of_...
 class FakeDevice():
     def __init__(self):
