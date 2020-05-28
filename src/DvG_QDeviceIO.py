@@ -221,6 +221,8 @@ class QDeviceIO(QtCore.QObject):
         """
         if type(self.dev) == self.NoAttachedDevice:
             self.dev = dev
+            #TODO: Test for existence required members
+            # .name, .mutex, .is_alive
         else:
             pft("Device can be attached only once. Already attached to '%s'." %
                 self.dev.name)
@@ -497,7 +499,9 @@ class QDeviceIO(QtCore.QObject):
 
         @coverage_resolve_trace
         @QtCore.pyqtSlot()
-        def run(self):            
+        def run(self):  
+            #TODO: rename to _run to make it clear this is not a method to be
+            # called by the user directly.
             if self.DEBUG:
                 dprint("Worker_DAQ  %s: run  @ thread %s" %
                        (self.dev.name, curThreadName()), self.DEBUG_color)
@@ -561,12 +565,17 @@ class QDeviceIO(QtCore.QObject):
         def stop(self):
             """Only useful with DAQ_trigger.EXTERNAL_WAKE_UP_CALL or
             DAQ_trigger.CONTINUOUS
+            TODO: Rename to 'exit' or 'exit_run' or 'stop_run' to make it more
+            clear it is permanently stopping execution of the thread.
+            TODO: prepend _ to flag it as a private method
             """
             self.running = False # Regardless of checking 'self.trigger_by'
 
         @coverage_resolve_trace
         @QtCore.pyqtSlot()
         def update(self):
+            # TODO: rename to _update, because it should be flagged as a private
+            # method.
             locker = QtCore.QMutexLocker(self.dev.mutex)
             self.outer.DAQ_update_counter += 1
 
@@ -810,6 +819,9 @@ class QDeviceIO(QtCore.QObject):
 
         @QtCore.pyqtSlot()
         def stop(self):
+            """TODO: Rename it to 'exit' to make it more clear it is permanently
+            stopping execution of the thread.
+            """
             self.running = False
 
         # ----------------------------------------------------------------------

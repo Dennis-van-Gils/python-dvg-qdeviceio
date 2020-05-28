@@ -24,8 +24,15 @@ DAQ_trigger.EXTERNAL_WAKE_UP_CALL
     timer_qdevios.start(UPDATE_INTERVAL_MS)
 
 DAQ_trigger.CONTINUOUS
-    I/O device acting as a master and outputting a continuous stream of data.
-    Typical use case
+    Typical use case: I/O device acting as a master and outputting a continuous
+    stream of data. The worker_DAQ will start up in suspended mode (idling).
+    This allows for a start command to be send to the I/O device, for instance,
+    over a Worker_Send instance. Once the start command has been received and
+    processed by the device, such that it will output a continuous stream of
+    data, worker_DAQ can be taken out of suspended mode and have it listen and
+    receive this data stream.
+    
+    
     
 """
 
