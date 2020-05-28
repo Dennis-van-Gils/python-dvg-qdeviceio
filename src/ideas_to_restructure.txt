@@ -1,0 +1,30 @@
+"""Pseudo code indicating how the module should be restructured
+in a more clear and concise way
+"""
+
+class QDeviceIO(QtCore.QObject):
+    XXX DON'T
+    def __init__(device):
+        Note: 'device' is now an argument to __init__, instead of having
+        to call another method 'attach_device' immediatly after __init__
+    
+    def attach_device(...)
+        Obsolete, because 'device' is now an argument to __init__
+    \XXX BECAUSE class QDeviceIO will be mixed into parent classes that
+    take different kinds of 'device's. It is handier to keep attach_device()
+        
+    def create_worker_DAQ():
+        Not just create the worker, but also start the event loop immediately
+        Embed the method worker_DAQ.start_thread_worker_DAQ(...) into this
+        All DAQ_trigger modes should start-up in the idle/suspended/waiting state
+        Only after the user gives worker_DAQ.start should running be set to True
+        and should the acquisition, hence, start.
+        
+        For mode INTERNAL TIMER, also create the QTimer here, instead of
+        inside method worker_DAQ.run(). But mind: do not Qtimer.start() yet.
+        Also, INTERNAL TIMER probably does not need statement: self.thread_DAQ.started.connect(self.worker_DAQ.run)
+        
+    class Worker_DAQ()
+        def run()
+            Should be renamed into 'event_loop_function'
+    

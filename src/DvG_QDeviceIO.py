@@ -270,6 +270,10 @@ class QDeviceIO(QtCore.QObject):
                 resource heavy, so use sparingly.
 
         Returns True when successful, False otherwise.
+        
+        TODO: embed this method directly into create_worker_DAQ and make sure to
+        start up in the idle state. Another call to worker_DAQ.start should
+        get the acquisition going.
         """
         if hasattr(self, 'thread_DAQ'):
             if self.thread_DAQ is not None:
@@ -500,7 +504,7 @@ class QDeviceIO(QtCore.QObject):
         @coverage_resolve_trace
         @QtCore.pyqtSlot()
         def run(self):  
-            #TODO: rename to _run to make it clear this is not a method to be
+            #TODO: rename to _start to make it clear this is not a method to be
             # called by the user directly.
             if self.DEBUG:
                 dprint("Worker_DAQ  %s: run  @ thread %s" %
@@ -515,6 +519,7 @@ class QDeviceIO(QtCore.QObject):
                 self.timer.start()
 
             # EXTERNAL WAKE UP
+            # TODO: perhaps rename to SINGLE_SHOT_WAKE_UP
             elif self.trigger_by == DAQ_trigger.EXTERNAL_WAKE_UP_CALL:
                 while self.running:
                     locker_wait = QtCore.QMutexLocker(self.mutex_wait)
@@ -568,14 +573,22 @@ class QDeviceIO(QtCore.QObject):
             TODO: Rename to 'exit' or 'exit_run' or 'stop_run' to make it more
             clear it is permanently stopping execution of the thread.
             TODO: prepend _ to flag it as a private method
+            TODO: Make it work with INTERNAL_TIMER too by stopping the QTimer
             """
             self.running = False # Regardless of checking 'self.trigger_by'
+        
+        """TODO:
+        def restart(self):
+            - case INTERNAL TIMER: restart already existing QTimer
+            - case EXTERNAL_WAKE_UP_CALL: self.running = True, call self.run()
+            - case CONTINUOUS: hmmm.... Perhaps ditch the suspend mechanics and
+            go with just stop() and restart(), like case EXTERNAL_WAKE_UP_CALL
+        """
 
         @coverage_resolve_trace
         @QtCore.pyqtSlot()
         def update(self):
-            # TODO: rename to _update, because it should be flagged as a private
-            # method.
+            # TODO: rename to _perform_DAQ
             locker = QtCore.QMutexLocker(self.dev.mutex)
             self.outer.DAQ_update_counter += 1
 
