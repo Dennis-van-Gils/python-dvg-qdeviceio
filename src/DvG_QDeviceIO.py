@@ -576,14 +576,6 @@ class QDeviceIO(QtCore.QObject):
             TODO: Make it work with INTERNAL_TIMER too by stopping the QTimer
             """
             self.running = False # Regardless of checking 'self.trigger_by'
-        
-        """TODO:
-        def restart(self):
-            - case INTERNAL TIMER: restart already existing QTimer
-            - case EXTERNAL_WAKE_UP_CALL: self.running = True, call self.run()
-            - case CONTINUOUS: hmmm.... Perhaps ditch the suspend mechanics and
-            go with just stop() and restart(), like case EXTERNAL_WAKE_UP_CALL
-        """
 
         @coverage_resolve_trace
         @QtCore.pyqtSlot()
