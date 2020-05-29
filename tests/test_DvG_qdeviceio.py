@@ -4,12 +4,11 @@ from PyQt5 import QtCore, QtWidgets
 import DvG_QDeviceIO
 
 
-"""TODO: Separate FakeDevice into multiple versions, like:
-
+"""
 DAQ_trigger.INTERNAL_TIMER
     I/O device slaved to an external timer originating from Worker_DAQ
 
-DAQ_trigger.EXTERNAL_WAKE_UP_CALL
+DAQ_trigger.SINGLE_SHOT_WAKE_UP
     Typical use case: Multiple I/O devices that are slaved to a common single
     external timer originating from a higher scope Python module than 
     this 'DvG_QdeviceIO' module.
@@ -32,27 +31,36 @@ DAQ_trigger.CONTINUOUS
     data, worker_DAQ can be taken out of suspended mode and have it listen and
     receive this data stream.
     
-    
-    
 """
 
-# FakeDevice_master_of_...
 class FakeDevice():
-    def __init__(self):
+    def __init__(self, name="FakeDev"):
         # Required members
-        self.name = "FakeDev"
+        self.name = name
         self.mutex = QtCore.QMutex()
         self.is_alive = True
         
         # Member for testing
-        self.counter = 0
+        self.count_commands = 0
+        self.count_replies  = 0
         
-    def set_alive(self, is_alive = True):
-        self.is_alive = is_alive
+    def _send(self, data_to_be_send):
+        if self.is_alive:
+            # Simulate successful device output
+            self.count_replies += 1
+            print(data_to_be_send)
+            return data_to_be_send
+        else:
+            # Simulate device failure
+            time.sleep(1)
+            return None
     
     def fake_query(self):
-        self.counter += 1
-        return self.counter
+        self.count_commands += 1
+        return self._send("device reply")
+    
+    def fake_command_with_argument(self, val):
+        self.count_commands += 1
 
 
     
@@ -64,21 +72,23 @@ def create_QApplication():
     
 
 
-def test_Worker_DAQ__INTERNAL_TIMER():
+def test_Worker_DAQ__INTERNAL_TIMER(start_alive=True):
     print("\nTEST Worker_DAQ INTERNAL_TIMER")
-    print("------------------------------")
+    if not start_alive: print("start dead")
+    print("-" * 30)
     app = create_QApplication()
     
     # Simulate a device
     dev = FakeDevice()
+    dev.is_alive = start_alive
+    
     def DAQ_function():
-        if dev.is_alive:
-            dev.counter += 1
-            print(dev.counter)
-        return dev.is_alive
+        # Must return True when successful, False otherwise
+        reply = dev.fake_query()
+        return reply == "device reply"
     
     qdevio = DvG_QDeviceIO.QDeviceIO()
-    qdevio.attach_device(dev)
+    assert qdevio.attach_device(dev) == True
     
     # Worker_DAQ in mode INTERNAL TIMER
     qdevio.create_worker_DAQ(
@@ -89,36 +99,99 @@ def test_Worker_DAQ__INTERNAL_TIMER():
         DAQ_critical_not_alive_count    = 1,
         calc_DAQ_rate_every_N_iter      = 5,
         DEBUG                           = True)
-    qdevio.start_worker_DAQ()
+    
+    assert qdevio.start_worker_DAQ() == start_alive
     
     # Simulate device runtime
     time.sleep(.35)
     
     print("About to quit")
     app.processEvents()
-    assert qdevio.quit_worker_DAQ() == True
+    assert qdevio.quit_all_workers() == True
     app.quit()
     
-    assert dev.counter == 3
+    if start_alive:
+        assert dev.count_commands == 3
+        assert dev.count_replies  == 3
+    
+    
+    
+def test_Worker_DAQ__INTERNAL_TIMER__start_dead():
+    test_Worker_DAQ__INTERNAL_TIMER(start_alive=False)
+    
 
     
 
-def test_Worker_DAQ__CONTINUOUS():
-    print("\nTEST Worker_DAQ CONTINUOUS")
-    print("--------------------------")
+def test_Worker_DAQ__SINGLE_SHOT_WAKE_UP(start_alive=True):
+    print("\nTEST Worker_DAQ SINGLE_SHOT_WAKE_UP")
+    if not start_alive: print("start dead")
+    print("-" * 30)
     app = create_QApplication()
     
     # Simulate a device
     dev = FakeDevice()
+    dev.is_alive = start_alive
+    
     def DAQ_function():
-        if dev.is_alive:
-            dev.counter += 1
-            print(dev.counter)
-            time.sleep(.1)
-        return dev.is_alive        
+        # Must return True when successful, False otherwise
+        reply = dev.fake_query()
+        return reply == "device reply"
     
     qdevio = DvG_QDeviceIO.QDeviceIO()
-    qdevio.attach_device(dev)
+    assert qdevio.attach_device(dev) == True
+    
+    # Worker_DAQ in mode SINGLE_SHOT_WAKE_UP
+    qdevio.create_worker_DAQ(
+        DAQ_trigger_by                  = DvG_QDeviceIO.DAQ_trigger.SINGLE_SHOT_WAKE_UP,
+        DAQ_function_to_run_each_update = DAQ_function,
+        DAQ_critical_not_alive_count    = 1,
+        calc_DAQ_rate_every_N_iter      = 5,
+        DEBUG                           = True)
+    
+    assert qdevio.start_worker_DAQ() == start_alive
+    
+    # Simulate device runtime
+    qdevio.worker_DAQ.wake_up()
+    time.sleep(.1)
+    qdevio.worker_DAQ.wake_up()
+    time.sleep(.1)
+    qdevio.worker_DAQ.wake_up()
+    time.sleep(.1)
+    
+    print("About to quit")
+    app.processEvents()
+    assert qdevio.quit_all_workers() == True
+    app.quit()
+    
+    if start_alive:
+        assert dev.count_commands == 3
+        assert dev.count_replies  == 3
+
+    
+
+def test_Worker_DAQ__SINGLE_SHOT_WAKE_UP__start_dead():
+    test_Worker_DAQ__SINGLE_SHOT_WAKE_UP(start_alive=False)
+    
+    
+
+def test_Worker_DAQ__CONTINUOUS(start_alive=True):
+    print("\nTEST Worker_DAQ CONTINUOUS")
+    if not start_alive: print("start dead")
+    print("-" * 30)
+    app = create_QApplication()
+    
+    # Simulate a device
+    dev = FakeDevice()
+    dev.is_alive = start_alive
+    
+    def DAQ_function():
+        # Must return True when successful, False otherwise
+        time.sleep(.1)
+        reply = dev.fake_query()
+        return reply == "device reply"
+    
+    qdevio = DvG_QDeviceIO.QDeviceIO()
+    assert qdevio.attach_device(dev) == True
     
     # Worker_DAQ in mode CONTINUOUS
     qdevio.create_worker_DAQ(
@@ -127,7 +200,8 @@ def test_Worker_DAQ__CONTINUOUS():
         DAQ_critical_not_alive_count    = 1,
         calc_DAQ_rate_every_N_iter      = 5,
         DEBUG                           = True)
-    qdevio.start_worker_DAQ()
+    
+    assert qdevio.start_worker_DAQ() == start_alive
     
     # Simulate device runtime
     time.sleep(.1)  # Worker starts suspended
@@ -140,69 +214,36 @@ def test_Worker_DAQ__CONTINUOUS():
     
     print("About to quit")
     app.processEvents()
-    assert qdevio.quit_worker_DAQ() == True
+    assert qdevio.quit_all_workers() == True
     app.quit()
     
-    assert dev.counter == 6
-    
+    if start_alive:
+        assert dev.count_commands == 6
+        assert dev.count_replies  == 6
+        
 
 
-def test_Worker_DAQ__SINGLE_SHOT_WAKE_UP():
-    print("\nTEST Worker_DAQ SINGLE_SHOT_WAKE_UP")
-    print("-----------------------------------")
-    app = create_QApplication()
+def test_Worker_DAQ__CONTINUOUS__start_dead():
+    test_Worker_DAQ__CONTINUOUS(start_alive=False)
     
-    # Simulate a device
-    dev = FakeDevice()
-    def DAQ_function():
-        if dev.is_alive:
-            dev.counter += 1
-            print(dev.counter)
-        return dev.is_alive        
     
-    qdevio = DvG_QDeviceIO.QDeviceIO()
-    qdevio.attach_device(dev)
     
-    # Worker_DAQ in mode SINGLE_SHOT_WAKE_UP
-    qdevio.create_worker_DAQ(
-        DAQ_trigger_by                  = DvG_QDeviceIO.DAQ_trigger.SINGLE_SHOT_WAKE_UP,
-        DAQ_function_to_run_each_update = DAQ_function,
-        DAQ_critical_not_alive_count    = 1,
-        calc_DAQ_rate_every_N_iter      = 5,
-        DEBUG                           = True)
-    qdevio.start_worker_DAQ()
-    
-    # Simulate device runtime
-    qdevio.worker_DAQ.wake_up()
-    time.sleep(.1)
-    qdevio.worker_DAQ.wake_up()
-    time.sleep(.1)
-    qdevio.worker_DAQ.wake_up()
-    time.sleep(.1)
-    
-    print("About to quit")
-    app.processEvents()
-    assert qdevio.quit_worker_DAQ() == True
-    app.quit()
-    
-    assert dev.counter == 3
-
-    
-
-def test_Worker_send():
+def test_Worker_send(start_alive=True):
     print("\nTEST Worker_send")
-    print("----------------")
+    if not start_alive: print("start dead")
+    print("-" * 30)
     app = create_QApplication()
     
     # Simulate a device
     dev = FakeDevice()
-    #def alt_process_jobs_function(self, func, args):        
+    dev.is_alive = start_alive
     
     qdevio = DvG_QDeviceIO.QDeviceIO()
-    qdevio.attach_device(dev)
+    assert qdevio.attach_device(dev) == True
     
     qdevio.create_worker_send(DEBUG=True)
-    qdevio.start_worker_send()
+    
+    assert qdevio.start_worker_send() == start_alive
     
     # Simulate device runtime
     qdevio.worker_send.add_to_queue(dev.fake_query)
@@ -211,7 +252,11 @@ def test_Worker_send():
     time.sleep(0.1)
     qdevio.worker_send.queued_instruction(dev.fake_query)
     time.sleep(0.1)
-    qdevio.worker_send.add_to_queue(dev.fake_query)
+    qdevio.worker_send.add_to_queue(dev.fake_command_with_argument, 0)
+    time.sleep(0.1)
+    qdevio.worker_send.add_to_queue(dev.fake_command_with_argument, 0)
+    time.sleep(0.1)
+    qdevio.worker_send.add_to_queue(dev.fake_command_with_argument, 0)
     time.sleep(0.1)
     qdevio.worker_send.process_queue()
     time.sleep(0.1)
@@ -219,15 +264,124 @@ def test_Worker_send():
     sys.stdout.flush()
     print("About to quit")
     app.processEvents()
-    assert qdevio.quit_worker_send() == True
+    assert qdevio.quit_all_workers() == True
     app.quit()
     
-    assert dev.counter == 3
+    if start_alive:
+        assert dev.count_commands == 5
+        assert dev.count_replies  == 2
+        
+        
+        
+def test_Worker_send__start_dead():
+    test_Worker_send(start_alive=False)
+
+
+
+def test_Worker_send__alt_jobs():
+    print("\nTEST Worker_send")
+    print("alternative jobs")
+    print("-" * 30)
+    app = create_QApplication()
     
+    # Simulate a device
+    dev = FakeDevice()
+    
+    def my_alt_process_jobs_function(func, args):
+        if func == "special command":
+            dev.fake_query()
+        else:
+            # Default job handling where, e.g.
+            # func = self.dev.write
+            # args = ("toggle LED",)
+            func(*args)
+    
+    qdevio = DvG_QDeviceIO.QDeviceIO()
+    assert qdevio.attach_device(dev) == True
+    
+    qdevio.create_worker_send(
+        alt_process_jobs_function=my_alt_process_jobs_function,
+        DEBUG=True)
+    
+    assert qdevio.start_worker_send() == True
+    
+    # Simulate device runtime
+    qdevio.worker_send.queued_instruction(dev.fake_query)
+    time.sleep(0.1)
+    qdevio.worker_send.queued_instruction("special command")
+    time.sleep(0.1)
+    qdevio.worker_send.queued_instruction(dev.fake_command_with_argument, 0)
+    time.sleep(0.1)
+    
+    sys.stdout.flush()
+    print("About to quit")
+    app.processEvents()
+    assert qdevio.quit_all_workers() == True
+    app.quit()
+    
+    assert dev.count_commands == 3
+    assert dev.count_replies  == 2
+    
+    
+    
+def test_Worker_DAQ__start_worker_without_create():
+    print("\nTEST Worker_DAQ")
+    print("start worker without create")
+    print("-" * 30)
+    
+    dev = FakeDevice()    
+    qdevio = DvG_QDeviceIO.QDeviceIO()
+    assert qdevio.attach_device(dev) == True
+    assert qdevio.start_worker_DAQ() == False
+    assert qdevio.quit_all_workers() == True
+
+
+    
+def test_Worker_send__start_worker_without_create():
+    print("\nTEST Worker_send")
+    print("start worker without create")
+    print("-" * 30)
+    
+    dev = FakeDevice()        
+    qdevio = DvG_QDeviceIO.QDeviceIO()
+    assert qdevio.attach_device(dev) == True
+    assert qdevio.start_worker_send() == False
+    assert qdevio.quit_all_workers() == True
+    
+    
+    
+def test_attach_device_twice():
+    print("\nTEST attach device twice")
+    print("-" * 30)
+    
+    dev = FakeDevice()    
+    qdevio = DvG_QDeviceIO.QDeviceIO()
+    assert qdevio.attach_device(dev) == True
+    assert qdevio.attach_device(dev) == False
+    
+
+
+def test_no_device_attached():
+    print("\nTEST no device attached")
+    print("-" * 30)
+    
+    qdevio = DvG_QDeviceIO.QDeviceIO()
+    qdevio.create_worker_DAQ()
+    assert qdevio.start_worker_DAQ() == False
+    assert qdevio.quit_all_workers() == True
     
     
 if __name__ == "__main__":
     test_Worker_DAQ__INTERNAL_TIMER()
-    test_Worker_DAQ__CONTINUOUS()
+    test_Worker_DAQ__INTERNAL_TIMER__start_dead()
     test_Worker_DAQ__SINGLE_SHOT_WAKE_UP()
+    test_Worker_DAQ__SINGLE_SHOT_WAKE_UP__start_dead()
+    test_Worker_DAQ__CONTINUOUS()
+    test_Worker_DAQ__CONTINUOUS__start_dead()
     test_Worker_send()
+    test_Worker_send__start_dead()
+    test_Worker_send__alt_jobs()
+    test_Worker_DAQ__start_worker_without_create()
+    test_Worker_send__start_worker_without_create()
+    test_attach_device_twice()
+    test_no_device_attached()
