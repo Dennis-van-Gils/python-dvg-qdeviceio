@@ -11,8 +11,8 @@ MAIN CONTENTS:
             Methods:
                 attach_device(...)
                 
-                create_worker_DAQ()
-                create_worker_send()
+                create_worker_DAQ(...)
+                create_worker_send(...)
                 
                 start_worker_DAQ(...)
                 start_worker_send(...)
@@ -46,8 +46,8 @@ MAIN CONTENTS:
 __author__      = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__         = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
-__date__        = "25-05-2020"
-__version__     = "1.0.0"   # This DvG_QDeviceIO.py v1.0.0 is near identical to the alpha-prototype DvG_dev_Base__pyqt_lib.py v1.3.3
+__date__        = "29-05-2020"
+__version__     = "1.0.0"   # This DvG_QDeviceIO.py v1.0.0 is based on the alpha-prototype DvG_dev_Base__pyqt_lib.py v1.3.3
 
 from enum import IntEnum, unique
 import queue
@@ -84,7 +84,7 @@ def curThreadName(): return QtCore.QThread.currentThread().objectName()
 
 @unique
 class DAQ_trigger(IntEnum):
-    [INTERNAL_TIMER, EXTERNAL_WAKE_UP_CALL, CONTINUOUS] = range(3)
+    [INTERNAL_TIMER, SINGLE_SHOT_WAKE_UP, CONTINUOUS] = range(3)
 
 # ------------------------------------------------------------------------------
 #   InnerClassDescriptor
@@ -337,11 +337,6 @@ class QDeviceIO(QtCore.QObject):
         """
         if self._thread_DAQ is not None:
             self.worker_DAQ._stop()
-            
-            if (self.worker_DAQ.trigger_by ==
-                DAQ_trigger.EXTERNAL_WAKE_UP_CALL):                
-                self.worker_DAQ.qwc.wakeAll()
-                
             self._thread_DAQ.quit()
             print("Closing thread %s " %
                   "{:.<16}".format(self._thread_DAQ.objectName()), end='')
@@ -361,7 +356,6 @@ class QDeviceIO(QtCore.QObject):
         """
         if self._thread_send is not None:
             self.worker_send._stop()
-            self.worker_send.qwc.wakeAll()
             self._thread_send.quit()
             print("Closing thread %s " %
                   "{:.<16}".format(self._thread_send.objectName()), end='')
@@ -466,11 +460,11 @@ class QDeviceIO(QtCore.QObject):
                 unintentionally.
         """
         def __init__(self, *,
-                     DAQ_update_interval_ms=1000,
-                     DAQ_function_to_run_each_update=None,
-                     DAQ_critical_not_alive_count=1,
-                     DAQ_timer_type=QtCore.Qt.CoarseTimer,
                      DAQ_trigger_by=DAQ_trigger.INTERNAL_TIMER,
+                     DAQ_function_to_run_each_update=None,
+                     DAQ_update_interval_ms=1000,
+                     DAQ_timer_type=QtCore.Qt.CoarseTimer,                     
+                     DAQ_critical_not_alive_count=1,
                      calc_DAQ_rate_every_N_iter=25,
                      DEBUG=False):
             super().__init__(None)
@@ -478,33 +472,29 @@ class QDeviceIO(QtCore.QObject):
             self.DEBUG_color = ANSI.CYAN
 
             self.dev = self.outer.dev
-            self.update_interval_ms = DAQ_update_interval_ms
+            self.trigger_by = DAQ_trigger_by
             self.function_to_run_each_update = DAQ_function_to_run_each_update
             self.critical_not_alive_count = DAQ_critical_not_alive_count
-            self.timer_type = DAQ_timer_type
-            self.trigger_by = DAQ_trigger_by
             
-            # Members specificly for EXTERNAL WAKE UP
-            self.qwc = QtCore.QWaitCondition()
-            self.mutex_wait = QtCore.QMutex()
-            self.running = True
-            
-            # Members specifically for CONTINUOUS
-            #self.running = True   # (Already defined above)
-            self.suspend = True    # Start with the worker suspended and
-            self.suspended = False # immediately trigger 'signal_DAQ_suspended'
-
-            # INTERNAL TIMER
+            # Members specifically for INTERNAL_TIMER
             if self.trigger_by == DAQ_trigger.INTERNAL_TIMER:
+                self.update_interval_ms = DAQ_update_interval_ms
+                self.timer_type = DAQ_timer_type
                 self.calc_DAQ_rate_every_N_iter = max(
                         round(1e3/self.update_interval_ms), 1)
             
-            # EXTERNAL WAKE UP
-            elif self.trigger_by == DAQ_trigger.EXTERNAL_WAKE_UP_CALL:
+            # Members specifically for SINGLE_SHOT_WAKE_UP
+            elif self.trigger_by == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
+                self.running = True
+                self.qwc = QtCore.QWaitCondition()
+                self.mutex_wait = QtCore.QMutex()
                 self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
-                
-            # CONTINUOUS
+            
+            # Members specifically for CONTINUOUS
             elif self.trigger_by == DAQ_trigger.CONTINUOUS:
+                self.running = True
+                self.suspend = True    # Start with the worker suspended and
+                self.suspended = False # immediately trigger 'signal_DAQ_suspended'
                 self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
                 
             # QElapsedTimer (QET) to keep track of DAQ interval and DAQ rate
@@ -524,7 +514,7 @@ class QDeviceIO(QtCore.QObject):
                 dprint("Worker_DAQ  %s: work @ thread %s" %
                        (self.dev.name, curThreadName()), self.DEBUG_color)
 
-            # INTERNAL TIMER
+            # INTERNAL_TIMER
             if self.trigger_by == DAQ_trigger.INTERNAL_TIMER:
                 self.timer = QtCore.QTimer()
                 self.timer.setInterval(self.update_interval_ms)
@@ -532,9 +522,8 @@ class QDeviceIO(QtCore.QObject):
                 self.timer.setTimerType(self.timer_type)
                 self.timer.start()
 
-            # EXTERNAL WAKE UP
-            # TODO: perhaps rename to SINGLE_SHOT_WAKE_UP
-            elif self.trigger_by == DAQ_trigger.EXTERNAL_WAKE_UP_CALL:
+            # SINGLE_SHOT_WAKE_UP
+            elif self.trigger_by == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
                 while self.running:
                     locker_wait = QtCore.QMutexLocker(self.mutex_wait)
 
@@ -567,6 +556,10 @@ class QDeviceIO(QtCore.QObject):
                     else:
                         self.suspended = False
                         self._perform_DAQ()
+                        
+                if self.DEBUG:
+                    dprint("Worker_DAQ  %s: done running" % self.dev.name,
+                           self.DEBUG_color)
 
         @coverage_resolve_trace
         @QtCore.pyqtSlot()
@@ -636,14 +629,18 @@ class QDeviceIO(QtCore.QObject):
         
         @QtCore.pyqtSlot()
         def _stop(self):
-            """Escape the '_do_work' loop inside of the worker
+            """Stop the worker to prepare for quitting the worker thread
             """
             if self.trigger_by == DAQ_trigger.INTERNAL_TIMER:
                 self.timer.stop()
-            elif (self.trigger_by == DAQ_trigger.EXTERNAL_WAKE_UP_CALL or
-                  self.trigger_by == DAQ_trigger.CONTINUOUS):
+            
+            elif self.trigger_by == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
                 self.running = False
-
+                self.qwc.wakeAll()
+                
+            elif self.trigger_by == DAQ_trigger.CONTINUOUS:
+                self.running = False
+                
         @QtCore.pyqtSlot(bool)
         def schedule_suspend(self, state=True):
             """Only useful with DAQ_trigger.CONTINUOUS
@@ -661,9 +658,9 @@ class QDeviceIO(QtCore.QObject):
         # ----------------------------------------------------------------------
 
         def wake_up(self):
-            """Only useful with DAQ_trigger.EXTERNAL_WAKE_UP_CALL
+            """Only useful with DAQ_trigger.SINGLE_SHOT_WAKE_UP
             """
-            if self.trigger_by == DAQ_trigger.EXTERNAL_WAKE_UP_CALL:
+            if self.trigger_by == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
                 self.qwc.wakeAll()
 
     # --------------------------------------------------------------------------
@@ -832,9 +829,10 @@ class QDeviceIO(QtCore.QObject):
 
         @QtCore.pyqtSlot()
         def _stop(self):
-            """Escape the '_do_work' loop inside of the worker
+            """Stop the worker to prepare for quitting the worker thread
             """
             self.running = False
+            self.qwc.wakeAll()
 
         # ----------------------------------------------------------------------
         #   add_to_queue

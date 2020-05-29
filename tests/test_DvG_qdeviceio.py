@@ -58,7 +58,6 @@ class FakeDevice():
     
 def create_QApplication():
     QtCore.QThread.currentThread().setObjectName('MAIN')    # For DEBUG info
-    print()     # Esthetics for pytest output
     app = 0     # Work-around for kernel crash when using Spyder IDE
     app = QtWidgets.QApplication(sys.argv)
     return app
@@ -66,6 +65,8 @@ def create_QApplication():
 
 
 def test_Worker_DAQ__INTERNAL_TIMER():
+    print("\nTEST Worker_DAQ INTERNAL_TIMER")
+    print("------------------------------")
     app = create_QApplication()
     
     # Simulate a device
@@ -103,6 +104,8 @@ def test_Worker_DAQ__INTERNAL_TIMER():
     
 
 def test_Worker_DAQ__CONTINUOUS():
+    print("\nTEST Worker_DAQ CONTINUOUS")
+    print("--------------------------")
     app = create_QApplication()
     
     # Simulate a device
@@ -144,7 +147,9 @@ def test_Worker_DAQ__CONTINUOUS():
     
 
 
-def test_Worker_DAQ__EXTERNAL_WAKE_UP_CALL():
+def test_Worker_DAQ__SINGLE_SHOT_WAKE_UP():
+    print("\nTEST Worker_DAQ SINGLE_SHOT_WAKE_UP")
+    print("-----------------------------------")
     app = create_QApplication()
     
     # Simulate a device
@@ -158,9 +163,9 @@ def test_Worker_DAQ__EXTERNAL_WAKE_UP_CALL():
     qdevio = DvG_QDeviceIO.QDeviceIO()
     qdevio.attach_device(dev)
     
-    # Worker_DAQ in mode EXTERNAL_WAKE_UP_CALL
+    # Worker_DAQ in mode SINGLE_SHOT_WAKE_UP
     qdevio.create_worker_DAQ(
-        DAQ_trigger_by                  = DvG_QDeviceIO.DAQ_trigger.EXTERNAL_WAKE_UP_CALL,
+        DAQ_trigger_by                  = DvG_QDeviceIO.DAQ_trigger.SINGLE_SHOT_WAKE_UP,
         DAQ_function_to_run_each_update = DAQ_function,
         DAQ_critical_not_alive_count    = 1,
         calc_DAQ_rate_every_N_iter      = 5,
@@ -185,6 +190,8 @@ def test_Worker_DAQ__EXTERNAL_WAKE_UP_CALL():
     
 
 def test_Worker_send():
+    print("\nTEST Worker_send")
+    print("----------------")
     app = create_QApplication()
     
     # Simulate a device
@@ -222,5 +229,5 @@ def test_Worker_send():
 if __name__ == "__main__":
     test_Worker_DAQ__INTERNAL_TIMER()
     test_Worker_DAQ__CONTINUOUS()
-    test_Worker_DAQ__EXTERNAL_WAKE_UP_CALL()
+    test_Worker_DAQ__SINGLE_SHOT_WAKE_UP()
     test_Worker_send()
