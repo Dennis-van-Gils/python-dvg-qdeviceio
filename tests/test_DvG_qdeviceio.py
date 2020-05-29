@@ -88,14 +88,14 @@ def test_Worker_DAQ__INTERNAL_TIMER():
         DAQ_critical_not_alive_count    = 1,
         calc_DAQ_rate_every_N_iter      = 5,
         DEBUG                           = True)
-    qdevio.start_thread_worker_DAQ()
+    qdevio.start_worker_DAQ()
     
     # Simulate device runtime
     time.sleep(.35)
     
     print("About to quit")
     app.processEvents()
-    assert qdevio.close_thread_worker_DAQ() == True
+    assert qdevio.quit_worker_DAQ() == True
     app.quit()
     
     assert dev.counter == 3
@@ -124,7 +124,7 @@ def test_Worker_DAQ__CONTINUOUS():
         DAQ_critical_not_alive_count    = 1,
         calc_DAQ_rate_every_N_iter      = 5,
         DEBUG                           = True)
-    qdevio.start_thread_worker_DAQ()
+    qdevio.start_worker_DAQ()
     
     # Simulate device runtime
     time.sleep(.1)  # Worker starts suspended
@@ -137,7 +137,7 @@ def test_Worker_DAQ__CONTINUOUS():
     
     print("About to quit")
     app.processEvents()
-    assert qdevio.close_thread_worker_DAQ() == True
+    assert qdevio.quit_worker_DAQ() == True
     app.quit()
     
     assert dev.counter == 6
@@ -165,7 +165,7 @@ def test_Worker_DAQ__EXTERNAL_WAKE_UP_CALL():
         DAQ_critical_not_alive_count    = 1,
         calc_DAQ_rate_every_N_iter      = 5,
         DEBUG                           = True)
-    qdevio.start_thread_worker_DAQ()
+    qdevio.start_worker_DAQ()
     
     # Simulate device runtime
     qdevio.worker_DAQ.wake_up()
@@ -177,7 +177,7 @@ def test_Worker_DAQ__EXTERNAL_WAKE_UP_CALL():
     
     print("About to quit")
     app.processEvents()
-    assert qdevio.close_thread_worker_DAQ() == True
+    assert qdevio.quit_worker_DAQ() == True
     app.quit()
     
     assert dev.counter == 3
@@ -195,7 +195,7 @@ def test_Worker_send():
     qdevio.attach_device(dev)
     
     qdevio.create_worker_send(DEBUG=True)
-    qdevio.start_thread_worker_send()
+    qdevio.start_worker_send()
     
     # Simulate device runtime
     qdevio.worker_send.add_to_queue(dev.fake_query)
@@ -212,7 +212,7 @@ def test_Worker_send():
     sys.stdout.flush()
     print("About to quit")
     app.processEvents()
-    assert qdevio.close_thread_worker_send() == True
+    assert qdevio.quit_worker_send() == True
     app.quit()
     
     assert dev.counter == 3
@@ -220,7 +220,7 @@ def test_Worker_send():
     
     
 if __name__ == "__main__":
-    #test_Worker_DAQ__INTERNAL_TIMER()
-    #test_Worker_DAQ__CONTINUOUS()
-    #test_Worker_DAQ__EXTERNAL_WAKE_UP_CALL()
+    test_Worker_DAQ__INTERNAL_TIMER()
+    test_Worker_DAQ__CONTINUOUS()
+    test_Worker_DAQ__EXTERNAL_WAKE_UP_CALL()
     test_Worker_send()
