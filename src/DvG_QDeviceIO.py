@@ -80,7 +80,7 @@ from PyQt5 import QtCore
 from DvG_debug_functions import ANSI, dprint, print_fancy_traceback as pft
 
 # Short-hand alias for DEBUG information
-def curThreadName(): return QtCore.QThread.currentThread().objectName()
+def cur_thread_name(): return QtCore.QThread.currentThread().objectName()
 
 @unique
 class DAQ_trigger(IntEnum):
@@ -225,14 +225,18 @@ class QDeviceIO(QtCore.QObject):
 
     def attach_device(self, dev):
         """Attach a reference to a 'device' instance with I/O methods.
+        
+        Returns True when successful, False otherwise.
         """
         if type(self.dev) == self.NoAttachedDevice:
             self.dev = dev
             #TODO: Test for existence required members
             # dev.name, dev.mutex, dev.is_alive
+            return True
         else:
             pft("Device can be attached only once. Already attached to '%s'." %
                 self.dev.name)
+            return False
 
     # --------------------------------------------------------------------------
     #   Create workers
@@ -370,15 +374,10 @@ class QDeviceIO(QtCore.QObject):
 
     def quit_all_workers(self):
         """Stop all of any running workers and close their respective threads.
-        Safer and more convenient than calling 'quit_worker_DAQ' and
-        'quit_worker_send', individually.
         
         Returns True when successful, False otherwise.
         """
-        success = True
-        if self._thread_DAQ  is not None: success &= self.quit_worker_DAQ()
-        if self._thread_send is not None: success &= self.quit_worker_send()
-        return success
+        return (self.quit_worker_DAQ() & self.quit_worker_send())
 
     # --------------------------------------------------------------------------
     #   Worker_DAQ
@@ -505,14 +504,14 @@ class QDeviceIO(QtCore.QObject):
 
             if self.DEBUG:
                 dprint("Worker_DAQ  %s: init @ thread %s" %
-                       (self.dev.name, curThreadName()), self.DEBUG_color)
+                       (self.dev.name, cur_thread_name()), self.DEBUG_color)
 
         @coverage_resolve_trace
         @QtCore.pyqtSlot()
         def _do_work(self):  
             if self.DEBUG:
                 dprint("Worker_DAQ  %s: work @ thread %s" %
-                       (self.dev.name, curThreadName()), self.DEBUG_color)
+                       (self.dev.name, cur_thread_name()), self.DEBUG_color)
 
             # INTERNAL_TIMER
             if self.trigger_by == DAQ_trigger.INTERNAL_TIMER:
@@ -632,11 +631,13 @@ class QDeviceIO(QtCore.QObject):
             """Stop the worker to prepare for quitting the worker thread
             """
             if self.trigger_by == DAQ_trigger.INTERNAL_TIMER:
-                self.timer.stop()
+                if hasattr(self, 'timer'):
+                    self.timer.stop()
             
             elif self.trigger_by == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
                 self.running = False
-                self.qwc.wakeAll()
+                if hasattr(self, 'qwc'):
+                    self.qwc.wakeAll()
                 
             elif self.trigger_by == DAQ_trigger.CONTINUOUS:
                 self.running = False
@@ -644,7 +645,8 @@ class QDeviceIO(QtCore.QObject):
         @QtCore.pyqtSlot(bool)
         def schedule_suspend(self, state=True):
             """Only useful with DAQ_trigger.CONTINUOUS
-            TODO: Rename method to 'schedule_set_suspend_to(...)'
+            TODO: change names schedule_suspend, suspend and suspended to
+            something more clear
             """
             if self.trigger_by == DAQ_trigger.CONTINUOUS:
                 self.suspend = state
@@ -711,7 +713,7 @@ class QDeviceIO(QtCore.QObject):
                             [success, ans_str] = self.dev.query("id?")
                             # And store the reply 'ans_str' in another variable
                             # at a higher scope or do stuff with it here.
-                        elif:
+                        else:
                             # Default job handling where, e.g.
                             # func = self.dev.write
                             # args = ("toggle LED",)
@@ -756,14 +758,14 @@ class QDeviceIO(QtCore.QObject):
 
             if self.DEBUG:
                 dprint("Worker_send %s: init @ thread %s" %
-                       (self.dev.name, curThreadName()), self.DEBUG_color)
+                       (self.dev.name, cur_thread_name()), self.DEBUG_color)
 
         @coverage_resolve_trace
         @QtCore.pyqtSlot()
         def _do_work(self):
             if self.DEBUG:
                 dprint("Worker_send %s: work @ thread %s" %
-                       (self.dev.name, curThreadName()), self.DEBUG_color)
+                       (self.dev.name, cur_thread_name()), self.DEBUG_color)
 
             while self.running:
                 locker_wait = QtCore.QMutexLocker(self.mutex_wait)
