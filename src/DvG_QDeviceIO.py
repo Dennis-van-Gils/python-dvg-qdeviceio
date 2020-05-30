@@ -464,7 +464,7 @@ class QDeviceIO(QtCore.QObject):
                      DAQ_update_interval_ms=1000,
                      DAQ_timer_type=QtCore.Qt.CoarseTimer,                     
                      DAQ_critical_not_alive_count=1,
-                     calc_DAQ_rate_every_N_iter=25,
+                     calc_DAQ_rate_every_N_iter=25, # TODO: set default value to 'auto' and implement further down. When integer, take over that value.
                      DEBUG=False):
             super().__init__(None)
             self.DEBUG = DEBUG
@@ -480,6 +480,8 @@ class QDeviceIO(QtCore.QObject):
                 self.update_interval_ms = DAQ_update_interval_ms
                 self.timer_type = DAQ_timer_type
                 self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
+                # TODO: create a special value, like string 'auto_1_Hz' to
+                # trigger below calculation
                 #self.calc_DAQ_rate_every_N_iter = max(
                 #        round(1e3/self.update_interval_ms), 1)
             
