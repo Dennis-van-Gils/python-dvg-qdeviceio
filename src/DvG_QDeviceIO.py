@@ -46,8 +46,8 @@ MAIN CONTENTS:
 __author__      = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__         = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
-__date__        = "29-05-2020"
-__version__     = "1.0.0"   # This DvG_QDeviceIO.py v1.0.0 is based on the alpha-prototype DvG_dev_Base__pyqt_lib.py v1.3.3
+__date__        = "30-05-2020"
+__version__     = "0.0.1"   # This DvG_QDeviceIO.py v0.0.1 on PyPI is based on the pre-PyPI prototype DvG_dev_Base__pyqt_lib.py v1.3.3
 
 from enum import IntEnum, unique
 import queue

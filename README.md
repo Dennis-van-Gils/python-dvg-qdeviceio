@@ -4,3 +4,5 @@
 
 # DvG_QDeviceIO
 PyQt5 module containing the framework for multithreaded communication and periodical data acquisition for an I/O device.
+
+In alpha stage. Within a month (at July 2020) I expect a proper release.
