@@ -52,7 +52,7 @@ class FakeDevice():
             return data_to_be_send
         else:
             # Simulate device failure
-            time.sleep(1)
+            time.sleep(.1)
             return None
     
     def fake_query(self):
@@ -369,9 +369,107 @@ def test_no_device_attached():
     qdevio.create_worker_DAQ()
     assert qdevio.start_worker_DAQ() == False
     assert qdevio.quit_all_workers() == True
+
+    
+    
+def test_Worker_DAQ__rate():
+    print("\nTEST Worker_DAQ INTERNAL_TIMER")
+    print("DAQ rate")
+    print("-" * 30)
+    app = create_QApplication()
+    
+    # Simulate a device
+    dev = FakeDevice()
+    
+    def DAQ_function():
+        print(qdevio.obtained_DAQ_update_interval_ms)
+        print(qdevio.obtained_DAQ_rate_Hz)
+        return True
+    
+    qdevio = DvG_QDeviceIO.QDeviceIO()
+    assert qdevio.attach_device(dev) == True
+    
+    # Worker_DAQ in mode INTERNAL TIMER
+    qdevio.create_worker_DAQ(
+        DAQ_trigger_by                  = DvG_QDeviceIO.DAQ_trigger.INTERNAL_TIMER,
+        DAQ_function_to_run_each_update = DAQ_function,
+        DAQ_update_interval_ms          = 20,
+        DAQ_timer_type                  = QtCore.Qt.PreciseTimer,
+        DAQ_critical_not_alive_count    = 1,
+        calc_DAQ_rate_every_N_iter      = 25,
+        DEBUG                           = True)
+    
+    print(qdevio.worker_DAQ.calc_DAQ_rate_every_N_iter)
+    assert qdevio.start_worker_DAQ() == True
+    
+    # Simulate device runtime
+    time.sleep(1.02)
+    
+    print("About to quit")
+    app.processEvents()
+    assert qdevio.quit_all_workers() == True
+    app.quit()
+    
+    assert (
+        qdevio.obtained_DAQ_update_interval_ms >= 19 &
+        qdevio.obtained_DAQ_update_interval_ms <= 21)
+    assert round(qdevio.obtained_DAQ_rate_Hz) == 50
+    
+    
+    
+def test_Worker_DAQ__midway_dead_device():
+    print("\nTEST Worker_DAQ INTERNAL_TIMER")
+    print("midway dead device")
+    print("-" * 30)
+    app = create_QApplication()
+    
+    # Simulate a device
+    dev = FakeDevice()
+    
+    def DAQ_function():
+        if qdevio.DAQ_update_counter == 30:
+            dev.is_alive = False
+        reply = dev.fake_query()
+        print(qdevio.obtained_DAQ_update_interval_ms)
+        print(qdevio.obtained_DAQ_rate_Hz)
+        return reply == "device reply"
+    
+    qdevio = DvG_QDeviceIO.QDeviceIO()
+    assert qdevio.attach_device(dev) == True
+    
+    # Worker_DAQ in mode INTERNAL TIMER
+    qdevio.create_worker_DAQ(
+        DAQ_trigger_by                  = DvG_QDeviceIO.DAQ_trigger.INTERNAL_TIMER,
+        DAQ_function_to_run_each_update = DAQ_function,
+        DAQ_update_interval_ms          = 20,
+        DAQ_timer_type                  = QtCore.Qt.PreciseTimer,
+        DAQ_critical_not_alive_count    = 3,
+        calc_DAQ_rate_every_N_iter      = 20,
+        DEBUG                           = True)
+    
+    print(qdevio.worker_DAQ.calc_DAQ_rate_every_N_iter)
+    assert qdevio.start_worker_DAQ() == True
+    
+    # Simulate device runtime
+    time.sleep(1)
+    
+    print("About to quit")
+    app.processEvents()
+    assert qdevio.quit_all_workers() == True
+    app.quit()
+    
+    print(qdevio.obtained_DAQ_update_interval_ms)
+    assert (
+        (qdevio.obtained_DAQ_update_interval_ms >= 19) and
+        (qdevio.obtained_DAQ_update_interval_ms <= 21))
+    assert round(qdevio.obtained_DAQ_rate_Hz) == 50
+    
+    # TODO: Connect to signal 'connection lost' and assert
+    
     
     
 if __name__ == "__main__":
+    """
     test_Worker_DAQ__INTERNAL_TIMER()
     test_Worker_DAQ__INTERNAL_TIMER__start_dead()
     test_Worker_DAQ__SINGLE_SHOT_WAKE_UP()
@@ -385,3 +483,6 @@ if __name__ == "__main__":
     test_Worker_send__start_worker_without_create()
     test_attach_device_twice()
     test_no_device_attached()
+    test_Worker_DAQ__rate()
+    """
+    test_Worker_DAQ__midway_dead_device()
