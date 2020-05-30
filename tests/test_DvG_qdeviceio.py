@@ -1,6 +1,6 @@
 import sys
 import time
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore
 import DvG_QDeviceIO
 from DvG_debug_functions import dprint
 
@@ -72,7 +72,9 @@ class FakeDevice():
 def create_QApplication():
     QtCore.QThread.currentThread().setObjectName('MAIN')    # For DEBUG info
     app = 0     # Work-around for kernel crash when using Spyder IDE
-    app = QtWidgets.QApplication(sys.argv)
+    # QtWidgets are not needed for pytest and will fail standard Travis test
+    #app = QtWidgets.QApplication(sys.argv)
+    app = QtCore.QCoreApplication(sys.argv) # Use QCoreApplication instead
     return app
     
 
