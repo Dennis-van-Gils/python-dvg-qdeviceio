@@ -25,7 +25,7 @@ def read(*names, **kwargs):
 
 setup(
     name='dvg-qdeviceio',
-    version='0.0.1',
+    version='0.0.2',
     license='MIT',
     description='PyQt5 framework for multithreaded communication and periodical data acquisition for an I/O device.',
     long_description='%s\n%s' % (
