@@ -2,6 +2,10 @@ import sys
 import time
 from PyQt5 import QtCore, QtWidgets
 import DvG_QDeviceIO
+from DvG_debug_functions import dprint
+
+# TODO: test pyqt_signals coming from QDeviceIO
+# See test_Worker_DAQ__midway_dead_device()
 
 
 """
@@ -48,11 +52,12 @@ class FakeDevice():
         if self.is_alive:
             # Simulate successful device output
             self.count_replies += 1
-            print(data_to_be_send)
+            dprint(data_to_be_send)
             return data_to_be_send
         else:
             # Simulate device failure
             time.sleep(.1)
+            dprint("FAKE DEVICE I/O ERROR")
             return None
     
     def fake_query(self):
@@ -105,7 +110,7 @@ def test_Worker_DAQ__INTERNAL_TIMER(start_alive=True):
     # Simulate device runtime
     time.sleep(.35)
     
-    print("About to quit")
+    dprint("About to quit")
     app.processEvents()
     assert qdevio.quit_all_workers() == True
     app.quit()
@@ -158,7 +163,7 @@ def test_Worker_DAQ__SINGLE_SHOT_WAKE_UP(start_alive=True):
     qdevio.worker_DAQ.wake_up()
     time.sleep(.1)
     
-    print("About to quit")
+    dprint("About to quit")
     app.processEvents()
     assert qdevio.quit_all_workers() == True
     app.quit()
@@ -212,7 +217,7 @@ def test_Worker_DAQ__CONTINUOUS(start_alive=True):
     qdevio.worker_DAQ.schedule_suspend(False)
     time.sleep(.3)  # running
     
-    print("About to quit")
+    dprint("About to quit")
     app.processEvents()
     assert qdevio.quit_all_workers() == True
     app.quit()
@@ -260,9 +265,10 @@ def test_Worker_send(start_alive=True):
     time.sleep(0.1)
     qdevio.worker_send.process_queue()
     time.sleep(0.1)
+    qdevio.worker_send.queued_instruction("trigger_illegal_function_call_error")
+    time.sleep(0.1)
     
-    sys.stdout.flush()
-    print("About to quit")
+    dprint("About to quit")
     app.processEvents()
     assert qdevio.quit_all_workers() == True
     app.quit()
@@ -313,8 +319,7 @@ def test_Worker_send__alt_jobs():
     qdevio.worker_send.queued_instruction(dev.fake_command_with_argument, 0)
     time.sleep(0.1)
     
-    sys.stdout.flush()
-    print("About to quit")
+    dprint("About to quit")
     app.processEvents()
     assert qdevio.quit_all_workers() == True
     app.quit()
@@ -382,8 +387,8 @@ def test_Worker_DAQ__rate():
     dev = FakeDevice()
     
     def DAQ_function():
-        print(qdevio.obtained_DAQ_update_interval_ms)
-        print(qdevio.obtained_DAQ_rate_Hz)
+        dprint(qdevio.obtained_DAQ_update_interval_ms)
+        dprint(qdevio.obtained_DAQ_rate_Hz)
         return True
     
     qdevio = DvG_QDeviceIO.QDeviceIO()
@@ -405,7 +410,7 @@ def test_Worker_DAQ__rate():
     # Simulate device runtime
     time.sleep(1.02)
     
-    print("About to quit")
+    dprint("About to quit")
     app.processEvents()
     assert qdevio.quit_all_workers() == True
     app.quit()
@@ -430,8 +435,8 @@ def test_Worker_DAQ__midway_dead_device():
         if qdevio.DAQ_update_counter == 30:
             dev.is_alive = False
         reply = dev.fake_query()
-        print(qdevio.obtained_DAQ_update_interval_ms)
-        print(qdevio.obtained_DAQ_rate_Hz)
+        dprint(qdevio.obtained_DAQ_update_interval_ms)
+        dprint(qdevio.obtained_DAQ_rate_Hz)
         return reply == "device reply"
     
     qdevio = DvG_QDeviceIO.QDeviceIO()
@@ -447,29 +452,32 @@ def test_Worker_DAQ__midway_dead_device():
         calc_DAQ_rate_every_N_iter      = 20,
         DEBUG                           = True)
     
-    print(qdevio.worker_DAQ.calc_DAQ_rate_every_N_iter)
+    global go
+    go = True
+    
+    @QtCore.pyqtSlot()
+    def process_connection_lost():
+        dprint("---> Received signal: connection_lost")
+        global go
+        go = False
+
+    qdevio.signal_connection_lost.connect(process_connection_lost)
+    
     assert qdevio.start_worker_DAQ() == True
     
     # Simulate device runtime
-    time.sleep(1)
-    
-    print("About to quit")
+    while go:
+        app.processEvents()
+        
+    dprint("About to quit")
     app.processEvents()
     assert qdevio.quit_all_workers() == True
     app.quit()
     
-    print(qdevio.obtained_DAQ_update_interval_ms)
-    assert (
-        (qdevio.obtained_DAQ_update_interval_ms >= 19) and
-        (qdevio.obtained_DAQ_update_interval_ms <= 21))
-    assert round(qdevio.obtained_DAQ_rate_Hz) == 50
-    
-    # TODO: Connect to signal 'connection lost' and assert
-    
     
     
 if __name__ == "__main__":
-    """
+    #"""
     test_Worker_DAQ__INTERNAL_TIMER()
     test_Worker_DAQ__INTERNAL_TIMER__start_dead()
     test_Worker_DAQ__SINGLE_SHOT_WAKE_UP()
@@ -484,5 +492,6 @@ if __name__ == "__main__":
     test_attach_device_twice()
     test_no_device_attached()
     test_Worker_DAQ__rate()
-    """
     test_Worker_DAQ__midway_dead_device()
+    #"""
+    #test_Worker_send()
