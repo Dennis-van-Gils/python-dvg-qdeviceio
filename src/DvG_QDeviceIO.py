@@ -348,8 +348,8 @@ class QDeviceIO(QtCore.QObject):
                 print("done.\n", end='')
                 return True
             else:
-                print("FAILED.\n", end='')
-                return False
+                print("FAILED.\n", end='')      # pragma: no cover
+                return False                    # pragma: no cover
             
         else: return True
 
@@ -367,8 +367,8 @@ class QDeviceIO(QtCore.QObject):
                 print("done.\n", end='')
                 return True
             else:
-                print("FAILED.\n", end='')
-                return False
+                print("FAILED.\n", end='')      # pragma: no cover
+                return False                    # pragma: no cover
             
         else: return True
 
@@ -586,8 +586,8 @@ class QDeviceIO(QtCore.QObject):
                     self.outer.obtained_DAQ_rate_Hz = (
                             self.calc_DAQ_rate_every_N_iter /
                             (now - self.prev_tick_DAQ_rate) * 1e3)
-                except ZeroDivisionError:
-                    self.outer.obtained_DAQ_rate_Hz = np.nan
+                except ZeroDivisionError:                     # pragma: no cover
+                    self.outer.obtained_DAQ_rate_Hz = np.nan  # pragma: no cover
                 self.prev_tick_DAQ_rate = now
 
             # Check the not alive counter
