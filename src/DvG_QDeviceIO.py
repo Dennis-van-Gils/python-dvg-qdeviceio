@@ -479,8 +479,9 @@ class QDeviceIO(QtCore.QObject):
             if self.trigger_by == DAQ_trigger.INTERNAL_TIMER:
                 self.update_interval_ms = DAQ_update_interval_ms
                 self.timer_type = DAQ_timer_type
-                self.calc_DAQ_rate_every_N_iter = max(
-                        round(1e3/self.update_interval_ms), 1)
+                self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
+                #self.calc_DAQ_rate_every_N_iter = max(
+                #        round(1e3/self.update_interval_ms), 1)
             
             # Members specifically for SINGLE_SHOT_WAKE_UP
             elif self.trigger_by == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
@@ -632,7 +633,10 @@ class QDeviceIO(QtCore.QObject):
             """
             if self.trigger_by == DAQ_trigger.INTERNAL_TIMER:
                 if hasattr(self, 'timer'):
-                    self.timer.stop()
+                    #self.timer.stop()  # Leave commented out
+                    # You should not stop a timer from out of another thread!
+                    # Quitting the thread will take care of stopping the timer
+                    pass
             
             elif self.trigger_by == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
                 self.running = False
