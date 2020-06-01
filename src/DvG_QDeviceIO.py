@@ -158,9 +158,7 @@ class QDeviceIO(QtCore.QObject):
 
         quit_all_workers():
             Stop all of any running workers and close their respective threads.
-            Safer and more convenient than calling 'quit_worker_DAQ' and
-            'quit_worker_send', individually.
-
+            
     Inner-class instances:
         worker_DAQ
         worker_send
@@ -187,6 +185,9 @@ class QDeviceIO(QtCore.QObject):
     Signals:
         signal_DAQ_updated:
             Emitted by 'worker_DAQ' when '_perform_DAQ' has finished.
+            
+        signal_DAQ_paused:
+            TODO: write description
 
         signal_connection_lost:
             Indicates that we lost connection to the device, because one or more
@@ -276,7 +277,7 @@ class QDeviceIO(QtCore.QObject):
     # --------------------------------------------------------------------------
 
     def start_worker_DAQ(self, priority=QtCore.QThread.InheritPriority):
-        """Start running the event loop of the worker thread.
+        """Start running the event loop of the 'worker_DAQ' thread.
 
         Args:
             priority (PyQt5.QtCore.QThread.Priority, optional, default=
@@ -304,7 +305,7 @@ class QDeviceIO(QtCore.QObject):
         return True
 
     def start_worker_send(self, priority=QtCore.QThread.InheritPriority):
-        """Start running the event loop of the worker thread.
+        """Start running the event loop of the 'worker_send' thread.
 
         Args:
             priority (PyQt5.QtCore.QThread.Priority, optional, default=
@@ -386,14 +387,15 @@ class QDeviceIO(QtCore.QObject):
 
     @InnerClassDescriptor
     class Worker_DAQ(QtCore.QObject):
-        """This worker acquires data from the device. It does so by calling a
-        user-supplied function containing your device I/O operations (and/or
-        data parsing, processing or more), every iteration of the worker's event
-        loop (i.e. _perform_DAQ()).
+        """This worker acquires data from the I/O device. It does so by calling
+        a user-supplied function, passed as argument 'DAQ_function_to_run_each_
+        update', containing your device I/O operations (and/or data parsing,
+        processing or more), every iteration of the worker's event loop. 
+        No direct changes to the GUI should be performed inside this function.
+        Instead, connect to the 'signal_DAQ_updated' signal to instigate GUI
+        changes when needed.
 
-        The worker should be placed inside a separate thread. No direct changes
-        to the GUI should be performed inside this class. If needed, use the
-        QtCore.pyqtSignal() mechanism to instigate GUI changes.
+        The worker should be placed inside a separate thread. 
 
         The Worker_DAQ routine is robust in the following sense. It can be set
         to quit as soon as a communication error appears, or it could be set to
@@ -408,12 +410,13 @@ class QDeviceIO(QtCore.QObject):
 
         Args:
             DAQ_update_interval_ms:
+                TODO: Rewrite and explain different DAQ_trigger methods
                 Desired data acquisition update interval in milliseconds.
 
             DAQ_function_to_run_each_update (optional, default=None):
                 Reference to a user-supplied function containing the device
                 query operations and subsequent data processing, to be invoked
-                every DAQ update. It should return True when everything went
+                every DAQ update. It must return True when everything went
                 successful, and False otherwise.
 
                 NOTE: No direct changes to the GUI should run inside this
