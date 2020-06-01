@@ -211,12 +211,12 @@ def test_Worker_DAQ__CONTINUOUS(start_alive=True):
     assert qdevio.start_worker_DAQ() == start_alive
     
     # Simulate device runtime
-    time.sleep(.1)  # Worker starts suspended
-    qdevio.worker_DAQ.schedule_suspend(False)
+    time.sleep(.1)  # Worker starts paused
+    qdevio.worker_DAQ.unpause()
     time.sleep(.3)  # running
-    qdevio.worker_DAQ.schedule_suspend(True)
-    time.sleep(.1)  # suspended
-    qdevio.worker_DAQ.schedule_suspend(False)
+    qdevio.worker_DAQ.pause()
+    time.sleep(.1)  # paused
+    qdevio.worker_DAQ.unpause()
     time.sleep(.3)  # running
     
     dprint("About to quit")
@@ -479,7 +479,7 @@ def test_Worker_DAQ__midway_dead_device():
     
     
 if __name__ == "__main__":
-    #"""
+    """
     test_Worker_DAQ__INTERNAL_TIMER()
     test_Worker_DAQ__INTERNAL_TIMER__start_dead()
     test_Worker_DAQ__SINGLE_SHOT_WAKE_UP()
@@ -495,5 +495,5 @@ if __name__ == "__main__":
     test_no_device_attached()
     test_Worker_DAQ__rate()
     test_Worker_DAQ__midway_dead_device()
-    #"""
-    #test_Worker_send()
+    """
+    test_Worker_DAQ__CONTINUOUS()

@@ -25,7 +25,8 @@ MAIN CONTENTS:
                 worker_DAQ(...)
                     Methods:
                         wake_up(...)
-                        schedule_suspend(...)
+                        schedule_pause(...)
+                        schedule_unpause(...)
 
                 worker_send(...):
                     Methods:
@@ -40,7 +41,7 @@ MAIN CONTENTS:
 
             Signals:
                 signal_DAQ_updated()
-                signal_DAQ_suspended()
+                signal_DAQ_paused()
                 signal_connection_lost()
 """
 __author__      = "Dennis van Gils"
@@ -194,7 +195,7 @@ class QDeviceIO(QtCore.QObject):
             than 'worker_DAQ.critical_not_alive_count'.
     """
     signal_DAQ_updated     = QtCore.pyqtSignal()
-    signal_DAQ_suspended   = QtCore.pyqtSignal()
+    signal_DAQ_paused      = QtCore.pyqtSignal()
     signal_connection_lost = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
@@ -452,11 +453,21 @@ class QDeviceIO(QtCore.QObject):
                 it is resource heavy. Use sparingly.
 
             DAQ_trigger_by (optional, default=DAQ_trigger.INTERNAL_TIMER):
-                TO DO: write description
+                TODO: write description
 
             DEBUG (bool, optional, default=False):
                 Show debug info in terminal? Warning: Slow! Do not leave on
                 unintentionally.
+                
+        Methods:
+            pause():
+                Only useful with DAQ_trigger.CONTINUOUS
+
+            unpause():
+                Only useful with DAQ_trigger.CONTINUOUS
+
+            wake_up():
+                Only useful with DAQ_trigger.SINGLE_SHOT_WAKE_UP
         """
         def __init__(self, *,
                      DAQ_trigger_by=DAQ_trigger.INTERNAL_TIMER,
@@ -493,10 +504,12 @@ class QDeviceIO(QtCore.QObject):
                 self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
             
             # Members specifically for CONTINUOUS
+            # At start, the worker will directly go into a paused state and
+            # trigger a 'signal_DAQ_paused' PyQt signal
             elif self._trigger_by == DAQ_trigger.CONTINUOUS:
                 self._running = True
-                self._suspend = True   # Start with the worker suspended and
-                self.suspended = False # immediately trigger 'signal_DAQ_suspended'
+                self._pause   = True  # [True]
+                self.paused   = False # [False]
                 self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
                 
             # QElapsedTimer (QET) to keep track of DAQ interval and DAQ rate
@@ -545,18 +558,18 @@ class QDeviceIO(QtCore.QObject):
             # CONTINUOUS
             elif self._trigger_by == DAQ_trigger.CONTINUOUS:
                 while self._running:
-                    if self._suspend:
-                        if (self._suspend != self.suspended):
+                    if self._pause:
+                        if (self._pause != self.paused):
                             if self.DEBUG:
-                                dprint("Worker_DAQ  %s: suspended" % 
+                                dprint("Worker_DAQ  %s: paused" % 
                                        self.dev.name, self.DEBUG_color)
-                            self.outer.signal_DAQ_suspended.emit()
+                            self.outer.signal_DAQ_paused.emit()
                         
-                        self.suspended = True
-                        Time.sleep(0.01)  # Do not hog the CPU while suspended
+                        self.paused = True
+                        Time.sleep(0.01)  # Do not hog the CPU while paused
                         pass
                     else:
-                        self.suspended = False
+                        self.paused = False
                         self._perform_DAQ()
                         
                 if self.DEBUG:
@@ -647,19 +660,32 @@ class QDeviceIO(QtCore.QObject):
                 
             elif self._trigger_by == DAQ_trigger.CONTINUOUS:
                 self._running = False
-                
+        
+        # ----------------------------------------------------------------------
+        #   pause / unpause
+        # ----------------------------------------------------------------------
+            
         @QtCore.pyqtSlot(bool)
-        def schedule_suspend(self, state=True):
+        def pause(self):
             """Only useful with DAQ_trigger.CONTINUOUS
-            TODO: change names schedule_suspend, suspend and suspended to
-            something more clear
             """
             if self._trigger_by == DAQ_trigger.CONTINUOUS:
-                self._suspend = state
+                self._pause = True
                 
                 if self.DEBUG:
-                    dprint("Worker_DAQ  %s: schedule suspend=%s" % 
-                           (self.dev.name, state), self.DEBUG_color)
+                    dprint("Worker_DAQ  %s: request pause" % 
+                           self.dev.name, self.DEBUG_color)
+                    
+        @QtCore.pyqtSlot(bool)
+        def unpause(self):
+            """Only useful with DAQ_trigger.CONTINUOUS
+            """
+            if self._trigger_by == DAQ_trigger.CONTINUOUS:
+                self._pause = False
+                
+                if self.DEBUG:
+                    dprint("Worker_DAQ  %s: request unpause" % 
+                           self.dev.name, self.DEBUG_color)
                         
         # ----------------------------------------------------------------------
         #   wake_up
