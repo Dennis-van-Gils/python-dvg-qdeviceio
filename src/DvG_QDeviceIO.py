@@ -423,19 +423,25 @@ class QDeviceIO(QtCore.QObject):
                 function! If you do anyhow, expect a penalty in the timing
                 stability of this worker.
 
-                E.g. pseudo-code, where 'time' and 'reading_1' are variables
-                that live at a higher scope, presumably at main/GUI scope level.
+                Example pseudo-code, where 'time' and 'temperature' are
+                variables that live at a higher scope, presumably at main/GUI
+                scope level:
 
                 def my_update_function():
-                    # Query the device for its state
-                    [success, tmp_state] = dev.query_ascii_values("state?")
+                    # Query the device for its state. In this example we assume
+                    # the device replies with a time stamp and a temperature
+                    # reading. The function 'dev.query_temperature()' is also
+                    # supplied by the user and handles the direct communication
+                    # with the I/O device, returning..
+                    # BLABLABLA. TODO: rewrite and provide more clear example
+                    [success, reply] = dev.query_temperature()
                     if not(success):
                         print("Device IOerror")
                         return False
 
-                    # Parse readings into separate variables
+                    # Parse readings into separate variables and store them
                     try:
-                        [time, reading_1] = tmp_state
+                        [time, temperature] = parse(reply)
                     except Exception as err:
                         print(err)
                         return False
@@ -443,10 +449,10 @@ class QDeviceIO(QtCore.QObject):
                     return True
 
             DAQ_critical_not_alive_count (optional, default=1):
-                The worker will allow for up to a certain number of
+                The worker will allow for up to a certain number of consecutive
                 communication failures with the device before hope is given up
-                and a 'connection lost' signal is emitted. Use at your own
-                discretion.
+                and a 'signal_connection_lost' signal is emitted. Use at your
+                own discretion.
 
             DAQ_timer_type (PyQt5.QtCore.Qt.TimerType, optional, default=
                             PyQt5.QtCore.Qt.CoarseTimer):
@@ -628,6 +634,7 @@ class QDeviceIO(QtCore.QObject):
             if not(self.function_to_run_each_update is None):
                 if self.function_to_run_each_update():
                     # Did return True, hence was succesfull
+                    # --> Reset the 'not alive' counter
                     self.outer.DAQ_not_alive_counter = 0
                 else:
                     # Did return False, hence was unsuccesfull
@@ -659,6 +666,7 @@ class QDeviceIO(QtCore.QObject):
             elif self._trigger_by == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
                 self._running = False
                 if hasattr(self, '_qwc'):
+                    # Wake up for the final time
                     self._qwc.wakeAll()
                 
             elif self._trigger_by == DAQ_trigger.CONTINUOUS:
@@ -719,6 +727,10 @@ class QDeviceIO(QtCore.QObject):
 
         No direct changes to the GUI should be performed inside this class. If
         needed, use the QtCore.pyqtSignal() mechanism to instigate GUI changes.
+        TODO: implement PyQt signal 'signal_send_updated'
+        No direct changes to the GUI should be performed inside this class.
+        Instead, connect to the 'signal_send_updated' signal to instigate GUI
+        changes when needed.
 
         Args:
             alt_process_jobs_function (optional, default=None):
@@ -730,14 +742,15 @@ class QDeviceIO(QtCore.QObject):
                 I/O operation that is an one-way send, i.e. a write operation
                 without a reply.
 
-                Instead of just write operations, you can also put query
-                operations in the queue and process each reply of the device
-                accordingly. This is the purpose of this argument: To provide
-                your own 'job processing routines' function. The function you
-                supply must take two arguments, where the first argument will be
-                'func' and the second argument will be 'args', which is a tuple.
-                Both 'func' and 'args' will be retrieved from the worker_send
-                queue and passed onto your own function.
+                Instead of just write operations, you can also put a single or
+                multiple query operation(s) in the queue and process each reply
+                of the device accordingly. This is the purpose of this argument:
+                To provide your own 'job processing routines' function. The
+                function you supply must take two arguments, where the first
+                argument will be 'func' and the second argument will be
+                'args', which is a tuple. Both 'func' and 'args' will be
+                retrieved from the worker_send queue and passed onto your
+                own function.
 
                 Example of a query operation by sending and checking for a
                 special string value of 'func':
@@ -763,11 +776,11 @@ class QDeviceIO(QtCore.QObject):
                 Put an instruction on the worker_send queue.
 
             process_queue():
-                Trigger processing the worker_send queue.
+                Trigger processing the worker_send queue until empty.
 
             queued_instruction(...):
                 Put an instruction on the worker_send queue and process the
-                queue.
+                queue until empty.
         """
 
         def __init__(self, *,
@@ -904,7 +917,7 @@ class QDeviceIO(QtCore.QObject):
         # ----------------------------------------------------------------------
 
         def process_queue(self):
-            """Trigger processing the worker_send queue.
+            """Trigger processing the worker_send queue until empty.
             """
             self._qwc.wakeAll()
 
@@ -914,7 +927,7 @@ class QDeviceIO(QtCore.QObject):
 
         def queued_instruction(self, instruction, pass_args=()):
             """Put an instruction on the worker_send queue and process the
-            queue. See 'add_to_queue' for more details.
+            queue until empty. See 'add_to_queue' for more details.
             """
             self.add_to_queue(instruction, pass_args)
             self.process_queue()
