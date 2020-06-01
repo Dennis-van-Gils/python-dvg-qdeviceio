@@ -24,9 +24,9 @@ MAIN CONTENTS:
             Inner-class instances:
                 worker_DAQ(...)
                     Methods:
-                        wake_up(...)
-                        schedule_pause(...)
-                        schedule_unpause(...)
+                        pause()
+                        unpause()
+                        wake_up()
 
                 worker_send(...):
                     Methods:
@@ -128,7 +128,7 @@ class QDeviceIO(QtCore.QObject):
     This class can be mixed into your own specific device I/O class definition.
     Hint: Look up 'mixin class' for Python.
     E.g., when writing your own device I/O library for an Arduino:
-        class QDevIO_Arduino(DvG_QDeviceIO.QDeviceIO, QtCore.QObject):
+        class QDeviceIO_Arduino(DvG_QDeviceIO.QDeviceIO, QtCore.QObject):
 
     Methods:
         attach_device(...)
