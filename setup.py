@@ -25,7 +25,7 @@ def read(*names, **kwargs):
 
 setup(
     name='dvg-qdeviceio',
-    version='0.0.2',
+    version='0.0.3',
     license='MIT',
     description='PyQt5 framework for multithreaded communication and periodical data acquisition for an I/O device.',
     long_description='%s\n%s' % (
@@ -50,7 +50,6 @@ setup(
         'Operating System :: OS Independent',
         'Programming Language :: Python',
         'Programming Language :: Python :: 3',
-        'Programming Language :: Python :: 3.5',
         'Programming Language :: Python :: 3.6',
         'Programming Language :: Python :: 3.7',
         'Programming Language :: Python :: 3.8',
@@ -68,7 +67,7 @@ setup(
         # eg: 'keyword1', 'keyword2', 'keyword3',
         'PyQt5', 'multithread', 'device I/O', 'automation', 'laboratory', 'science',
     ],
-    python_requires='>=3.5',
+    python_requires='>=3.6',
     install_requires=[
         # eg: 'aspectlib==1.1.1', 'six>=1.7',
         'pyqt5>=5.9.2,<6',
