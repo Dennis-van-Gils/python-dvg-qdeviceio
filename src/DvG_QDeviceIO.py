@@ -195,9 +195,10 @@ class QDeviceIO(QtCore.QObject):
             '_perform_DAQ' when 'DAQ_not_alive_counter' is equal to or larger
             than 'worker_DAQ.critical_not_alive_count'.
     """
-    signal_DAQ_updated     = QtCore.pyqtSignal()
-    signal_DAQ_paused      = QtCore.pyqtSignal()
-    signal_connection_lost = QtCore.pyqtSignal()
+    signal_DAQ_updated      = QtCore.pyqtSignal()
+    signal_DAQ_paused       = QtCore.pyqtSignal()
+    signal_connection_lost  = QtCore.pyqtSignal()
+    _signal_stop_worker_DAQ = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
         super(QDeviceIO, self).__init__(parent=parent)
@@ -215,6 +216,9 @@ class QDeviceIO(QtCore.QObject):
 
         self.obtained_DAQ_update_interval_ms = np.nan
         self.obtained_DAQ_rate_Hz = np.nan
+        
+        self._qwc_worker_DAQ_stopped = QtCore.QWaitCondition()
+        self._mutex_wait_worker_DAQ = QtCore.QMutex()
 
     class NoAttachedDevice():
         name = "NoAttachedDevice"
@@ -257,6 +261,8 @@ class QDeviceIO(QtCore.QObject):
         self._thread_DAQ.setObjectName("%s_DAQ" % self.dev.name)            
         self.worker_DAQ.moveToThread(self._thread_DAQ)            
         self._thread_DAQ.started.connect(self.worker_DAQ._do_work)
+
+        self._signal_stop_worker_DAQ.connect(self.worker_DAQ._stop)
             
     def create_worker_send(self, **kwargs):
         """Create a single instance of 'Worker_send' and transfer it to 
@@ -341,8 +347,19 @@ class QDeviceIO(QtCore.QObject):
         
         Returns True when successful, False otherwise.
         """
+        print(self._thread_DAQ)
+        print(self.worker_DAQ)
         if self._thread_DAQ is not None:
-            self.worker_DAQ._stop()
+            if self.dev.is_alive:
+                self._signal_stop_worker_DAQ.emit()
+                dprint("locker_wait")
+                locker_wait = QtCore.QMutexLocker(self._mutex_wait_worker_DAQ)
+                self._qwc_worker_DAQ_stopped.wait(self._mutex_wait_worker_DAQ)
+                dprint("woken up")
+                locker_wait.unlock()
+            
+            #self.worker_DAQ._stop()
+            #TODO: add QWaitCondition on confirm stop
             self._thread_DAQ.quit()
             print("Closing thread %s " %
                   "{:.<16}".format(self._thread_DAQ.objectName()),
@@ -480,6 +497,8 @@ class QDeviceIO(QtCore.QObject):
             wake_up():
                 Only useful with DAQ_trigger.SINGLE_SHOT_WAKE_UP
         """
+        _signal_worker_DAQ_stopped = QtCore.pyqtSignal()
+        
         def __init__(self, *,
                      DAQ_trigger_by=DAQ_trigger.INTERNAL_TIMER,
                      DAQ_function_to_run_each_update=None,
@@ -670,14 +689,20 @@ class QDeviceIO(QtCore.QObject):
         def _stop(self):
             """Stop the worker to prepare for quitting the worker thread
             """
+            dprint("Entered _stop()")
             if self._trigger_by == DAQ_trigger.INTERNAL_TIMER:
                 if hasattr(self, 'timer'):
+                    dprint("timer.stop()")
+                    self.timer.stop()
+                dprint("wakeAll()")
+                self.outer._qwc_worker_DAQ_stopped.wakeAll()
+                    
                     #self.timer.stop()  # Leave commented out
                     # TODO: You should not stop a timer from out of another
                     # thread!
                     # We must use a signal to stop instead and have it stop from
                     # within the worker_DAQ thread
-                    pass
+                    #pass
             
             elif self._trigger_by == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
                 self._running = False
