@@ -39,7 +39,7 @@ script:
   - pytest --cov src -s
     
 after_success:
-  - coverage combine
+  #- coverage combine
   #- coverage combine .coverage
   - coverage report -m
   - coveralls

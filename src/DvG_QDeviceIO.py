@@ -673,8 +673,10 @@ class QDeviceIO(QtCore.QObject):
             if self._trigger_by == DAQ_trigger.INTERNAL_TIMER:
                 if hasattr(self, 'timer'):
                     #self.timer.stop()  # Leave commented out
-                    # You should not stop a timer from out of another thread!
-                    # Quitting the thread will take care of stopping the timer
+                    # TODO: You should not stop a timer from out of another
+                    # thread!
+                    # We must use a signal to stop instead and have it stop from
+                    # within the worker_DAQ thread
                     pass
             
             elif self._trigger_by == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
