@@ -556,7 +556,11 @@ class QDeviceIO(QtCore.QObject):
                                self.dev.name, self.DEBUG_color)
 
                     self._qwc.wait(self._mutex_wait)
-                    self._perform_DAQ()
+
+                    # Needed check to prevent _perform_DAQ() at final wake up
+                    # when _stop() has been called
+                    if self._running:
+                        self._perform_DAQ()
 
                     locker_wait.unlock()
 
