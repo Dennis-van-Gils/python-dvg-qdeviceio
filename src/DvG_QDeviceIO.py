@@ -344,9 +344,8 @@ class QDeviceIO(QtCore.QObject):
         if self._thread_DAQ is not None:
             self.worker_DAQ._stop()
             self._thread_DAQ.quit()
-            print("%f Closing thread %s " %
-                  (time.perf_counter(),
-                   "{:.<16}".format(self._thread_DAQ.objectName())),
+            print("Closing thread %s " %
+                  "{:.<16}".format(self._thread_DAQ.objectName()),
                   end='\n' if self.worker_DAQ.DEBUG else '')
             if self._thread_DAQ.wait(2000):
                 print("done.\n", end='')
@@ -365,9 +364,8 @@ class QDeviceIO(QtCore.QObject):
         if self._thread_send is not None:
             self.worker_send._stop()
             self._thread_send.quit()
-            print("%f Closing thread %s " %
-                  (time.perf_counter(),
-                   "{:.<16}".format(self._thread_send.objectName())),
+            print("Closing thread %s " %
+                  "{:.<16}".format(self._thread_send.objectName()),
                   end='\n' if self.worker_send.DEBUG else '')
             if self._thread_send.wait(2000):
                 print("done.\n", end='')
