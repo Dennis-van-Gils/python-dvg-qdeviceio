@@ -2,7 +2,7 @@ import sys
 import time
 from PyQt5 import QtCore
 import DvG_QDeviceIO
-from DvG_debug_functions import dprint
+from DvG_debug_functions import dprint, ANSI
 
 """
 DAQ_trigger.INTERNAL_TIMER
@@ -53,14 +53,15 @@ class FakeDevice():
         else:
             # Simulate device failure
             time.sleep(.1)
-            dprint("FAKE DEVICE I/O ERROR")
-            return None
+            dprint("%f SIMULATED I/O ERROR" % time.perf_counter())
+            return "SIMULATED I/O ERROR"
     
     def fake_query(self):
         self.count_commands += 1
-        return self._send("device reply")
+        return self._send("%f device replied" % time.perf_counter())
     
     def fake_command_with_argument(self, val):
+        dprint("%f device received command" % time.perf_counter())
         self.count_commands += 1
 
 
@@ -76,9 +77,9 @@ def create_QApplication():
 
 
 def test_Worker_DAQ__INTERNAL_TIMER(start_alive=True):
-    print("\nTEST Worker_DAQ INTERNAL_TIMER")
-    if not start_alive: print("start dead")
-    print("-" * 30)
+    dprint("\nTEST Worker_DAQ INTERNAL_TIMER", ANSI.PURPLE)
+    if not start_alive: dprint("start dead", ANSI.PURPLE)
+    dprint("-" * 50, ANSI.PURPLE)
     app = create_QApplication()
     
     # Simulate a device
@@ -91,14 +92,14 @@ def test_Worker_DAQ__INTERNAL_TIMER(start_alive=True):
     def DAQ_function():
         # Must return True when successful, False otherwise
         reply = dev.fake_query()
-        return reply == "device reply"
+        return reply[-14:] == "device replied"
     
     global pytest_counter_signal_DAQ_updated 
     pytest_counter_signal_DAQ_updated = 0
     @QtCore.pyqtSlot()
     def process_DAQ_updated():
         # In production code, your GUI update routine would go here
-        dprint("---> Received signal: DAQ_updated")
+        dprint("%f ---> Received signal: DAQ_updated" % time.perf_counter())
         global pytest_counter_signal_DAQ_updated 
         pytest_counter_signal_DAQ_updated += 1
 
@@ -116,6 +117,12 @@ def test_Worker_DAQ__INTERNAL_TIMER(start_alive=True):
     
     assert qdevio.start_worker_DAQ() == start_alive
     
+    # Give time to enter '_do_work'. TODO: Should be implemented by a mechanism inside DvG_QDeviceIO
+    start_time = time.perf_counter()
+    while time.perf_counter() - start_time < .1:
+        app.processEvents()
+        time.sleep(.001)    # Do not hog the CPU
+    
     # Simulate device runtime
     start_time = time.perf_counter()
     while time.perf_counter() - start_time < 1:
@@ -124,14 +131,14 @@ def test_Worker_DAQ__INTERNAL_TIMER(start_alive=True):
             break
         time.sleep(.001)    # Do not hog the CPU
     
-    dprint("About to quit")
+    dprint("%f About to quit" % time.perf_counter())
     app.processEvents()
     assert qdevio.quit_all_workers() == True
     app.quit()
     
     if start_alive:
-        assert dev.count_commands == 3
-        assert dev.count_replies  == 3
+        assert dev.count_commands >= 3
+        assert dev.count_replies  >= 3
         assert pytest_counter_signal_DAQ_updated >= 2 # Third signal is not always received before thread is quit
     
     
@@ -143,9 +150,9 @@ def test_Worker_DAQ__INTERNAL_TIMER__start_dead():
     
 
 def test_Worker_DAQ__SINGLE_SHOT_WAKE_UP(start_alive=True):
-    print("\nTEST Worker_DAQ SINGLE_SHOT_WAKE_UP")
-    if not start_alive: print("start dead")
-    print("-" * 30)
+    dprint("\nTEST Worker_DAQ SINGLE_SHOT_WAKE_UP", ANSI.PURPLE)
+    if not start_alive: dprint("start dead", ANSI.PURPLE)
+    dprint("-" * 50, ANSI.PURPLE)
     app = create_QApplication()
     
     # Simulate a device
@@ -158,7 +165,7 @@ def test_Worker_DAQ__SINGLE_SHOT_WAKE_UP(start_alive=True):
     def DAQ_function():
         # Must return True when successful, False otherwise
         reply = dev.fake_query()
-        return reply == "device reply"
+        return reply[-14:] == "device replied"
     
     global pytest_counter_signal_DAQ_updated 
     pytest_counter_signal_DAQ_updated = 0
@@ -181,34 +188,30 @@ def test_Worker_DAQ__SINGLE_SHOT_WAKE_UP(start_alive=True):
     
     assert qdevio.start_worker_DAQ() == start_alive
     
-    # Simulate device runtime
+    # Give time to enter '_do_work'. TODO: Should be implemented by a mechanism inside DvG_QDeviceIO
     start_time = time.perf_counter()
-    action_toggle_1 = True
-    action_toggle_2 = True
-    while time.perf_counter() - start_time < 1:
+    while time.perf_counter() - start_time < .1:
         app.processEvents()
-        if action_toggle_1:
-            qdevio.worker_DAQ.wake_up()
-            action_toggle_1 = False
-        if action_toggle_2 and (time.perf_counter() - start_time > .2):
-            qdevio.worker_DAQ.wake_up()
-            action_toggle_2 = False
-        if time.perf_counter() - start_time > .5:
-            qdevio.worker_DAQ.wake_up()
-            break
         time.sleep(.001)    # Do not hog the CPU
     
-    # TODO: Something is seriously wrong in the WAKE_UP mechanics. Test timestamps!
-    #time.sleep(10)  # Give time for the final signal_DAQ_updated to get received
+    # Simulate device runtime
+    start_time = time.perf_counter()
+    QtCore.QTimer.singleShot(000, lambda: qdevio.worker_DAQ.wake_up())
+    QtCore.QTimer.singleShot(300, lambda: qdevio.worker_DAQ.wake_up())
+    QtCore.QTimer.singleShot(600, lambda: qdevio.worker_DAQ.wake_up())
+    while time.perf_counter() - start_time < 1:
+        app.processEvents()
+        time.sleep(.001)    # Do not hog the CPU
+
     dprint("%f About to quit" % time.perf_counter())
     app.processEvents()
     assert qdevio.quit_all_workers() == True
     app.quit()
     
     if start_alive:
-        assert dev.count_commands >= 2
-        assert dev.count_replies  >= 2
-        assert pytest_counter_signal_DAQ_updated >= 2
+        assert dev.count_commands == 3
+        assert dev.count_replies  == 3
+        assert pytest_counter_signal_DAQ_updated == 3
     
 
 def test_Worker_DAQ__SINGLE_SHOT_WAKE_UP__start_dead():
@@ -217,9 +220,9 @@ def test_Worker_DAQ__SINGLE_SHOT_WAKE_UP__start_dead():
     
 
 def test_Worker_DAQ__CONTINUOUS(start_alive=True):
-    print("\nTEST Worker_DAQ CONTINUOUS")
-    if not start_alive: print("start dead")
-    print("-" * 30)
+    dprint("\nTEST Worker_DAQ CONTINUOUS", ANSI.PURPLE)
+    if not start_alive: dprint("start dead", ANSI.PURPLE)
+    dprint("-" * 50, ANSI.PURPLE)
     app = create_QApplication()
     
     # Simulate a device
@@ -233,14 +236,14 @@ def test_Worker_DAQ__CONTINUOUS(start_alive=True):
         # Must return True when successful, False otherwise
         time.sleep(.1)
         reply = dev.fake_query()
-        return reply == "device reply"
+        return reply[-14:] == "device replied"
     
     global pytest_counter_signal_DAQ_paused
     pytest_counter_signal_DAQ_paused = 0
     @QtCore.pyqtSlot()
     def process_DAQ_paused():
         # In production code, your GUI update routine would go here
-        dprint("---> Received signal: DAQ_paused")
+        dprint("%f ---> Received signal: DAQ_paused" % time.perf_counter())
         global pytest_counter_signal_DAQ_paused 
         pytest_counter_signal_DAQ_paused += 1
 
@@ -255,32 +258,33 @@ def test_Worker_DAQ__CONTINUOUS(start_alive=True):
         DEBUG                           = True)
     
     assert qdevio.start_worker_DAQ() == start_alive
-    qdevio.worker_DAQ.unpause()
+    
+    # Give time to enter '_do_work'. TODO: Should be implemented by a mechanism inside DvG_QDeviceIO
+    start_time = time.perf_counter()
+    while time.perf_counter() - start_time < .1:
+        app.processEvents()
+        time.sleep(.001)    # Do not hog the CPU
     
     # Simulate device runtime
     start_time = time.perf_counter()
-    action_toggle_1 = True
-    action_toggle_2 = True
-    while time.perf_counter() - start_time < 2:
+    QtCore.QTimer.singleShot(000, lambda: qdevio.worker_DAQ.unpause())
+    QtCore.QTimer.singleShot(300, lambda: qdevio.worker_DAQ.pause())
+    QtCore.QTimer.singleShot(600, lambda: qdevio.worker_DAQ.unpause())
+    while time.perf_counter() - start_time < 1:
         app.processEvents()
-        if action_toggle_1 and dev.count_commands == 3:
-            qdevio.worker_DAQ.pause()
-            action_toggle_1 = False
-        if action_toggle_2 and time.perf_counter() - start_time > .6:
-            qdevio.worker_DAQ.unpause()
-            action_toggle_2 = False
         if dev.count_commands == 6:
             break
+        time.sleep(.001)    # Do not hog the CPU
     
-    dprint("About to quit")
+    dprint("%f About to quit" % time.perf_counter())
     app.processEvents()
     assert qdevio.quit_all_workers() == True
     app.quit()
     
     if start_alive:
-        assert dev.count_commands == 6
-        assert dev.count_replies  == 6
-        assert pytest_counter_signal_DAQ_paused == 1
+        assert dev.count_commands >= 6
+        assert dev.count_replies  >= 6
+        assert pytest_counter_signal_DAQ_paused == 2
         
 
 
@@ -290,9 +294,9 @@ def test_Worker_DAQ__CONTINUOUS__start_dead():
     
     
 def test_Worker_send(start_alive=True):
-    print("\nTEST Worker_send")
-    if not start_alive: print("start dead")
-    print("-" * 30)
+    dprint("\nTEST Worker_send", ANSI.PURPLE)
+    if not start_alive: dprint("start dead", ANSI.PURPLE)
+    dprint("-" * 50, ANSI.PURPLE)
     app = create_QApplication()
     
     # Simulate a device
@@ -306,25 +310,27 @@ def test_Worker_send(start_alive=True):
     
     assert qdevio.start_worker_send() == start_alive
     
-    # Simulate device runtime
-    qdevio.worker_send.add_to_queue(dev.fake_query)
-    time.sleep(0.1)
-    qdevio.worker_send.process_queue()
-    time.sleep(0.1)
-    qdevio.worker_send.queued_instruction(dev.fake_query)
-    time.sleep(0.1)
-    qdevio.worker_send.add_to_queue(dev.fake_command_with_argument, 0)
-    time.sleep(0.1)
-    qdevio.worker_send.add_to_queue(dev.fake_command_with_argument, 0)
-    time.sleep(0.1)
-    qdevio.worker_send.add_to_queue(dev.fake_command_with_argument, 0)
-    time.sleep(0.1)
-    qdevio.worker_send.process_queue()
-    time.sleep(0.1)
-    qdevio.worker_send.queued_instruction("trigger_illegal_function_call_error")
-    time.sleep(0.1)
+    # Give time to enter '_do_work'. TODO: Should be implemented by a mechanism inside DvG_QDeviceIO
+    start_time = time.perf_counter()
+    while time.perf_counter() - start_time < .1:
+        app.processEvents()
+        time.sleep(.001)    # Do not hog the CPU
     
-    dprint("About to quit")
+    # Simulate device runtime
+    start_time = time.perf_counter()
+    QtCore.QTimer.singleShot(000, lambda: qdevio.worker_send.add_to_queue(dev.fake_query))
+    QtCore.QTimer.singleShot(100, lambda: qdevio.worker_send.process_queue())
+    QtCore.QTimer.singleShot(200, lambda: qdevio.worker_send.queued_instruction(dev.fake_query))
+    QtCore.QTimer.singleShot(300, lambda: qdevio.worker_send.add_to_queue(dev.fake_command_with_argument, 0))
+    QtCore.QTimer.singleShot(400, lambda: qdevio.worker_send.add_to_queue(dev.fake_command_with_argument, 0))
+    QtCore.QTimer.singleShot(500, lambda: qdevio.worker_send.add_to_queue(dev.fake_command_with_argument, 0))
+    QtCore.QTimer.singleShot(600, lambda: qdevio.worker_send.process_queue())
+    QtCore.QTimer.singleShot(700, lambda: qdevio.worker_send.queued_instruction("trigger_illegal_function_call_error"))
+    while time.perf_counter() - start_time < 1:
+        app.processEvents()
+        time.sleep(.001)    # Do not hog the CPU
+    
+    dprint("%f About to quit" % time.perf_counter())
     app.processEvents()
     assert qdevio.quit_all_workers() == True
     app.quit()
@@ -341,9 +347,9 @@ def test_Worker_send__start_dead():
 
 
 def test_Worker_send__alt_jobs():
-    print("\nTEST Worker_send")
-    print("alternative jobs")
-    print("-" * 30)
+    dprint("\nTEST Worker_send", ANSI.PURPLE)
+    dprint("alternative jobs", ANSI.PURPLE)
+    dprint("-" * 50, ANSI.PURPLE)
     app = create_QApplication()
     
     # Simulate a device
@@ -367,15 +373,22 @@ def test_Worker_send__alt_jobs():
     
     assert qdevio.start_worker_send() == True
     
-    # Simulate device runtime
-    qdevio.worker_send.queued_instruction(dev.fake_query)
-    time.sleep(0.1)
-    qdevio.worker_send.queued_instruction("special command")
-    time.sleep(0.1)
-    qdevio.worker_send.queued_instruction(dev.fake_command_with_argument, 0)
-    time.sleep(0.1)
+    # Give time to enter '_do_work'. TODO: Should be implemented by a mechanism inside DvG_QDeviceIO
+    start_time = time.perf_counter()
+    while time.perf_counter() - start_time < .1:
+        app.processEvents()
+        time.sleep(.001)    # Do not hog the CPU
     
-    dprint("About to quit")
+    # Simulate device runtime
+    start_time = time.perf_counter()
+    QtCore.QTimer.singleShot(000, lambda: qdevio.worker_send.queued_instruction(dev.fake_query))
+    QtCore.QTimer.singleShot(100, lambda: qdevio.worker_send.queued_instruction("special command"))
+    QtCore.QTimer.singleShot(200, lambda: qdevio.worker_send.queued_instruction(dev.fake_command_with_argument, 0))
+    while time.perf_counter() - start_time < .5:
+        app.processEvents()
+        time.sleep(.001)    # Do not hog the CPU
+    
+    dprint("%f About to quit" % time.perf_counter())
     app.processEvents()
     assert qdevio.quit_all_workers() == True
     app.quit()
@@ -386,9 +399,9 @@ def test_Worker_send__alt_jobs():
     
     
 def test_Worker_DAQ__start_without_create():
-    print("\nTEST Worker_DAQ")
-    print("start worker without create")
-    print("-" * 30)
+    dprint("\nTEST Worker_DAQ", ANSI.PURPLE)
+    dprint("start worker without create", ANSI.PURPLE)
+    dprint("-" * 50, ANSI.PURPLE)
     
     dev = FakeDevice()    
     qdevio = DvG_QDeviceIO.QDeviceIO()
@@ -399,9 +412,9 @@ def test_Worker_DAQ__start_without_create():
 
     
 def test_Worker_send__start_without_create():
-    print("\nTEST Worker_send")
-    print("start worker without create")
-    print("-" * 30)
+    dprint("\nTEST Worker_send", ANSI.PURPLE)
+    dprint("start worker without create", ANSI.PURPLE)
+    dprint("-" * 50, ANSI.PURPLE)
     
     dev = FakeDevice()        
     qdevio = DvG_QDeviceIO.QDeviceIO()
@@ -412,8 +425,8 @@ def test_Worker_send__start_without_create():
     
     
 def test_attach_device_twice():
-    print("\nTEST attach device twice")
-    print("-" * 30)
+    dprint("\nTEST attach device twice", ANSI.PURPLE)
+    dprint("-" * 50, ANSI.PURPLE)
     
     dev = FakeDevice()    
     qdevio = DvG_QDeviceIO.QDeviceIO()
@@ -423,8 +436,8 @@ def test_attach_device_twice():
 
 
 def test_no_device_attached():
-    print("\nTEST no device attached")
-    print("-" * 30)
+    dprint("\nTEST no device attached", ANSI.PURPLE)
+    dprint("-" * 50, ANSI.PURPLE)
     
     qdevio = DvG_QDeviceIO.QDeviceIO()
     qdevio.create_worker_DAQ()
@@ -434,9 +447,9 @@ def test_no_device_attached():
     
     
 def test_Worker_DAQ__rate():
-    print("\nTEST Worker_DAQ INTERNAL_TIMER")
-    print("DAQ rate")
-    print("-" * 30)
+    dprint("\nTEST Worker_DAQ INTERNAL_TIMER", ANSI.PURPLE)
+    dprint("DAQ rate", ANSI.PURPLE)
+    dprint("-" * 50, ANSI.PURPLE)
     app = create_QApplication()
     
     # Simulate a device
@@ -463,10 +476,19 @@ def test_Worker_DAQ__rate():
     print(qdevio.worker_DAQ.calc_DAQ_rate_every_N_iter)
     assert qdevio.start_worker_DAQ() == True
     
-    # Simulate device runtime
-    time.sleep(1.02)
+    # Give time to enter '_do_work'. TODO: Should be implemented by a mechanism inside DvG_QDeviceIO
+    start_time = time.perf_counter()
+    while time.perf_counter() - start_time < .1:
+        app.processEvents()
+        time.sleep(.001)    # Do not hog the CPU
     
-    dprint("About to quit")
+    # Simulate device runtime
+    start_time = time.perf_counter()
+    while time.perf_counter() - start_time < 1.02:
+        app.processEvents()
+        time.sleep(.001)    # Do not hog the CPU
+    
+    dprint("%f About to quit" % time.perf_counter())
     app.processEvents()
     assert qdevio.quit_all_workers() == True
     app.quit()
@@ -479,9 +501,9 @@ def test_Worker_DAQ__rate():
     
     
 def test_Worker_DAQ__lose_connection():
-    print("\nTEST Worker_DAQ INTERNAL_TIMER")
-    print("lose connection")
-    print("-" * 30)
+    dprint("\nTEST Worker_DAQ INTERNAL_TIMER", ANSI.PURPLE)
+    dprint("lose connection", ANSI.PURPLE)
+    dprint("-" * 50, ANSI.PURPLE)
     app = create_QApplication()
     
     # Simulate a device
@@ -496,7 +518,7 @@ def test_Worker_DAQ__lose_connection():
         reply = dev.fake_query()
         dprint(qdevio.obtained_DAQ_update_interval_ms)
         dprint(qdevio.obtained_DAQ_rate_Hz)
-        return reply == "device reply"
+        return reply[-14:] == "device replied"
     
     # Worker_DAQ in mode INTERNAL TIMER
     qdevio.create_worker_DAQ(
@@ -516,7 +538,7 @@ def test_Worker_DAQ__lose_connection():
     
     @QtCore.pyqtSlot()
     def process_connection_lost():
-        dprint("---> Received signal: connection_lost")
+        dprint("%f ---> Received signal: connection_lost" % time.perf_counter())
         global go
         go = False
 
@@ -524,11 +546,18 @@ def test_Worker_DAQ__lose_connection():
     
     assert qdevio.start_worker_DAQ() == True
     
+    # Give time to enter '_do_work'. TODO: Should be implemented by a mechanism inside DvG_QDeviceIO
+    start_time = time.perf_counter()
+    while time.perf_counter() - start_time < .1:
+        app.processEvents()
+        time.sleep(.001)    # Do not hog the CPU
+    
     # Simulate device runtime
     while go:
         app.processEvents()
+        time.sleep(.001)    # Do not hog the CPU
         
-    dprint("About to quit")
+    dprint("%f About to quit" % time.perf_counter())
     app.processEvents()
     assert qdevio.quit_all_workers() == True
     app.quit()
@@ -536,7 +565,7 @@ def test_Worker_DAQ__lose_connection():
     
     
 if __name__ == "__main__":
-    """
+    #"""
     test_Worker_DAQ__INTERNAL_TIMER()
     test_Worker_DAQ__INTERNAL_TIMER__start_dead()
     test_Worker_DAQ__SINGLE_SHOT_WAKE_UP()
@@ -552,6 +581,8 @@ if __name__ == "__main__":
     test_no_device_attached()
     test_Worker_DAQ__rate()
     test_Worker_DAQ__lose_connection()
-    """
+    #"""
     #test_Worker_DAQ__INTERNAL_TIMER()
-    test_Worker_DAQ__SINGLE_SHOT_WAKE_UP()
+    #test_Worker_DAQ__SINGLE_SHOT_WAKE_UP()
+    #test_Worker_DAQ__CONTINUOUS()
+    #test_Worker_send__alt_jobs()
