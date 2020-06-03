@@ -118,8 +118,11 @@ def test_Worker_DAQ__INTERNAL_TIMER(start_alive=True):
     
     # Simulate device runtime
     start_time = time.time()
-    while time.time() - start_time < .35:
+    while time.time() - start_time < 1:
         app.processEvents()
+        if dev.count_commands == 3:
+            time.sleep(.1)
+            break
     
     dprint("About to quit")
     app.processEvents()
@@ -157,6 +160,17 @@ def test_Worker_DAQ__SINGLE_SHOT_WAKE_UP(start_alive=True):
         reply = dev.fake_query()
         return reply == "device reply"
     
+    global pytest_counter_signal_DAQ_updated 
+    pytest_counter_signal_DAQ_updated = 0
+    @QtCore.pyqtSlot()
+    def process_DAQ_updated():
+        # In production code, your GUI update routine would go here
+        dprint("---> Received signal: DAQ_updated")
+        global pytest_counter_signal_DAQ_updated 
+        pytest_counter_signal_DAQ_updated += 1
+    
+    qdevio.signal_DAQ_updated.connect(process_DAQ_updated)
+    
     # Worker_DAQ in mode SINGLE_SHOT_WAKE_UP
     qdevio.create_worker_DAQ(
         DAQ_trigger_by                  = DvG_QDeviceIO.DAQ_trigger.SINGLE_SHOT_WAKE_UP,
@@ -168,13 +182,22 @@ def test_Worker_DAQ__SINGLE_SHOT_WAKE_UP(start_alive=True):
     assert qdevio.start_worker_DAQ() == start_alive
     
     # Simulate device runtime
-    qdevio.worker_DAQ.wake_up()
-    time.sleep(.1)
-    qdevio.worker_DAQ.wake_up()
-    time.sleep(.1)
-    qdevio.worker_DAQ.wake_up()
-    time.sleep(.1)
-    
+    start_time = time.time()
+    action_toggle_1 = True
+    action_toggle_2 = True
+    while time.time() - start_time < 1:
+        app.processEvents()
+        if action_toggle_1:
+            qdevio.worker_DAQ.wake_up()
+            action_toggle_1 = False
+        if action_toggle_2 and time.time() - start_time > .2:
+            qdevio.worker_DAQ.wake_up()
+            action_toggle_2 = False
+        if time.time() - start_time > .5:
+            qdevio.worker_DAQ.wake_up()
+            time.sleep(.1)
+            break
+        
     dprint("About to quit")
     app.processEvents()
     assert qdevio.quit_all_workers() == True
@@ -183,7 +206,7 @@ def test_Worker_DAQ__SINGLE_SHOT_WAKE_UP(start_alive=True):
     if start_alive:
         assert dev.count_commands == 3
         assert dev.count_replies  == 3
-
+        assert pytest_counter_signal_DAQ_updated == 3
     
 
 def test_Worker_DAQ__SINGLE_SHOT_WAKE_UP__start_dead():
@@ -236,16 +259,16 @@ def test_Worker_DAQ__CONTINUOUS(start_alive=True):
     start_time = time.time()
     action_toggle_1 = True
     action_toggle_2 = True
-    while time.time() - start_time < .85:
+    while time.time() - start_time < 2:
         app.processEvents()
-        if time.time() - start_time > .3:
-            if action_toggle_1:
-                qdevio.worker_DAQ.pause()
-                action_toggle_1 = False
-        if time.time() - start_time > .6:
-            if action_toggle_2:
-                qdevio.worker_DAQ.unpause()
-                action_toggle_2 = False
+        if action_toggle_1 and dev.count_commands == 3:
+            qdevio.worker_DAQ.pause()
+            action_toggle_1 = False
+        if action_toggle_2 and time.time() - start_time > .6:
+            qdevio.worker_DAQ.unpause()
+            action_toggle_2 = False
+        if dev.count_commands == 6:
+            break
     
     dprint("About to quit")
     app.processEvents()
@@ -528,4 +551,4 @@ if __name__ == "__main__":
     test_Worker_DAQ__rate()
     test_Worker_DAQ__lose_connection()
     """
-    test_Worker_DAQ__CONTINUOUS()
+    test_Worker_DAQ__SINGLE_SHOT_WAKE_UP()
