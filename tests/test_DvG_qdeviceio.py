@@ -565,24 +565,25 @@ def test_Worker_DAQ__lose_connection():
     
     
 if __name__ == "__main__":
-    #"""
-    test_Worker_DAQ__INTERNAL_TIMER()
-    test_Worker_DAQ__INTERNAL_TIMER__start_dead()
-    test_Worker_DAQ__SINGLE_SHOT_WAKE_UP()
-    test_Worker_DAQ__SINGLE_SHOT_WAKE_UP__start_dead()
-    test_Worker_DAQ__CONTINUOUS()
-    test_Worker_DAQ__CONTINUOUS__start_dead()
-    test_Worker_send()
-    test_Worker_send__start_dead()
-    test_Worker_send__alt_jobs()
-    test_Worker_DAQ__start_without_create()
-    test_Worker_send__start_without_create()
-    test_attach_device_twice()
-    test_no_device_attached()
-    test_Worker_DAQ__rate()
-    test_Worker_DAQ__lose_connection()
-    #"""
-    #test_Worker_DAQ__INTERNAL_TIMER()
-    #test_Worker_DAQ__SINGLE_SHOT_WAKE_UP()
-    #test_Worker_DAQ__CONTINUOUS()
-    #test_Worker_send__alt_jobs()
+    ALL = True
+    if ALL:
+        test_Worker_DAQ__INTERNAL_TIMER()
+        test_Worker_DAQ__INTERNAL_TIMER__start_dead()
+        test_Worker_DAQ__SINGLE_SHOT_WAKE_UP()
+        test_Worker_DAQ__SINGLE_SHOT_WAKE_UP__start_dead()
+        test_Worker_DAQ__CONTINUOUS()
+        test_Worker_DAQ__CONTINUOUS__start_dead()
+        test_Worker_send()
+        test_Worker_send__start_dead()
+        test_Worker_send__alt_jobs()
+        test_Worker_DAQ__start_without_create()
+        test_Worker_send__start_without_create()
+        test_attach_device_twice()
+        test_no_device_attached()
+        test_Worker_DAQ__rate()
+        test_Worker_DAQ__lose_connection()
+    else:
+        #test_Worker_DAQ__INTERNAL_TIMER()
+        #test_Worker_DAQ__SINGLE_SHOT_WAKE_UP()
+        #test_Worker_DAQ__CONTINUOUS()
+        test_Worker_send__alt_jobs()
