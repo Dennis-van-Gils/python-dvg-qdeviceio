@@ -319,6 +319,8 @@ class QDeviceIO(QtCore.QObject):
             self._thread_DAQ.start(priority)
             self.worker_DAQ.started_okay = True
         
+        #TODO: Implement QWaitCondition on worker_DAQ entered '_do_work()'
+        
         return self.worker_DAQ.started_okay
 
     def start_worker_send(self, priority=QtCore.QThread.InheritPriority):
@@ -358,47 +360,49 @@ class QDeviceIO(QtCore.QObject):
         
         Returns True when successful, False otherwise.
         """
-        if self._thread_DAQ is not None:        
-            if self.worker_DAQ.DEBUG:
-                tprint("Worker_DAQ  %s: stop requested and waiting" %
-                       self.dev.name, self.worker_DAQ.DEBUG_color)
-            
-            if self.worker_DAQ._trigger_by == DAQ_trigger.INTERNAL_TIMER:
-                # The QTimer inside the INTERNAL_TIMER '_do_work()'-routine has
-                # to be stopped from within the worker_DAQ thread. Hence, we
-                # must use a signal from out of this current (and different)
-                # thread.
-                self._signal_stop_worker_DAQ.emit()
-            
-            elif self.worker_DAQ._trigger_by == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
-                # The QWaitCondition inside the SINGLE_SHOT_WAKE_UP
-                # '_do_work()'-routine will likely have locked worker_DAQ.
-                # Hence, a '_signal_stop_worker_DAQ' signal might not get
-                # handled by worker_DAQ when emitted from out of this thread.
-                # Instead, we must directly call _stop(), which is actually
-                # allowed for SINGLE_SHOT_WAKE_UP.
-                self.worker_DAQ._stop()
-            
-            else:
-                self.worker_DAQ._stop()
-            
-            locker_wait = QtCore.QMutexLocker(self._mutex_wait_worker_DAQ)
-            self._qwc_worker_DAQ_stopped.wait(self._mutex_wait_worker_DAQ)
-            locker_wait.unlock()
+        if self._thread_DAQ is None:
+            return True
+        
+        if self.worker_DAQ.DEBUG:
+            tprint("Worker_DAQ  %s: stop requested and waiting" %
+                   self.dev.name, self.worker_DAQ.DEBUG_color)
+        
+        if self.worker_DAQ._trigger_by == DAQ_trigger.INTERNAL_TIMER:
+            """The QTimer inside the INTERNAL_TIMER '_do_work()'-routine has to
+            be stopped from within the worker_DAQ thread. Hence, we must use a
+            signal from out of this current (and different) thread.
+            """
+            self._signal_stop_worker_DAQ.emit()
+        
+        elif self.worker_DAQ._trigger_by == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
+            """The QWaitCondition inside the SINGLE_SHOT_WAKE_UP '_do_work()'-
+            routine will likely have locked worker_DAQ. Hence, a
+            '_signal_stop_worker_DAQ' signal might not get handled by
+            worker_DAQ when emitted from out of this thread. Instead, we must
+            directly call _stop(), which is actually allowed for
+            SINGLE_SHOT_WAKE_UP.
+            """
+            self.worker_DAQ._stop()
+        
+        else:
+            self.worker_DAQ._stop()
+        
+        # Wait for worker_DAQ to confirm having stopped
+        locker_wait = QtCore.QMutexLocker(self._mutex_wait_worker_DAQ)
+        self._qwc_worker_DAQ_stopped.wait(self._mutex_wait_worker_DAQ)
+        locker_wait.unlock()
 
-            self._thread_DAQ.quit()
-            print("Closing thread %s " %
-                  "{:.<16}".format(self._thread_DAQ.objectName()),
-                  end='')
-            if self._thread_DAQ.wait(2000):
-                print("done.\n", end='')
-                return True
-            else:
-                print("FAILED.\n", end='')      # pragma: no cover
-                return False                    # pragma: no cover
-            
-        else: return True
-
+        self._thread_DAQ.quit()
+        print("Closing thread %s " %
+              "{:.<16}".format(self._thread_DAQ.objectName()),
+              end='')
+        if self._thread_DAQ.wait(2000):
+            print("done.\n", end='')
+            return True
+        else:
+            print("FAILED.\n", end='')      # pragma: no cover
+            return False                    # pragma: no cover
+        
     def quit_worker_send(self):
         """Stop 'worker_send' and close its thread.
         
