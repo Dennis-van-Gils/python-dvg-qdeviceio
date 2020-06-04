@@ -733,6 +733,10 @@ class QDeviceIO(QtCore.QObject):
                     tprint("Worker_DAQ  %s: stop confirmed" %
                            self.dev.name, self.DEBUG_color)
                 
+                # Wait a tiny amount for the other thread to have entered the
+                # QWaitCondition lock, before giving a wakingAll().
+                # TODO: Perhaps, this can also be done by a signal (again)
+                time.sleep(.01)
                 self.outer._qwc_worker_DAQ_stopped.wakeAll()
 
             elif self._trigger_by == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
