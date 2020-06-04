@@ -625,9 +625,10 @@ class QDeviceIO(QtCore.QObject):
                 # Wait a tiny amount for the other thread to have entered the
                 # QWaitCondition lock, before giving a wakingAll().
                 # TODO: Perhaps, this can also be done by a signal (again)
-                time.sleep(.1)
-                
-                self.outer._qwc_worker_DAQ_stopped.wakeAll()
+                QtCore.QTimer.singleShot(100,
+                    lambda: self.outer._qwc_worker_DAQ_stopped.wakeAll())
+                #time.sleep(.1)
+                #self.outer._qwc_worker_DAQ_stopped.wakeAll()
                     
             # CONTINUOUS
             elif self._trigger_by == DAQ_trigger.CONTINUOUS:
@@ -653,9 +654,10 @@ class QDeviceIO(QtCore.QObject):
                 # Wait a tiny amount for the other thread to have entered the
                 # QWaitCondition lock, before giving a wakingAll().
                 # TODO: Perhaps, this can also be done by a signal (again)
-                time.sleep(.1)
-                
-                self.outer._qwc_worker_DAQ_stopped.wakeAll()
+                QtCore.QTimer.singleShot(100,
+                    lambda: self.outer._qwc_worker_DAQ_stopped.wakeAll())
+                #time.sleep(.1)
+                #self.outer._qwc_worker_DAQ_stopped.wakeAll()
 
         @coverage_resolve_trace
         @QtCore.pyqtSlot()
@@ -746,8 +748,10 @@ class QDeviceIO(QtCore.QObject):
                 # Wait a tiny amount for the other thread to have entered the
                 # QWaitCondition lock, before giving a wakingAll().
                 # TODO: Perhaps, this can also be done by a signal (again)
-                time.sleep(.1)
-                self.outer._qwc_worker_DAQ_stopped.wakeAll()
+                QtCore.QTimer.singleShot(100,
+                    lambda: self.outer._qwc_worker_DAQ_stopped.wakeAll())
+                #time.sleep(.1)
+                #self.outer._qwc_worker_DAQ_stopped.wakeAll()
 
             elif self._trigger_by == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
                 self._running = False
