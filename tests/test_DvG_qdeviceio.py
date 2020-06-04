@@ -115,8 +115,7 @@ def test_Worker_DAQ__INTERNAL_TIMER(start_alive=True):
         calc_DAQ_rate_every_N_iter      = 5,
         DEBUG                           = True)
     
-    #assert qdevio.start_worker_DAQ() == start_alive
-    qdevio.start_worker_DAQ()
+    assert qdevio.start_worker_DAQ() == start_alive
     
     # Give time to enter '_do_work'. TODO: Should be implemented by a mechanism inside DvG_QDeviceIO
     start_time = time.perf_counter()
@@ -400,6 +399,8 @@ def test_Worker_send__alt_jobs():
     
     
 def test_Worker_DAQ__start_without_create():
+    import pytest
+    
     dprint("\nTEST Worker_DAQ", ANSI.PURPLE)
     dprint("start worker without create", ANSI.PURPLE)
     dprint("-" * 50, ANSI.PURPLE)
@@ -407,9 +408,13 @@ def test_Worker_DAQ__start_without_create():
     dev = FakeDevice()    
     qdevio = DvG_QDeviceIO.QDeviceIO()
     assert qdevio.attach_device(dev) == True
-    assert qdevio.start_worker_DAQ() == False
-    assert qdevio.quit_all_workers() == True
 
+    with pytest.raises(SystemExit) as pytest_wrapped_e:
+        qdevio.start_worker_DAQ()
+    assert pytest_wrapped_e.type == SystemExit
+    dprint("Exit code: %i" % pytest_wrapped_e.value.code)
+    assert pytest_wrapped_e.value.code == 404
+    
 
     
 def test_Worker_send__start_without_create():
@@ -426,25 +431,35 @@ def test_Worker_send__start_without_create():
     
     
 def test_attach_device_twice():
+    import pytest
     dprint("\nTEST attach device twice", ANSI.PURPLE)
     dprint("-" * 50, ANSI.PURPLE)
     
     dev = FakeDevice()    
     qdevio = DvG_QDeviceIO.QDeviceIO()
     assert qdevio.attach_device(dev) == True
-    assert qdevio.attach_device(dev) == False
+    
+    with pytest.raises(SystemExit) as pytest_wrapped_e:
+        qdevio.attach_device(dev)
+    assert pytest_wrapped_e.type == SystemExit
+    dprint("Exit code: %i" % pytest_wrapped_e.value.code)
+    assert pytest_wrapped_e.value.code == 22
     
 
 
 def test_no_device_attached():
+    import pytest
     dprint("\nTEST no device attached", ANSI.PURPLE)
     dprint("-" * 50, ANSI.PURPLE)
     
     qdevio = DvG_QDeviceIO.QDeviceIO()
-    qdevio.create_worker_DAQ()
-    assert qdevio.start_worker_DAQ() == False
-    assert qdevio.quit_all_workers() == True
-
+    
+    with pytest.raises(SystemExit) as pytest_wrapped_e:
+        qdevio.create_worker_DAQ()
+    assert pytest_wrapped_e.type == SystemExit
+    dprint("Exit code: %i" % pytest_wrapped_e.value.code)
+    assert pytest_wrapped_e.value.code == 99
+    
     
     
 def test_Worker_DAQ__rate():
@@ -586,6 +601,12 @@ if __name__ == "__main__":
     else:
         test_Worker_DAQ__INTERNAL_TIMER()
         test_Worker_DAQ__INTERNAL_TIMER__start_dead()
-        #test_Worker_DAQ__SINGLE_SHOT_WAKE_UP()
-        #test_Worker_DAQ__CONTINUOUS()
-        #test_Worker_send__alt_jobs()
+        test_Worker_DAQ__SINGLE_SHOT_WAKE_UP()
+        test_Worker_DAQ__SINGLE_SHOT_WAKE_UP__start_dead()
+        test_Worker_DAQ__CONTINUOUS()
+        test_Worker_DAQ__CONTINUOUS__start_dead()
+        test_Worker_DAQ__start_without_create()
+        test_attach_device_twice()
+        test_no_device_attached()
+        test_Worker_DAQ__rate()
+        test_Worker_DAQ__lose_connection()
