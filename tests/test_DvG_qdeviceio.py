@@ -2,7 +2,7 @@ import sys
 import time
 from PyQt5 import QtCore
 import DvG_QDeviceIO
-from DvG_debug_functions import dprint, ANSI
+from DvG_debug_functions import dprint, tprint, ANSI
 
 """
 DAQ_trigger.INTERNAL_TIMER
@@ -48,20 +48,20 @@ class FakeDevice():
         if self.is_alive:
             # Simulate successful device output
             self.count_replies += 1
-            dprint(data_to_be_send)
+            tprint(data_to_be_send)
             return data_to_be_send
         else:
             # Simulate device failure
             time.sleep(.1)
-            dprint("%f SIMULATED I/O ERROR" % time.perf_counter())
+            tprint("SIMULATED I/O ERROR")
             return "SIMULATED I/O ERROR"
     
     def fake_query(self):
         self.count_commands += 1
-        return self._send("%f device replied" % time.perf_counter())
+        return self._send("device replied")
     
     def fake_command_with_argument(self, val):
-        dprint("%f device received command" % time.perf_counter())
+        tprint("device received command")
         self.count_commands += 1
 
 
@@ -99,7 +99,7 @@ def test_Worker_DAQ__INTERNAL_TIMER(start_alive=True):
     @QtCore.pyqtSlot()
     def process_DAQ_updated():
         # In production code, your GUI update routine would go here
-        dprint("%f ---> Received signal: DAQ_updated" % time.perf_counter())
+        tprint("---> Received signal: DAQ_updated")
         global pytest_counter_signal_DAQ_updated 
         pytest_counter_signal_DAQ_updated += 1
 
@@ -131,7 +131,7 @@ def test_Worker_DAQ__INTERNAL_TIMER(start_alive=True):
             break
         time.sleep(.001)    # Do not hog the CPU
     
-    dprint("%f About to quit" % time.perf_counter())
+    tprint("About to quit")
     app.processEvents()
     assert qdevio.quit_all_workers() == True
     app.quit()
@@ -172,7 +172,7 @@ def test_Worker_DAQ__SINGLE_SHOT_WAKE_UP(start_alive=True):
     @QtCore.pyqtSlot()
     def process_DAQ_updated():
         # In production code, your GUI update routine would go here
-        dprint("%f ---> Received signal: DAQ_updated" % time.perf_counter())
+        tprint("---> Received signal: DAQ_updated")
         global pytest_counter_signal_DAQ_updated 
         pytest_counter_signal_DAQ_updated += 1
     
@@ -203,7 +203,7 @@ def test_Worker_DAQ__SINGLE_SHOT_WAKE_UP(start_alive=True):
         app.processEvents()
         time.sleep(.001)    # Do not hog the CPU
 
-    dprint("%f About to quit" % time.perf_counter())
+    tprint("About to quit")
     app.processEvents()
     assert qdevio.quit_all_workers() == True
     app.quit()
@@ -243,7 +243,7 @@ def test_Worker_DAQ__CONTINUOUS(start_alive=True):
     @QtCore.pyqtSlot()
     def process_DAQ_paused():
         # In production code, your GUI update routine would go here
-        dprint("%f ---> Received signal: DAQ_paused" % time.perf_counter())
+        tprint("---> Received signal: DAQ_paused")
         global pytest_counter_signal_DAQ_paused 
         pytest_counter_signal_DAQ_paused += 1
 
@@ -276,7 +276,7 @@ def test_Worker_DAQ__CONTINUOUS(start_alive=True):
             break
         time.sleep(.001)    # Do not hog the CPU
     
-    dprint("%f About to quit" % time.perf_counter())
+    tprint("About to quit")
     app.processEvents()
     assert qdevio.quit_all_workers() == True
     app.quit()
@@ -330,7 +330,7 @@ def test_Worker_send(start_alive=True):
         app.processEvents()
         time.sleep(.001)    # Do not hog the CPU
     
-    dprint("%f About to quit" % time.perf_counter())
+    tprint("About to quit")
     app.processEvents()
     assert qdevio.quit_all_workers() == True
     app.quit()
@@ -388,7 +388,7 @@ def test_Worker_send__alt_jobs():
         app.processEvents()
         time.sleep(.001)    # Do not hog the CPU
     
-    dprint("%f About to quit" % time.perf_counter())
+    tprint("About to quit")
     app.processEvents()
     assert qdevio.quit_all_workers() == True
     app.quit()
@@ -488,7 +488,7 @@ def test_Worker_DAQ__rate():
         app.processEvents()
         time.sleep(.001)    # Do not hog the CPU
     
-    dprint("%f About to quit" % time.perf_counter())
+    tprint("About to quit")
     app.processEvents()
     assert qdevio.quit_all_workers() == True
     app.quit()
@@ -538,7 +538,7 @@ def test_Worker_DAQ__lose_connection():
     
     @QtCore.pyqtSlot()
     def process_connection_lost():
-        dprint("%f ---> Received signal: connection_lost" % time.perf_counter())
+        tprint("---> Received signal: connection_lost")
         global go
         go = False
 
@@ -557,7 +557,7 @@ def test_Worker_DAQ__lose_connection():
         app.processEvents()
         time.sleep(.001)    # Do not hog the CPU
         
-    dprint("%f About to quit" % time.perf_counter())
+    tprint("About to quit")
     app.processEvents()
     assert qdevio.quit_all_workers() == True
     app.quit()

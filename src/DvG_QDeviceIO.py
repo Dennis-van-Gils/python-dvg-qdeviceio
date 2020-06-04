@@ -78,7 +78,8 @@ def coverage_resolve_trace(fn):
 
 import numpy as np
 from PyQt5 import QtCore
-from DvG_debug_functions import ANSI, dprint, print_fancy_traceback as pft
+from DvG_debug_functions import (ANSI, dprint, tprint,
+    print_fancy_traceback as pft)
 
 # Short-hand alias for DEBUG information
 def cur_thread_name(): return QtCore.QThread.currentThread().objectName()
@@ -549,17 +550,15 @@ class QDeviceIO(QtCore.QObject):
             self._prev_tick_DAQ_rate = 0
 
             if self.DEBUG:
-                dprint("%f Worker_DAQ  %s: init @ thread %s" %
-                       (time.perf_counter(), self.dev.name, cur_thread_name()),
-                       self.DEBUG_color)
+                tprint("Worker_DAQ  %s: init @ thread %s" %
+                       (self.dev.name, cur_thread_name()), self.DEBUG_color)
 
         @coverage_resolve_trace
         @QtCore.pyqtSlot()
         def _do_work(self):  
             if self.DEBUG:
-                dprint("%f Worker_DAQ  %s: work @ thread %s" %
-                       (time.perf_counter(), self.dev.name, cur_thread_name()),
-                       self.DEBUG_color)
+                tprint("Worker_DAQ  %s: work @ thread %s" %
+                       (self.dev.name, cur_thread_name()), self.DEBUG_color)
 
             # INTERNAL_TIMER
             if self._trigger_by == DAQ_trigger.INTERNAL_TIMER:
@@ -575,9 +574,8 @@ class QDeviceIO(QtCore.QObject):
                     locker_wait = QtCore.QMutexLocker(self._mutex_wait)
 
                     if self.DEBUG:
-                        dprint("%f Worker_DAQ  %s: waiting for trigger" %
-                               (time.perf_counter(), self.dev.name),
-                               self.DEBUG_color)
+                        tprint("Worker_DAQ  %s: waiting for trigger" %
+                               self.dev.name, self.DEBUG_color)
 
                     self._qwc.wait(self._mutex_wait)
 
@@ -589,9 +587,8 @@ class QDeviceIO(QtCore.QObject):
                     locker_wait.unlock()
 
                 if self.DEBUG:
-                    dprint("%f Worker_DAQ  %s: done running" %
-                           (time.perf_counter(), self.dev.name),
-                           self.DEBUG_color)
+                    tprint("Worker_DAQ  %s: done running" %
+                           self.dev.name, self.DEBUG_color)
             
             # CONTINUOUS
             elif self._trigger_by == DAQ_trigger.CONTINUOUS:
@@ -599,9 +596,8 @@ class QDeviceIO(QtCore.QObject):
                     if self._pause:
                         if (self._pause != self.paused):
                             if self.DEBUG:
-                                dprint("%f Worker_DAQ  %s: paused" % 
-                                       (time.perf_counter(), self.dev.name),
-                                       self.DEBUG_color)
+                                tprint("Worker_DAQ  %s: paused" % 
+                                       self.dev.name, self.DEBUG_color)
                             self.outer.signal_DAQ_paused.emit()
                         
                         self.paused = True
@@ -612,9 +608,8 @@ class QDeviceIO(QtCore.QObject):
                         self._perform_DAQ()
                         
                 if self.DEBUG:
-                    dprint("%f Worker_DAQ  %s: done running" %
-                           (time.perf_counter(), self.dev.name),
-                           self.DEBUG_color)
+                    tprint("Worker_DAQ  %s: done running" %
+                           self.dev.name, self.DEBUG_color)
 
         @coverage_resolve_trace
         @QtCore.pyqtSlot()
@@ -623,9 +618,8 @@ class QDeviceIO(QtCore.QObject):
             self.outer.DAQ_update_counter += 1
 
             if self.DEBUG:
-                dprint("%f Worker_DAQ  %s: lock   # %i" %
-                       (time.perf_counter(), self.dev.name,
-                        self.outer.DAQ_update_counter),
+                tprint("Worker_DAQ  %s: lock   # %i" %
+                       (self.dev.name, self.outer.DAQ_update_counter),
                        self.DEBUG_color)
 
             # Keep track of the obtained DAQ update interval
@@ -677,9 +671,8 @@ class QDeviceIO(QtCore.QObject):
             # ----------------------------------
 
             if self.DEBUG:
-                dprint("%f Worker_DAQ  %s: unlock # %i" % 
-                       (time.perf_counter(), self.dev.name,
-                        self.outer.DAQ_update_counter),
+                tprint("Worker_DAQ  %s: unlock # %i" % 
+                       (self.dev.name, self.outer.DAQ_update_counter),
                        self.DEBUG_color)
 
             locker.unlock()
@@ -725,9 +718,8 @@ class QDeviceIO(QtCore.QObject):
                 self._pause = True
                 
                 if self.DEBUG:
-                    dprint("%f Worker_DAQ  %s: request pause" % 
-                           (time.perf_counter(), self.dev.name),
-                           self.DEBUG_color)
+                    tprint("Worker_DAQ  %s: request pause" % 
+                           self.dev.name, self.DEBUG_color)
                     
         @QtCore.pyqtSlot(bool)
         def unpause(self):
@@ -737,9 +729,8 @@ class QDeviceIO(QtCore.QObject):
                 self._pause = False
                 
                 if self.DEBUG:
-                    dprint("%f Worker_DAQ  %s: request unpause" % 
-                           (time.perf_counter(), self.dev.name),
-                           self.DEBUG_color)
+                    tprint("Worker_DAQ  %s: request unpause" % 
+                           self.dev.name, self.DEBUG_color)
                         
         # ----------------------------------------------------------------------
         #   wake_up
@@ -848,34 +839,30 @@ class QDeviceIO(QtCore.QObject):
             self._queue.put(self._sentinel)
 
             if self.DEBUG:
-                dprint("%f Worker_send %s: init @ thread %s" %
-                       (time.perf_counter(), self.dev.name, cur_thread_name()),
-                       self.DEBUG_color)
+                tprint("Worker_send %s: init @ thread %s" %
+                       (self.dev.name, cur_thread_name()), self.DEBUG_color)
 
         @coverage_resolve_trace
         @QtCore.pyqtSlot()
         def _do_work(self):
             if self.DEBUG:
-                dprint("%f Worker_send %s: work @ thread %s" %
-                       (time.perf_counter(), self.dev.name, cur_thread_name()),
-                       self.DEBUG_color)
+                tprint("Worker_send %s: work @ thread %s" %
+                       (self.dev.name, cur_thread_name()), self.DEBUG_color)
 
             while self._running:
                 locker_wait = QtCore.QMutexLocker(self._mutex_wait)
 
                 if self.DEBUG:
-                    dprint("%f Worker_send %s: waiting for trigger" %
-                           (time.perf_counter(), self.dev.name),
-                           self.DEBUG_color)
+                    tprint("Worker_send %s: waiting for trigger" %
+                           self.dev.name, self.DEBUG_color)
 
                 self._qwc.wait(self._mutex_wait)
                 locker = QtCore.QMutexLocker(self.dev.mutex)
                 self.update_counter += 1
 
                 if self.DEBUG:
-                    dprint("%f Worker_send %s: lock   # %i" %
-                           (time.perf_counter(), self.dev.name,
-                            self.update_counter),
+                    tprint("Worker_send %s: lock   # %i" %
+                           (self.dev.name, self.update_counter),
                            self.DEBUG_color)
 
                 """Process all jobs until the queue is empty. We must iterate 2
@@ -890,14 +877,12 @@ class QDeviceIO(QtCore.QObject):
 
                         if self.DEBUG:
                             if type(func) == str:
-                                dprint("%f Worker_send %s: %s %s" %
-                                       (time.perf_counter(), self.dev.name,
-                                        func, args),
+                                tprint("Worker_send %s: %s %s" %
+                                       (self.dev.name, func, args),
                                        self.DEBUG_color)
                             else:
-                                dprint("%f Worker_send %s: %s %s" %
-                                       (time.perf_counter(), self.dev.name,
-                                        func.__name__, args),
+                                tprint("Worker_send %s: %s %s" %
+                                       (self.dev.name, func.__name__, args),
                                        self.DEBUG_color)
 
                         if self.alt_process_jobs_function is None:
@@ -915,18 +900,16 @@ class QDeviceIO(QtCore.QObject):
                     self._queue.put(self._sentinel)
 
                 if self.DEBUG:
-                    dprint("%f Worker_send %s: unlock # %i" % 
-                           (time.perf_counter(), self.dev.name,
-                            self.update_counter),
+                    tprint("Worker_send %s: unlock # %i" % 
+                           (self.dev.name, self.update_counter),
                            self.DEBUG_color)
 
                 locker.unlock()
                 locker_wait.unlock()
 
             if self.DEBUG:
-                dprint("%f Worker_send %s: done running" % 
-                       (time.perf_counter(), self.dev.name),
-                       self.DEBUG_color)
+                tprint("Worker_send %s: done running" % 
+                       self.dev.name, self.DEBUG_color)
 
         @QtCore.pyqtSlot()
         def _stop(self):
