@@ -48,7 +48,7 @@ __author__      = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__         = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
 __date__        = "01-06-2020"
-__version__     = "0.0.3"   # This DvG_QDeviceIO.py v0.0.1 on PyPI is based on the pre-PyPI prototype DvG_dev_Base__pyqt_lib.py v1.3.3
+__version__     = "0.0.4"   # DvG_QDeviceIO.py v0.0.1 on PyPI is based on the pre-PyPI prototype DvG_dev_Base__pyqt_lib.py v1.3.3
 
 from enum import IntEnum, unique
 import queue
@@ -78,8 +78,8 @@ def coverage_resolve_trace(fn):
 
 import numpy as np
 from PyQt5 import QtCore
-from DvG_debug_functions import (ANSI, dprint, tprint,
-    print_fancy_traceback as pft)
+from DvG_debug_functions import (print_fancy_traceback as pft,
+                                 dprint, tprint, ANSI)
 
 # Short-hand alias for DEBUG information
 def cur_thread_name(): return QtCore.QThread.currentThread().objectName()
@@ -199,6 +199,7 @@ class QDeviceIO(QtCore.QObject):
     signal_DAQ_updated      = QtCore.pyqtSignal()
     signal_DAQ_paused       = QtCore.pyqtSignal()
     signal_connection_lost  = QtCore.pyqtSignal()
+    
     _signal_stop_worker_DAQ = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
@@ -261,8 +262,8 @@ class QDeviceIO(QtCore.QObject):
         self._thread_DAQ = QtCore.QThread()
         self._thread_DAQ.setObjectName("%s_DAQ" % self.dev.name)            
         self.worker_DAQ.moveToThread(self._thread_DAQ)            
+        
         self._thread_DAQ.started.connect(self.worker_DAQ._do_work)
-
         self._signal_stop_worker_DAQ.connect(self.worker_DAQ._stop)
             
     def create_worker_send(self, **kwargs):
@@ -303,10 +304,12 @@ class QDeviceIO(QtCore.QObject):
                 self.dev.name)
             return False
         
+        """
         if not self.dev.is_alive:
             print("Worker_DAQ %s: Can't start thread because device is not "
                   "alive." % self.dev.name)
             return False
+        """
 
         self._thread_DAQ.start(priority)
         return True
@@ -348,16 +351,20 @@ class QDeviceIO(QtCore.QObject):
         
         Returns True when successful, False otherwise.
         """
-        print(self._thread_DAQ)
-        print(self.worker_DAQ)
+        #print(self._thread_DAQ)
+        #print(self.worker_DAQ)
+        #print(self.worker_DAQ._timer)
+        #print(self._signal_stop_worker_DAQ)
         if self._thread_DAQ is not None:
-            if self.dev.is_alive:
-                self._signal_stop_worker_DAQ.emit()
-                dprint("locker_wait")
-                locker_wait = QtCore.QMutexLocker(self._mutex_wait_worker_DAQ)
-                self._qwc_worker_DAQ_stopped.wait(self._mutex_wait_worker_DAQ)
-                dprint("woken up")
-                locker_wait.unlock()
+            self._signal_stop_worker_DAQ.emit()
+            
+            dprint("locker_wait")
+            
+            
+            #locker_wait = QtCore.QMutexLocker(self._mutex_wait_worker_DAQ)
+            #self._qwc_worker_DAQ_stopped.wait(self._mutex_wait_worker_DAQ)
+            #dprint("woken up")
+            #locker_wait.unlock()
             
             #self.worker_DAQ._stop()
             #TODO: add QWaitCondition on confirm stop
@@ -519,6 +526,7 @@ class QDeviceIO(QtCore.QObject):
             
             # Members specifically for INTERNAL_TIMER
             if self._trigger_by == DAQ_trigger.INTERNAL_TIMER:
+                self._timer = None
                 self._update_interval_ms = DAQ_update_interval_ms
                 self._timer_type = DAQ_timer_type
                 self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
@@ -562,11 +570,11 @@ class QDeviceIO(QtCore.QObject):
 
             # INTERNAL_TIMER
             if self._trigger_by == DAQ_trigger.INTERNAL_TIMER:
-                self.timer = QtCore.QTimer()
-                self.timer.setInterval(self._update_interval_ms)
-                self.timer.timeout.connect(self._perform_DAQ)
-                self.timer.setTimerType(self._timer_type)
-                self.timer.start()
+                self._timer = QtCore.QTimer()
+                self._timer.setInterval(self._update_interval_ms)
+                self._timer.timeout.connect(self._perform_DAQ)
+                self._timer.setTimerType(self._timer_type)
+                self._timer.start()
 
             # SINGLE_SHOT_WAKE_UP
             elif self._trigger_by == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
@@ -602,7 +610,7 @@ class QDeviceIO(QtCore.QObject):
                         
                         self.paused = True
                         time.sleep(0.01)  # Do not hog the CPU while paused
-                        pass
+                        
                     else:
                         self.paused = False
                         self._perform_DAQ()
@@ -626,7 +634,7 @@ class QDeviceIO(QtCore.QObject):
             now = self._QET_DAQ.elapsed()
             if self.outer.DAQ_update_counter > 1:
                 self.outer.obtained_DAQ_update_interval_ms = (
-                        now - self._prev_tick_DAQ_update)
+                    now - self._prev_tick_DAQ_update)
             self._prev_tick_DAQ_update = now
 
             # Keep track of the obtained DAQ rate
@@ -634,15 +642,15 @@ class QDeviceIO(QtCore.QObject):
                 self.calc_DAQ_rate_every_N_iter == 0):
                 try:
                     self.outer.obtained_DAQ_rate_Hz = (
-                            self.calc_DAQ_rate_every_N_iter /
-                            (now - self._prev_tick_DAQ_rate) * 1e3)
+                        self.calc_DAQ_rate_every_N_iter /
+                        (now - self._prev_tick_DAQ_rate) * 1e3)
                 except ZeroDivisionError:                     # pragma: no cover
                     self.outer.obtained_DAQ_rate_Hz = np.nan  # pragma: no cover
                 self._prev_tick_DAQ_rate = now
 
             # Check the not alive counter
             if (self.outer.DAQ_not_alive_counter >=
-                self.critical_not_alive_count):
+                    self.critical_not_alive_count):
                 dprint("\n%f Worker_DAQ %s: Determined device is not alive "
                        "anymore." % (time.perf_counter(), self.dev.name))
                 self.dev.is_alive = False
@@ -657,7 +665,7 @@ class QDeviceIO(QtCore.QObject):
             #   User-supplied DAQ function
             # ----------------------------------
 
-            if not(self.function_to_run_each_update is None):
+            if not self.function_to_run_each_update is None:
                 if self.function_to_run_each_update():
                     # Did return True, hence was succesfull
                     # --> Reset the 'not alive' counter
@@ -684,10 +692,11 @@ class QDeviceIO(QtCore.QObject):
             """
             dprint("Entered _stop()")
             if self._trigger_by == DAQ_trigger.INTERNAL_TIMER:
-                if hasattr(self, 'timer'):
-                    dprint("timer.stop()")
-                    self.timer.stop()
+                dprint("timer.stop()")
+                if self._timer is not None:
+                    self._timer.stop()
                 dprint("wakeAll()")
+                time.sleep(1)
                 self.outer._qwc_worker_DAQ_stopped.wakeAll()
                     
                     #self.timer.stop()  # Leave commented out
