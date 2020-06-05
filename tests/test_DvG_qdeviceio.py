@@ -73,13 +73,18 @@ def create_QApplication():
     #app = QtWidgets.QApplication(sys.argv)
     app = QtCore.QCoreApplication(sys.argv) # Use QCoreApplication instead
     return app
-    
 
 
-def test_Worker_DAQ__INTERNAL_TIMER(start_alive=True):
-    dprint("\nTEST Worker_DAQ INTERNAL_TIMER", ANSI.PURPLE)
-    if not start_alive: dprint("start dead", ANSI.PURPLE)
+
+def print_title(title):
+    dprint("\n%s" % title, ANSI.PURPLE)
     dprint("-" * 50, ANSI.PURPLE)
+
+
+
+def test_Worker_DAQ___INTERNAL_TIMER(start_alive=True):
+    print_title("Worker_DAQ - INTERNAL_TIMER" +
+                ("" if start_alive else " - start dead"))
     app = create_QApplication()
     
     # Simulate a device
@@ -94,14 +99,14 @@ def test_Worker_DAQ__INTERNAL_TIMER(start_alive=True):
         reply = dev.fake_query()
         return reply[-14:] == "device replied"
     
-    global pytest_counter_signal_DAQ_updated 
-    pytest_counter_signal_DAQ_updated = 0
+    global pytest_signal_counter 
+    pytest_signal_counter = 0
     @QtCore.pyqtSlot()
     def process_DAQ_updated():
         # In production code, your GUI update routine would go here
         tprint("---> Received signal: DAQ_updated")
-        global pytest_counter_signal_DAQ_updated 
-        pytest_counter_signal_DAQ_updated += 1
+        global pytest_signal_counter 
+        pytest_signal_counter += 1
 
     qdevio.signal_DAQ_updated.connect(process_DAQ_updated)
     
@@ -139,20 +144,18 @@ def test_Worker_DAQ__INTERNAL_TIMER(start_alive=True):
     if start_alive:
         assert dev.count_commands >= 3
         assert dev.count_replies  >= 3
-        assert pytest_counter_signal_DAQ_updated >= 2 # Third signal is not always received before thread is quit
+        assert pytest_signal_counter >= 2 # Third signal is not always received before thread is quit
     
     
     
-def test_Worker_DAQ__INTERNAL_TIMER__start_dead():
-    test_Worker_DAQ__INTERNAL_TIMER(start_alive=False)
-    
-
+def test_Worker_DAQ___INTERNAL_TIMER__start_dead():
+    test_Worker_DAQ___INTERNAL_TIMER(start_alive=False)
     
 
-def test_Worker_DAQ__SINGLE_SHOT_WAKE_UP(start_alive=True):
-    dprint("\nTEST Worker_DAQ SINGLE_SHOT_WAKE_UP", ANSI.PURPLE)
-    if not start_alive: dprint("start dead", ANSI.PURPLE)
-    dprint("-" * 50, ANSI.PURPLE)
+    
+def test_Worker_DAQ___SINGLE_SHOT_WAKE_UP(start_alive=True):
+    print_title("Worker_DAQ - SINGLE_SHOT_WAKE_UP" +
+                ("" if start_alive else " - start dead"))
     app = create_QApplication()
     
     # Simulate a device
@@ -167,14 +170,14 @@ def test_Worker_DAQ__SINGLE_SHOT_WAKE_UP(start_alive=True):
         reply = dev.fake_query()
         return reply[-14:] == "device replied"
     
-    global pytest_counter_signal_DAQ_updated 
-    pytest_counter_signal_DAQ_updated = 0
+    global pytest_signal_counter 
+    pytest_signal_counter = 0
     @QtCore.pyqtSlot()
     def process_DAQ_updated():
         # In production code, your GUI update routine would go here
         tprint("---> Received signal: DAQ_updated")
-        global pytest_counter_signal_DAQ_updated 
-        pytest_counter_signal_DAQ_updated += 1
+        global pytest_signal_counter 
+        pytest_signal_counter += 1
     
     qdevio.signal_DAQ_updated.connect(process_DAQ_updated)
     
@@ -211,18 +214,18 @@ def test_Worker_DAQ__SINGLE_SHOT_WAKE_UP(start_alive=True):
     if start_alive:
         assert dev.count_commands == 3
         assert dev.count_replies  == 3
-        assert pytest_counter_signal_DAQ_updated == 3
-    
-
-def test_Worker_DAQ__SINGLE_SHOT_WAKE_UP__start_dead():
-    test_Worker_DAQ__SINGLE_SHOT_WAKE_UP(start_alive=False)
+        assert pytest_signal_counter == 3
     
     
 
-def test_Worker_DAQ__CONTINUOUS(start_alive=True):
-    dprint("\nTEST Worker_DAQ CONTINUOUS", ANSI.PURPLE)
-    if not start_alive: dprint("start dead", ANSI.PURPLE)
-    dprint("-" * 50, ANSI.PURPLE)
+def test_Worker_DAQ___SINGLE_SHOT_WAKE_UP__start_dead():
+    test_Worker_DAQ___SINGLE_SHOT_WAKE_UP(start_alive=False)
+    
+    
+
+def test_Worker_DAQ___CONTINUOUS(start_alive=True):
+    print_title("Worker_DAQ - CONTINUOUS" +
+                ("" if start_alive else " - start dead"))
     app = create_QApplication()
     
     # Simulate a device
@@ -288,15 +291,14 @@ def test_Worker_DAQ__CONTINUOUS(start_alive=True):
         
 
 
-def test_Worker_DAQ__CONTINUOUS__start_dead():
-    test_Worker_DAQ__CONTINUOUS(start_alive=False)
+def test_Worker_DAQ___CONTINUOUS__start_dead():
+    test_Worker_DAQ___CONTINUOUS(start_alive=False)
     
     
     
 def test_Worker_send(start_alive=True):
-    dprint("\nTEST Worker_send", ANSI.PURPLE)
-    if not start_alive: dprint("start dead", ANSI.PURPLE)
-    dprint("-" * 50, ANSI.PURPLE)
+    print_title("Worker_send" +
+                ("" if start_alive else " - start dead"))
     app = create_QApplication()
     
     # Simulate a device
@@ -305,6 +307,17 @@ def test_Worker_send(start_alive=True):
     
     qdevio = DvG_QDeviceIO.QDeviceIO()
     assert qdevio.attach_device(dev) == True
+    
+    global pytest_signal_counter 
+    pytest_signal_counter = 0
+    @QtCore.pyqtSlot()
+    def process_send_updated():
+        # In production code, your GUI update routine would go here
+        tprint("---> Received signal: send_updated")
+        global pytest_signal_counter 
+        pytest_signal_counter += 1
+        
+    qdevio.signal_send_updated.connect(process_send_updated)
     
     qdevio.create_worker_send(DEBUG=True)
     
@@ -338,6 +351,7 @@ def test_Worker_send(start_alive=True):
     if start_alive:
         assert dev.count_commands == 5
         assert dev.count_replies  == 2
+        assert pytest_signal_counter == 4
         
         
         
@@ -347,9 +361,7 @@ def test_Worker_send__start_dead():
 
 
 def test_Worker_send__alt_jobs():
-    dprint("\nTEST Worker_send", ANSI.PURPLE)
-    dprint("alternative jobs", ANSI.PURPLE)
-    dprint("-" * 50, ANSI.PURPLE)
+    print_title("Worker_send - alternative jobs")
     app = create_QApplication()
     
     # Simulate a device
@@ -357,6 +369,17 @@ def test_Worker_send__alt_jobs():
     
     qdevio = DvG_QDeviceIO.QDeviceIO()
     assert qdevio.attach_device(dev) == True
+    
+    global pytest_signal_counter 
+    pytest_signal_counter = 0
+    @QtCore.pyqtSlot()
+    def process_send_updated():
+        # In production code, your GUI update routine would go here
+        tprint("---> Received signal: send_updated")
+        global pytest_signal_counter 
+        pytest_signal_counter += 1
+        
+    qdevio.signal_send_updated.connect(process_send_updated)
     
     def my_alt_process_jobs_function(func, args):
         if func == "special command":
@@ -395,45 +418,13 @@ def test_Worker_send__alt_jobs():
     
     assert dev.count_commands == 3
     assert dev.count_replies  == 2
+    assert pytest_signal_counter == 3
     
-    
-    
-def test_Worker_DAQ__start_without_create():
-    import pytest
-    
-    dprint("\nTEST Worker_DAQ", ANSI.PURPLE)
-    dprint("start worker without create", ANSI.PURPLE)
-    dprint("-" * 50, ANSI.PURPLE)
-    
-    dev = FakeDevice()    
-    qdevio = DvG_QDeviceIO.QDeviceIO()
-    assert qdevio.attach_device(dev) == True
+        
 
-    with pytest.raises(SystemExit) as pytest_wrapped_e:
-        qdevio.start_worker_DAQ()
-    assert pytest_wrapped_e.type == SystemExit
-    dprint("Exit code: %i" % pytest_wrapped_e.value.code)
-    assert pytest_wrapped_e.value.code == 404
-    
-
-    
-def test_Worker_send__start_without_create():
-    dprint("\nTEST Worker_send", ANSI.PURPLE)
-    dprint("start worker without create", ANSI.PURPLE)
-    dprint("-" * 50, ANSI.PURPLE)
-    
-    dev = FakeDevice()        
-    qdevio = DvG_QDeviceIO.QDeviceIO()
-    assert qdevio.attach_device(dev) == True
-    assert qdevio.start_worker_send() == False
-    assert qdevio.quit_all_workers() == True
-    
-    
-    
 def test_attach_device_twice():
+    print_title("Attach device twice")
     import pytest
-    dprint("\nTEST attach device twice", ANSI.PURPLE)
-    dprint("-" * 50, ANSI.PURPLE)
     
     dev = FakeDevice()    
     qdevio = DvG_QDeviceIO.QDeviceIO()
@@ -445,12 +436,11 @@ def test_attach_device_twice():
     dprint("Exit code: %i" % pytest_wrapped_e.value.code)
     assert pytest_wrapped_e.value.code == 22
     
-
-
-def test_no_device_attached():
+    
+    
+def test_Worker_DAQ___no_device_attached():
+    print_title("Worker_DAQ - no device attached")
     import pytest
-    dprint("\nTEST no device attached", ANSI.PURPLE)
-    dprint("-" * 50, ANSI.PURPLE)
     
     qdevio = DvG_QDeviceIO.QDeviceIO()
     
@@ -460,12 +450,56 @@ def test_no_device_attached():
     dprint("Exit code: %i" % pytest_wrapped_e.value.code)
     assert pytest_wrapped_e.value.code == 99
     
+
+    
+def test_Worker_send__no_device_attached():
+    print_title("Worker_send - no device attached")
+    import pytest
+    
+    qdevio = DvG_QDeviceIO.QDeviceIO()
+    
+    with pytest.raises(SystemExit) as pytest_wrapped_e:
+        qdevio.create_worker_send()
+    assert pytest_wrapped_e.type == SystemExit
+    dprint("Exit code: %i" % pytest_wrapped_e.value.code)
+    assert pytest_wrapped_e.value.code == 99
     
     
-def test_Worker_DAQ__rate():
-    dprint("\nTEST Worker_DAQ INTERNAL_TIMER", ANSI.PURPLE)
-    dprint("DAQ rate", ANSI.PURPLE)
-    dprint("-" * 50, ANSI.PURPLE)
+    
+def test_Worker_DAQ___start_without_create():
+    print_title("Worker_DAQ - start without create")
+    import pytest
+    
+    dev = FakeDevice()    
+    qdevio = DvG_QDeviceIO.QDeviceIO()
+    assert qdevio.attach_device(dev) == True
+
+    with pytest.raises(SystemExit) as pytest_wrapped_e:
+        qdevio.start_worker_DAQ()
+    assert pytest_wrapped_e.type == SystemExit
+    dprint("Exit code: %i" % pytest_wrapped_e.value.code)
+    assert pytest_wrapped_e.value.code == 404
+    
+    
+    
+def test_Worker_send__start_without_create():
+    print_title("Worker_send - start without create")
+    import pytest
+    
+    dev = FakeDevice()        
+    qdevio = DvG_QDeviceIO.QDeviceIO()
+    assert qdevio.attach_device(dev) == True
+    
+    with pytest.raises(SystemExit) as pytest_wrapped_e:
+        qdevio.start_worker_send()
+    assert pytest_wrapped_e.type == SystemExit
+    dprint("Exit code: %i" % pytest_wrapped_e.value.code)
+    assert pytest_wrapped_e.value.code == 404
+
+    
+    
+def test_Worker_DAQ___rate():
+    print_title("Worker_DAQ - INTERNAL_TIMER - DAQ rate")
     app = create_QApplication()
     
     # Simulate a device
@@ -516,10 +550,8 @@ def test_Worker_DAQ__rate():
     
     
     
-def test_Worker_DAQ__lose_connection():
-    dprint("\nTEST Worker_DAQ INTERNAL_TIMER", ANSI.PURPLE)
-    dprint("lose connection", ANSI.PURPLE)
-    dprint("-" * 50, ANSI.PURPLE)
+def test_Worker_DAQ___lose_connection():
+    print_title("Worker_DAQ - INTERNAL_TIMER - lose connection")
     app = create_QApplication()
     
     # Simulate a device
@@ -581,32 +613,41 @@ def test_Worker_DAQ__lose_connection():
     
     
 if __name__ == "__main__":
-    ALL = False
+    ALL = True
     if ALL:
-        test_Worker_DAQ__INTERNAL_TIMER()
-        test_Worker_DAQ__INTERNAL_TIMER__start_dead()
-        test_Worker_DAQ__SINGLE_SHOT_WAKE_UP()
-        test_Worker_DAQ__SINGLE_SHOT_WAKE_UP__start_dead()
-        test_Worker_DAQ__CONTINUOUS()
-        test_Worker_DAQ__CONTINUOUS__start_dead()
+        test_Worker_DAQ___INTERNAL_TIMER()
+        test_Worker_DAQ___INTERNAL_TIMER__start_dead()
+        test_Worker_DAQ___SINGLE_SHOT_WAKE_UP()
+        test_Worker_DAQ___SINGLE_SHOT_WAKE_UP__start_dead()
+        test_Worker_DAQ___CONTINUOUS()
+        test_Worker_DAQ___CONTINUOUS__start_dead()
         test_Worker_send()
         test_Worker_send__start_dead()
         test_Worker_send__alt_jobs()
-        test_Worker_DAQ__start_without_create()
-        test_Worker_send__start_without_create()
         test_attach_device_twice()
-        test_no_device_attached()
-        test_Worker_DAQ__rate()
-        test_Worker_DAQ__lose_connection()
+        test_Worker_DAQ___no_device_attached()
+        test_Worker_send__no_device_attached()
+        test_Worker_DAQ___start_without_create()
+        test_Worker_send__start_without_create()
+        test_Worker_DAQ___rate()
+        test_Worker_DAQ___lose_connection()
     else:
-        #test_Worker_DAQ__INTERNAL_TIMER()
-        #test_Worker_DAQ__INTERNAL_TIMER__start_dead()
-        test_Worker_DAQ__SINGLE_SHOT_WAKE_UP()
-        #test_Worker_DAQ__SINGLE_SHOT_WAKE_UP__start_dead()
-        #test_Worker_DAQ__CONTINUOUS()
-        #test_Worker_DAQ__CONTINUOUS__start_dead()
-        #test_Worker_DAQ__start_without_create()
-        #test_attach_device_twice()
-        #test_no_device_attached()
-        #test_Worker_DAQ__rate()
-        #test_Worker_DAQ__lose_connection()
+        test_Worker_DAQ___INTERNAL_TIMER()
+        test_Worker_DAQ___INTERNAL_TIMER__start_dead()
+        test_Worker_DAQ___SINGLE_SHOT_WAKE_UP()
+        test_Worker_DAQ___SINGLE_SHOT_WAKE_UP__start_dead()
+        test_Worker_DAQ___CONTINUOUS()
+        test_Worker_DAQ___CONTINUOUS__start_dead()
+        
+        test_Worker_DAQ___rate()
+        test_Worker_DAQ___lose_connection()
+        test_Worker_DAQ___no_device_attached()
+        test_Worker_DAQ___start_without_create()
+        
+        test_Worker_send()
+        test_Worker_send__start_dead()
+        test_Worker_send__alt_jobs()
+        test_Worker_send__no_device_attached()
+        test_Worker_send__start_without_create()
+
+        test_attach_device_twice()
