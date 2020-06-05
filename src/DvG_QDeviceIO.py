@@ -354,6 +354,9 @@ class QDeviceIO(QtCore.QObject):
         # use a blocking 'time.sleep(.05)' here.
         if self.worker_DAQ._trigger_by == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
             time.sleep(.05)
+            
+        if self.worker_DAQ._trigger_by == DAQ_trigger.CONTINUOUS:
+            time.sleep(.1)
         
         return self.worker_DAQ._started_okay
 
