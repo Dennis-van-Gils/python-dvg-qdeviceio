@@ -345,7 +345,10 @@ class QDeviceIO(QtCore.QObject):
         self._qwc_worker_DAQ_started.wait(self._mutex_wait_worker_DAQ)
         locker_wait.unlock()
         
-        time.sleep(.1)
+        # Wait a tiny amount of time for the worker to have entered 
+        # self._qwc.wait(self._mutex_wait) in the case of
+        # SINGLE_SHOT_WAKE_UP
+        time.sleep(.01)
         
         return self.worker_DAQ._started_okay
 
