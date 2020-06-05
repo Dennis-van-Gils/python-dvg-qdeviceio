@@ -694,7 +694,7 @@ class QDeviceIO(QtCore.QObject):
                         confirm_started(self)
                         init = False
                     
-                    locker = QtCore.QMutexLocker(self._mutex_pause)
+                    #locker = QtCore.QMutexLocker(self._mutex_pause)
                     
                     if self._pause:
                         if (self._pause != self.paused):
@@ -715,7 +715,7 @@ class QDeviceIO(QtCore.QObject):
                         
                         self._perform_DAQ()
                     
-                    locker.unlock()
+                    #locker.unlock()
                         
                 if self.DEBUG:
                     tprint("Worker_DAQ  %s: stop confirmed" %
@@ -834,9 +834,9 @@ class QDeviceIO(QtCore.QObject):
             """Only useful with DAQ_trigger.CONTINUOUS
             """
             if self._trigger_by == DAQ_trigger.CONTINUOUS:
-                locker = QtCore.QMutexLocker(self._mutex_pause)
+                #locker = QtCore.QMutexLocker(self._mutex_pause)
                 self._pause = True
-                locker.unlock()
+                #locker.unlock()
                 
                 if self.DEBUG:
                     tprint("Worker_DAQ  %s: pause requested..." % 
@@ -847,9 +847,9 @@ class QDeviceIO(QtCore.QObject):
             """Only useful with DAQ_trigger.CONTINUOUS
             """
             if self._trigger_by == DAQ_trigger.CONTINUOUS:
-                locker = QtCore.QMutexLocker(self._mutex_pause)
+                #locker = QtCore.QMutexLocker(self._mutex_pause)
                 self._pause = False
-                locker.unlock()
+                #locker.unlock()
                 
                 if self.DEBUG:
                     tprint("Worker_DAQ  %s: unpause requested..." % 
