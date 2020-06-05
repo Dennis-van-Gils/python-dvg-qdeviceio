@@ -224,6 +224,9 @@ class QDeviceIO(QtCore.QObject):
 
         self.obtained_DAQ_update_interval_ms = np.nan
         self.obtained_DAQ_rate_Hz = np.nan
+
+        self._qwc_worker_DAQ_started  = QtCore.QWaitCondition()
+        self._qwc_worker_send_started = QtCore.QWaitCondition()
         
         self._qwc_worker_DAQ_stopped  = QtCore.QWaitCondition()
         self._qwc_worker_send_stopped = QtCore.QWaitCondition()
@@ -331,9 +334,17 @@ class QDeviceIO(QtCore.QObject):
         else:
             self.worker_DAQ._started_okay = True
         
-        #TODO: Implement QWaitCondition on worker_DAQ entered '_do_work()'
+        if self.worker_DAQ.DEBUG:
+            tprint("Worker_DAQ  %s: start requested..." %
+                   self.dev.name, self.worker_DAQ.DEBUG_color)
         
         self._thread_DAQ.start(priority)
+        
+        # Wait for worker_DAQ to confirm having started
+        locker_wait = QtCore.QMutexLocker(self._mutex_wait_worker_DAQ)
+        self._qwc_worker_DAQ_started.wait(self._mutex_wait_worker_DAQ)
+        locker_wait.unlock()
+        
         return self.worker_DAQ._started_okay
 
     def start_worker_send(self, priority=QtCore.QThread.InheritPriority):
@@ -364,8 +375,6 @@ class QDeviceIO(QtCore.QObject):
         else:
             self.worker_send._started_okay = True
         
-        #TODO: Implement QWaitCondition on worker_send entered '_do_work()'
-        
         self._thread_send.start(priority)
         return self.worker_send._started_okay
 
@@ -382,7 +391,7 @@ class QDeviceIO(QtCore.QObject):
             return True
         
         if self.worker_DAQ.DEBUG:
-            tprint("Worker_DAQ  %s: stop requested and waiting" %
+            tprint("Worker_DAQ  %s: stop requested..." %
                    self.dev.name, self.worker_DAQ.DEBUG_color)
         
         if self.worker_DAQ._trigger_by == DAQ_trigger.INTERNAL_TIMER:
@@ -427,6 +436,10 @@ class QDeviceIO(QtCore.QObject):
         """
         if self._thread_send is None:
             return True
+        
+        if self.worker_send.DEBUG:
+            tprint("Worker_send %s: stop requested..." %
+                   self.dev.name, self.worker_send.DEBUG_color)
                 
         self.worker_send._stop()
         
@@ -565,7 +578,7 @@ class QDeviceIO(QtCore.QObject):
             self.dev = self.outer.dev
             self.critical_not_alive_count = DAQ_critical_not_alive_count
             self.function_to_run_each_update = DAQ_function_to_run_each_update
-            self._trigger_by = DAQ_trigger_by
+            self._trigger_by = DAQ_trigger_by            
             self._started_okay = None
             
             # Members specifically for INTERNAL_TIMER
@@ -607,11 +620,19 @@ class QDeviceIO(QtCore.QObject):
 
         @coverage_resolve_trace
         @QtCore.pyqtSlot()
-        def _do_work(self):  
+        def _do_work(self):
+            init = True
+            
+            def confirm_started(self):
+                if self.DEBUG:
+                    tprint("Worker_DAQ  %s: start confirmed" %
+                           self.dev.name, self.DEBUG_color)
+                self.outer._qwc_worker_DAQ_started.wakeAll()
+            
             if self.DEBUG:
-                tprint("Worker_DAQ  %s: work @ thread %s" %
+                tprint("Worker_DAQ  %s: starting @ thread %s" %
                        (self.dev.name, cur_thread_name()), self.DEBUG_color)
-
+            
             # INTERNAL_TIMER
             if self._trigger_by == DAQ_trigger.INTERNAL_TIMER:
                 self._timer = QtCore.QTimer()
@@ -619,6 +640,7 @@ class QDeviceIO(QtCore.QObject):
                 self._timer.timeout.connect(self._perform_DAQ)
                 self._timer.setTimerType(self._timer_type)
                 self._timer.start()
+                confirm_started(self)
 
             # SINGLE_SHOT_WAKE_UP
             elif self._trigger_by == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
@@ -628,7 +650,11 @@ class QDeviceIO(QtCore.QObject):
                     if self.DEBUG:
                         tprint("Worker_DAQ  %s: waiting for trigger" %
                                self.dev.name, self.DEBUG_color)
-
+                        
+                    if init:
+                        confirm_started(self)
+                        init = False
+                        
                     self._qwc.wait(self._mutex_wait)
 
                     # Needed check to prevent _perform_DAQ() at final wake up
@@ -650,18 +676,27 @@ class QDeviceIO(QtCore.QObject):
             # CONTINUOUS
             elif self._trigger_by == DAQ_trigger.CONTINUOUS:
                 while self._running:
+                    if init:
+                        confirm_started(self)
+                        init = False
+                    # TODO: must use a mutex around ._pause read and write
                     if self._pause:
                         if (self._pause != self.paused):
                             if self.DEBUG:
-                                tprint("Worker_DAQ  %s: paused" % 
+                                tprint("Worker_DAQ  %s: pause confirmed" % 
                                        self.dev.name, self.DEBUG_color)
                             self.outer.signal_DAQ_paused.emit()
-                        
-                        self.paused = True
+                            self.paused = True
+                            
                         time.sleep(0.01)  # Do not hog the CPU while paused
                         
                     else:
-                        self.paused = False
+                        if (self._pause != self.paused):
+                            if self.DEBUG:
+                                tprint("Worker_DAQ  %s: unpause confirmed" % 
+                                       self.dev.name, self.DEBUG_color)
+                            self.paused = False
+                        
                         self._perform_DAQ()
                         
                 if self.DEBUG:
@@ -783,7 +818,7 @@ class QDeviceIO(QtCore.QObject):
                 self._pause = True
                 
                 if self.DEBUG:
-                    tprint("Worker_DAQ  %s: request pause" % 
+                    tprint("Worker_DAQ  %s: pause requested..." % 
                            self.dev.name, self.DEBUG_color)
                     
         @QtCore.pyqtSlot(bool)
@@ -794,7 +829,7 @@ class QDeviceIO(QtCore.QObject):
                 self._pause = False
                 
                 if self.DEBUG:
-                    tprint("Worker_DAQ  %s: request unpause" % 
+                    tprint("Worker_DAQ  %s: unpause requested..." % 
                            self.dev.name, self.DEBUG_color)
                         
         # ----------------------------------------------------------------------
@@ -912,7 +947,7 @@ class QDeviceIO(QtCore.QObject):
         @QtCore.pyqtSlot()
         def _do_work(self):
             if self.DEBUG:
-                tprint("Worker_send %s: work @ thread %s" %
+                tprint("Worker_send %s: starting @ thread %s" %
                        (self.dev.name, cur_thread_name()), self.DEBUG_color)
 
             while self._running:

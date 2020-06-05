@@ -122,11 +122,13 @@ def test_Worker_DAQ___INTERNAL_TIMER(start_alive=True):
     
     assert qdevio.start_worker_DAQ() == start_alive
     
+    """
     # Give time to enter '_do_work'. TODO: Should be implemented by a mechanism inside DvG_QDeviceIO
     start_time = time.perf_counter()
     while time.perf_counter() - start_time < .1:
         app.processEvents()
         time.sleep(.001)    # Do not hog the CPU
+    """
     
     # Simulate device runtime
     start_time = time.perf_counter()
@@ -191,11 +193,13 @@ def test_Worker_DAQ___SINGLE_SHOT_WAKE_UP(start_alive=True):
     
     assert qdevio.start_worker_DAQ() == start_alive
     
+    """
     # Give time to enter '_do_work'. TODO: Should be implemented by a mechanism inside DvG_QDeviceIO
     start_time = time.perf_counter()
     while time.perf_counter() - start_time < .1:
         app.processEvents()
         time.sleep(.001)    # Do not hog the CPU
+    """
     
     # Simulate device runtime
     start_time = time.perf_counter()
@@ -262,11 +266,13 @@ def test_Worker_DAQ___CONTINUOUS(start_alive=True):
     
     assert qdevio.start_worker_DAQ() == start_alive
     
+    """
     # Give time to enter '_do_work'. TODO: Should be implemented by a mechanism inside DvG_QDeviceIO
     start_time = time.perf_counter()
     while time.perf_counter() - start_time < .1:
         app.processEvents()
         time.sleep(.001)    # Do not hog the CPU
+    """
     
     # Simulate device runtime
     start_time = time.perf_counter()
@@ -526,11 +532,13 @@ def test_Worker_DAQ___rate():
     print(qdevio.worker_DAQ.calc_DAQ_rate_every_N_iter)
     assert qdevio.start_worker_DAQ() == True
     
+    """
     # Give time to enter '_do_work'. TODO: Should be implemented by a mechanism inside DvG_QDeviceIO
     start_time = time.perf_counter()
     while time.perf_counter() - start_time < .1:
         app.processEvents()
         time.sleep(.001)    # Do not hog the CPU
+    """
     
     # Simulate device runtime
     start_time = time.perf_counter()
@@ -594,11 +602,13 @@ def test_Worker_DAQ___lose_connection():
     
     assert qdevio.start_worker_DAQ() == True
     
+    """
     # Give time to enter '_do_work'. TODO: Should be implemented by a mechanism inside DvG_QDeviceIO
     start_time = time.perf_counter()
     while time.perf_counter() - start_time < .1:
         app.processEvents()
         time.sleep(.001)    # Do not hog the CPU
+    """
     
     # Simulate device runtime
     while go:
@@ -613,7 +623,7 @@ def test_Worker_DAQ___lose_connection():
     
     
 if __name__ == "__main__":
-    ALL = True
+    ALL = False
     if ALL:
         test_Worker_DAQ___INTERNAL_TIMER()
         test_Worker_DAQ___INTERNAL_TIMER__start_dead()
@@ -632,22 +642,22 @@ if __name__ == "__main__":
         test_Worker_DAQ___rate()
         test_Worker_DAQ___lose_connection()
     else:
-        test_Worker_DAQ___INTERNAL_TIMER()
-        test_Worker_DAQ___INTERNAL_TIMER__start_dead()
-        test_Worker_DAQ___SINGLE_SHOT_WAKE_UP()
-        test_Worker_DAQ___SINGLE_SHOT_WAKE_UP__start_dead()
+        #test_Worker_DAQ___INTERNAL_TIMER()
+        #test_Worker_DAQ___INTERNAL_TIMER__start_dead()
+        #test_Worker_DAQ___SINGLE_SHOT_WAKE_UP()
+        #test_Worker_DAQ___SINGLE_SHOT_WAKE_UP__start_dead()
         test_Worker_DAQ___CONTINUOUS()
         test_Worker_DAQ___CONTINUOUS__start_dead()
         
-        test_Worker_DAQ___rate()
-        test_Worker_DAQ___lose_connection()
-        test_Worker_DAQ___no_device_attached()
-        test_Worker_DAQ___start_without_create()
+        #test_Worker_DAQ___rate()
+        #test_Worker_DAQ___lose_connection()
+        #test_Worker_DAQ___no_device_attached()
+        #test_Worker_DAQ___start_without_create()
         
-        test_Worker_send()
-        test_Worker_send__start_dead()
-        test_Worker_send__alt_jobs()
-        test_Worker_send__no_device_attached()
-        test_Worker_send__start_without_create()
+        #test_Worker_send()
+        #test_Worker_send__start_dead()
+        #test_Worker_send__alt_jobs()
+        #test_Worker_send__no_device_attached()
+        #test_Worker_send__start_without_create()
 
-        test_attach_device_twice()
+        #test_attach_device_twice()
