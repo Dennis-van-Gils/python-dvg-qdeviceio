@@ -616,12 +616,17 @@ if __name__ == "__main__":
         test_Worker_DAQ___rate()
         test_Worker_DAQ___lose_connection()
     else:
-        test_Worker_DAQ___INTERNAL_TIMER()
-        test_Worker_DAQ___INTERNAL_TIMER__start_dead()
-        test_Worker_DAQ___SINGLE_SHOT_WAKE_UP()
-        test_Worker_DAQ___SINGLE_SHOT_WAKE_UP__start_dead()
-        test_Worker_DAQ___CONTINUOUS()
-        test_Worker_DAQ___CONTINUOUS__start_dead()
+        #test_Worker_DAQ___INTERNAL_TIMER()
+        #test_Worker_DAQ___INTERNAL_TIMER__start_dead()
+        #test_Worker_DAQ___SINGLE_SHOT_WAKE_UP()
+        #test_Worker_DAQ___SINGLE_SHOT_WAKE_UP__start_dead()
+        
+        import msvcrt
+        while True:
+            test_Worker_DAQ___CONTINUOUS()
+            test_Worker_DAQ___CONTINUOUS__start_dead()
+            if msvcrt.kbhit() and msvcrt.getch() == chr(27).encode():
+                break
         
         #test_Worker_DAQ___rate()
         #test_Worker_DAQ___lose_connection()
