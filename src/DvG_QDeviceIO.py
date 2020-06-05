@@ -205,8 +205,11 @@ class QDeviceIO(QtCore.QObject):
     signal_connection_lost = QtCore.pyqtSignal()
     signal_send_updated    = QtCore.pyqtSignal()
     
-    # Necessary for DAQ_trigger == INTERNAL_TIMER
-    _signal_stop_worker_DAQ = QtCore.pyqtSignal()
+    # Necessary for INTERNAL_TIMER
+    _signal_stop_worker_DAQ    = QtCore.pyqtSignal()
+    # Necessary for CONTINUOUS
+    _signal_pause_worker_DAQ   = QtCore.pyqtSignal()
+    _signal_unpause_worker_DAQ = QtCore.pyqtSignal()
 
     def __init__(self, parent=None):
         super(QDeviceIO, self).__init__(parent=parent)
@@ -276,6 +279,8 @@ class QDeviceIO(QtCore.QObject):
         
         self.worker_DAQ = self.Worker_DAQ(**kwargs)            
         self._signal_stop_worker_DAQ.connect(self.worker_DAQ._stop)
+        self._signal_pause_worker_DAQ.connect(self.worker_DAQ.pause)
+        self._signal_unpause_worker_DAQ.connect(self.worker_DAQ.unpause)
         
         self._thread_DAQ = QtCore.QThread()
         self._thread_DAQ.setObjectName("%s_DAQ" % self.dev.name)            
@@ -477,6 +482,13 @@ class QDeviceIO(QtCore.QObject):
         Returns True when successful, False otherwise.
         """
         return (self.quit_worker_DAQ() & self.quit_worker_send())
+
+    def pause(self):
+        self._signal_pause_worker_DAQ.emit()
+    
+    def unpause(self):
+        print("yoilo")
+        self._signal_unpause_worker_DAQ.emit()
 
     # --------------------------------------------------------------------------
     #   Worker_DAQ
@@ -692,6 +704,7 @@ class QDeviceIO(QtCore.QObject):
                     
             # CONTINUOUS
             elif self._trigger_by == DAQ_trigger.CONTINUOUS:
+                # TODO: learn from and implement https://forum.qt.io/topic/92932/how-to-process-events-during-infinite-loop-in-worker-thread/2
                 #locker_pause = QtCore.QMutexLocker(self._mutex_pause)
                 #locker_pause.unlock()
                 
@@ -835,7 +848,7 @@ class QDeviceIO(QtCore.QObject):
         #   pause / unpause
         # ----------------------------------------------------------------------
             
-        @QtCore.pyqtSlot(bool)
+        @QtCore.pyqtSlot()
         def pause(self):
             """Only useful with DAQ_trigger.CONTINUOUS
             """
@@ -844,11 +857,13 @@ class QDeviceIO(QtCore.QObject):
                 self._pause = True
                 #locker.unlock()
                 
+                print(cur_thread_name())
+                
                 if self.DEBUG:
                     tprint("Worker_DAQ  %s: pause requested..." % 
                            self.dev.name, self.DEBUG_color)
                     
-        @QtCore.pyqtSlot(bool)
+        @QtCore.pyqtSlot()
         def unpause(self):
             """Only useful with DAQ_trigger.CONTINUOUS
             """
