@@ -345,10 +345,15 @@ class QDeviceIO(QtCore.QObject):
         self._qwc_worker_DAQ_started.wait(self._mutex_wait_worker_DAQ)
         locker_wait.unlock()
         
-        # Wait a tiny amount of time for the worker to have entered 
-        # self._qwc.wait(self._mutex_wait) in the case of
-        # SINGLE_SHOT_WAKE_UP
-        time.sleep(.01)
+        # Wait a tiny amount of extra time for the worker to have entered 
+        # self._qwc.wait(self._mutex_wait) of method '_do_work()' in the case of
+        # SINGLE_SHOT_WAKE_UP. Unfortunately, we can't use
+        #   QTimer.singleShot(500, confirm_started(self))
+        # inside the '_do_work()' routine, because it won't never resolve due to
+        # the upcoming blocking 'self._qwc.wait(self._mutex_wait)'. Hence, we
+        # use a blocking 'time.sleep(.05)' here.
+        if self.worker_DAQ._trigger_by == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
+            time.sleep(.05)
         
         return self.worker_DAQ._started_okay
 
@@ -609,6 +614,7 @@ class QDeviceIO(QtCore.QObject):
             # trigger a 'signal_DAQ_paused' PyQt signal
             elif self._trigger_by == DAQ_trigger.CONTINUOUS:
                 self._running = True
+                self._mutex_pause = QtCore.QMutex()
                 self._pause   = True  # [True]
                 self.paused   = False # [False]
                 self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
@@ -684,7 +690,9 @@ class QDeviceIO(QtCore.QObject):
                     if init:
                         confirm_started(self)
                         init = False
-                    # TODO: must use a mutex around ._pause read and write
+                    
+                    locker = QtCore.QMutexLocker(self._mutex_pause)
+                    
                     if self._pause:
                         if (self._pause != self.paused):
                             if self.DEBUG:
@@ -692,7 +700,8 @@ class QDeviceIO(QtCore.QObject):
                                        self.dev.name, self.DEBUG_color)
                             self.outer.signal_DAQ_paused.emit()
                             self.paused = True
-                            
+                        
+                        locker.unlock()
                         time.sleep(0.01)  # Do not hog the CPU while paused
                         
                     else:
@@ -702,13 +711,15 @@ class QDeviceIO(QtCore.QObject):
                                        self.dev.name, self.DEBUG_color)
                             self.paused = False
                         
+                        locker.unlock()
                         self._perform_DAQ()
                         
                 if self.DEBUG:
                     tprint("Worker_DAQ  %s: stop confirmed" %
                            self.dev.name, self.DEBUG_color)
                 
-                # Wait a tiny amount for the other thread to have entered the
+                # Wait a tiny amount for 'create_worker_DAQ()', which is running
+                # in a different thread than this one, to have entered the
                 # QWaitCondition lock, before giving a wakingAll().
                 QtCore.QTimer.singleShot(100,
                     lambda: self.outer._qwc_worker_DAQ_stopped.wakeAll())
@@ -820,7 +831,9 @@ class QDeviceIO(QtCore.QObject):
             """Only useful with DAQ_trigger.CONTINUOUS
             """
             if self._trigger_by == DAQ_trigger.CONTINUOUS:
+                locker = QtCore.QMutexLocker(self._mutex_pause)
                 self._pause = True
+                locker.unlock()
                 
                 if self.DEBUG:
                     tprint("Worker_DAQ  %s: pause requested..." % 
@@ -831,7 +844,9 @@ class QDeviceIO(QtCore.QObject):
             """Only useful with DAQ_trigger.CONTINUOUS
             """
             if self._trigger_by == DAQ_trigger.CONTINUOUS:
+                locker = QtCore.QMutexLocker(self._mutex_pause)
                 self._pause = False
+                locker.unlock()
                 
                 if self.DEBUG:
                     tprint("Worker_DAQ  %s: unpause requested..." % 
