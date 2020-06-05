@@ -652,6 +652,9 @@ class QDeviceIO(QtCore.QObject):
                                self.dev.name, self.DEBUG_color)
                         
                     if init:
+                        # We can't use QtCore.QTimer.singleShot()
+                        # Must use a blocking time.sleep(), because of the next _qwc.wait()
+                        time.sleep(.1)
                         confirm_started(self)
                         init = False
                         
