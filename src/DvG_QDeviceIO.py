@@ -701,7 +701,6 @@ class QDeviceIO(QtCore.QObject):
                             self.outer.signal_DAQ_paused.emit()
                             self.paused = True
                         
-                        locker.unlock()
                         time.sleep(0.01)  # Do not hog the CPU while paused
                         
                     else:
@@ -711,8 +710,9 @@ class QDeviceIO(QtCore.QObject):
                                        self.dev.name, self.DEBUG_color)
                             self.paused = False
                         
-                        locker.unlock()
                         self._perform_DAQ()
+                    
+                    locker.unlock()
                         
                 if self.DEBUG:
                     tprint("Worker_DAQ  %s: stop confirmed" %
