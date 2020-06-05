@@ -345,6 +345,8 @@ class QDeviceIO(QtCore.QObject):
         self._qwc_worker_DAQ_started.wait(self._mutex_wait_worker_DAQ)
         locker_wait.unlock()
         
+        time.sleep(.1)
+        
         return self.worker_DAQ._started_okay
 
     def start_worker_send(self, priority=QtCore.QThread.InheritPriority):
@@ -652,9 +654,6 @@ class QDeviceIO(QtCore.QObject):
                                self.dev.name, self.DEBUG_color)
                         
                     if init:
-                        # We can't use QtCore.QTimer.singleShot()
-                        # Must use a blocking time.sleep(), because of the next _qwc.wait()
-                        time.sleep(.1)
                         confirm_started(self)
                         init = False
                         
