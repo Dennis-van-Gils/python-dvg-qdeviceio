@@ -692,15 +692,15 @@ class QDeviceIO(QtCore.QObject):
                     
             # CONTINUOUS
             elif self._trigger_by == DAQ_trigger.CONTINUOUS:
-                locker_pause = QtCore.QMutexLocker(self._mutex_pause)
-                locker_pause.unlock()
+                #locker_pause = QtCore.QMutexLocker(self._mutex_pause)
+                #locker_pause.unlock()
                 
                 while self._running:
                     if init:
                         confirm_started(self)
                         init = False
                     
-                    locker_pause.relock()
+                    #locker_pause.relock()
                     
                     if self._pause:
                         if (self._pause != self.paused):
@@ -721,7 +721,7 @@ class QDeviceIO(QtCore.QObject):
                         
                         self._perform_DAQ()
                     
-                    locker_pause.unlock()
+                    #locker_pause.unlock()
                         
                 if self.DEBUG:
                     tprint("Worker_DAQ  %s: stop confirmed" %
@@ -840,9 +840,9 @@ class QDeviceIO(QtCore.QObject):
             """Only useful with DAQ_trigger.CONTINUOUS
             """
             if self._trigger_by == DAQ_trigger.CONTINUOUS:
-                locker = QtCore.QMutexLocker(self._mutex_pause)
+                #locker = QtCore.QMutexLocker(self._mutex_pause)
                 self._pause = True
-                locker.unlock()
+                #locker.unlock()
                 
                 if self.DEBUG:
                     tprint("Worker_DAQ  %s: pause requested..." % 
@@ -853,9 +853,9 @@ class QDeviceIO(QtCore.QObject):
             """Only useful with DAQ_trigger.CONTINUOUS
             """
             if self._trigger_by == DAQ_trigger.CONTINUOUS:
-                locker = QtCore.QMutexLocker(self._mutex_pause)
+                #locker = QtCore.QMutexLocker(self._mutex_pause)
                 self._pause = False
-                locker.unlock()
+                #locker.unlock()
                 
                 if self.DEBUG:
                     tprint("Worker_DAQ  %s: unpause requested..." % 
