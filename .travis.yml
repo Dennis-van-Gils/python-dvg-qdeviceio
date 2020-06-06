@@ -43,3 +43,4 @@ after_success:
   #- coverage combine .coverage
   - coverage report -m
   - coveralls
+  
