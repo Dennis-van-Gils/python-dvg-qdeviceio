@@ -416,24 +416,23 @@ class QDeviceIO(QtCore.QObject):
                    self.dev.name, ANSI.WHITE)
         
         if self.worker_DAQ._trigger_by == DAQ_trigger.INTERNAL_TIMER:
-            """The QTimer inside the INTERNAL_TIMER '_do_work()'-routine has to
-            be stopped from within the worker_DAQ thread. Hence, we must use a
-            signal from out of this current (and different) thread.
-            """
+            # The QTimer inside the INTERNAL_TIMER '_do_work()'-routine /must/
+            # be stopped from within the worker_DAQ thread. Hence, we must use a
+            # signal from out of this different thread.
             self._signal_stop_worker_DAQ.emit()
         
         elif self.worker_DAQ._trigger_by == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
-            """The QWaitCondition inside the SINGLE_SHOT_WAKE_UP '_do_work()'-
-            routine will likely have locked worker_DAQ. Hence, a
-            '_signal_stop_worker_DAQ' signal might not get handled by
-            worker_DAQ when emitted from out of this thread. Instead, we must
-            directly call _stop(), which is actually allowed for
-            SINGLE_SHOT_WAKE_UP.
-            """
+            # The QWaitCondition inside the SINGLE_SHOT_WAKE_UP '_do_work()'-
+            # routine will likely have locked worker_DAQ. Hence, a
+            # '_signal_stop_worker_DAQ' signal as above might not get handled by
+            # worker_DAQ when emitted from out of this thread. Instead,
+            # we directly call '_stop()' from out of this different thread,
+            # which is perfectly fine for SINGLE_SHOT_WAKE_UP as per my design.
             self.worker_DAQ._stop()
         
         elif self.worker_DAQ._trigger_by == DAQ_trigger.CONTINUOUS:
-            #TODO: comment
+            # We directly call '_stop()' from out of this different thread,
+            # which is perfectly fine for CONTINUOUS as per my design.
             self.worker_DAQ._stop()
         
         # Wait for worker_DAQ to confirm having stopped
@@ -673,7 +672,7 @@ class QDeviceIO(QtCore.QObject):
                     locker_wait.relock()
 
                     if self.DEBUG:
-                        tprint("Worker_DAQ  %s: waiting for trigger" %
+                        tprint("Worker_DAQ  %s: waiting for wake trigger" %
                                self.dev.name, self.DEBUG_color)
                         
                     if init:
@@ -681,6 +680,10 @@ class QDeviceIO(QtCore.QObject):
                         init = False
                         
                     self._qwc.wait(self._mutex_wait)
+                    
+                    if self.DEBUG:
+                        tprint("Worker_DAQ  %s: wake confirmed" %
+                               self.dev.name, self.DEBUG_color)
 
                     # Needed check to prevent _perform_DAQ() at final wake up
                     # when _stop() has been called
@@ -847,33 +850,47 @@ class QDeviceIO(QtCore.QObject):
         @QtCore.pyqtSlot()
         def pause(self):
             """Only useful with DAQ_trigger.CONTINUOUS
+            NOTE: This method can be called from the MAIN/GUI thread all right.
             """
             if self._trigger_by == DAQ_trigger.CONTINUOUS:
-                self._pause = True
-                
                 if self.DEBUG:
                     tprint("Worker_DAQ  %s: pause requested..." % 
-                           self.dev.name, self.DEBUG_color)
+                           self.dev.name, ANSI.WHITE)
+                
+                # The possible undefined behavior of changing variable '_pause'
+                # from out of another thread gets handled acceptably correct in
+                # '_do_work()' as per my design.
+                self._pause = True
                     
         @QtCore.pyqtSlot()
         def unpause(self):
             """Only useful with DAQ_trigger.CONTINUOUS
+            NOTE: This method can be called from the MAIN/GUI thread all right.
             """
             if self._trigger_by == DAQ_trigger.CONTINUOUS:
-                self._pause = False
-                
                 if self.DEBUG:
                     tprint("Worker_DAQ  %s: unpause requested..." % 
-                           self.dev.name, self.DEBUG_color)
+                           self.dev.name, ANSI.WHITE)
                         
+                # The possible undefined behavior of changing variable '_pause'
+                # from out of another thread gets handled acceptably correct in
+                # '_do_work()' as per my design.
+                self._pause = False
+                
         # ----------------------------------------------------------------------
         #   wake_up
         # ----------------------------------------------------------------------
-
+        
+        @QtCore.pyqtSlot()
         def wake_up(self):
             """Only useful with DAQ_trigger.SINGLE_SHOT_WAKE_UP
+            NOTE: This method can be called from the MAIN/GUI thread all right.
             """
             if self._trigger_by == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
+                if self.DEBUG:
+                    tprint("Worker_DAQ  %s: wake requested..." % 
+                           self.dev.name, ANSI.WHITE)
+                    
                 self._qwc.wakeAll()
 
     # --------------------------------------------------------------------------
