@@ -267,11 +267,13 @@ def test_Worker_DAQ___CONTINUOUS(start_alive=True):
     
     # Simulate device runtime
     start_time = time.perf_counter()
-    QtCore.QTimer.singleShot(300, lambda: qdevio.worker_DAQ.pause())
-    QtCore.QTimer.singleShot(600, lambda: qdevio.worker_DAQ.unpause())
-    while time.perf_counter() - start_time < 1:
+    QtCore.QTimer.singleShot(300 , lambda: qdevio.worker_DAQ.pause())
+    QtCore.QTimer.singleShot(600 , lambda: qdevio.worker_DAQ.unpause())
+    QtCore.QTimer.singleShot(900 , lambda: qdevio.worker_DAQ.pause())
+    QtCore.QTimer.singleShot(1200, lambda: qdevio.worker_DAQ.unpause())
+    while time.perf_counter() - start_time < 1.6:
         app.processEvents()
-        if dev.count_commands == 6:
+        if dev.count_commands == 12:
             break
         time.sleep(.001)    # Do not hog the CPU
     
@@ -281,10 +283,10 @@ def test_Worker_DAQ___CONTINUOUS(start_alive=True):
     app.quit()
     
     if start_alive:
-        assert dev.count_commands >= 6
-        assert dev.count_replies  >= 6
-        assert signal_counter_updated >= 5 # Sixth signal is not always received before thread is quit
-        assert signal_counter_paused == 2        
+        assert dev.count_commands >= 10
+        assert dev.count_replies  >= 10
+        assert signal_counter_updated >= 9 # Last signal is not always received before thread is quit
+        assert signal_counter_paused == 3
 
 
 def test_Worker_DAQ___CONTINUOUS__start_dead():
