@@ -1,0 +1,761 @@
+PyTest output on computer ONERA
+Python 3.7.6
+06-06-2020
+
+Worker_DAQ - INTERNAL_TIMER
+--------------------------------------------------
+0.4416 Worker_DAQ  FakeDev: init @ thread MAIN
+0.4417 Worker_DAQ  FakeDev: start requested...
+0.4419 Worker_DAQ  FakeDev: starting @ thread FakeDev_DAQ
+0.4421 Worker_DAQ  FakeDev: start confirmed
+0.5443 Worker_DAQ  FakeDev: lock   # 1
+0.5444 device replied
+0.5444 Worker_DAQ  FakeDev: unlock # 1
+0.5453 ---> Received signal: DAQ_updated
+0.6515 Worker_DAQ  FakeDev: lock   # 2
+0.6515 device replied
+0.6516 Worker_DAQ  FakeDev: unlock # 2
+0.6523 ---> Received signal: DAQ_updated
+0.7615 Worker_DAQ  FakeDev: lock   # 3
+0.7616 device replied
+0.7616 Worker_DAQ  FakeDev: unlock # 3
+0.7624 ---> Received signal: DAQ_updated
+0.7626 About to quit
+0.7626 Worker_DAQ  FakeDev: stop requested...
+0.7627 Worker_DAQ  FakeDev: stopping
+0.7628 Worker_DAQ  FakeDev: stop confirmed
+Closing thread FakeDev_DAQ..... done.
+
+Worker_DAQ - INTERNAL_TIMER - start dead
+--------------------------------------------------
+0.8633 Worker_DAQ  FakeDev: init @ thread MAIN
+
+Worker_DAQ FakeDev: WARNING - Device is not alive.
+
+0.8634 Worker_DAQ  FakeDev: start requested...
+0.8635 Worker_DAQ  FakeDev: starting @ thread FakeDev_DAQ
+0.8636 Worker_DAQ  FakeDev: start confirmed
+1.8644 About to quit
+1.8645 Worker_DAQ  FakeDev: stop requested...
+1.8646 Worker_DAQ  FakeDev: stopping
+1.8647 Worker_DAQ  FakeDev: stop confirmed
+Closing thread FakeDev_DAQ..... done.
+
+Worker_DAQ - SINGLE_SHOT_WAKE_UP
+--------------------------------------------------
+1.9652 Worker_DAQ  FakeDev: init @ thread MAIN
+1.9653 Worker_DAQ  FakeDev: start requested...
+1.9654 Worker_DAQ  FakeDev: starting @ thread FakeDev_DAQ
+1.9655 Worker_DAQ  FakeDev: waiting for wake trigger
+1.9655 Worker_DAQ  FakeDev: start confirmed
+2.0156 Worker_DAQ  FakeDev: wake requested...
+2.0156 Worker_DAQ  FakeDev: wake confirmed
+2.0157 Worker_DAQ  FakeDev: lock   # 1
+2.0158 device replied
+2.0158 Worker_DAQ  FakeDev: unlock # 1
+2.0158 Worker_DAQ  FakeDev: waiting for wake trigger
+2.0159 ---> Received signal: DAQ_updated
+2.3159 Worker_DAQ  FakeDev: wake requested...
+2.3160 Worker_DAQ  FakeDev: wake confirmed
+2.3160 Worker_DAQ  FakeDev: lock   # 2
+2.3160 device replied
+2.3161 Worker_DAQ  FakeDev: unlock # 2
+2.3161 Worker_DAQ  FakeDev: waiting for wake trigger
+2.3169 ---> Received signal: DAQ_updated
+2.6162 Worker_DAQ  FakeDev: wake requested...
+2.6162 Worker_DAQ  FakeDev: wake confirmed
+2.6163 Worker_DAQ  FakeDev: lock   # 3
+2.6164 device replied
+2.6164 Worker_DAQ  FakeDev: unlock # 3
+2.6164 Worker_DAQ  FakeDev: waiting for wake trigger
+2.6171 ---> Received signal: DAQ_updated
+3.0165 About to quit
+3.0165 Worker_DAQ  FakeDev: stop requested...
+3.0166 Worker_DAQ  FakeDev: stopping
+3.0166 Worker_DAQ  FakeDev: wake confirmed
+3.0167 Worker_DAQ  FakeDev: stop confirmed
+Closing thread FakeDev_DAQ..... done.
+
+Worker_DAQ - SINGLE_SHOT_WAKE_UP - start dead
+--------------------------------------------------
+3.1172 Worker_DAQ  FakeDev: init @ thread MAIN
+
+Worker_DAQ FakeDev: WARNING - Device is not alive.
+
+3.1173 Worker_DAQ  FakeDev: start requested...
+3.1175 Worker_DAQ  FakeDev: starting @ thread FakeDev_DAQ
+3.1175 Worker_DAQ  FakeDev: waiting for wake trigger
+3.1176 Worker_DAQ  FakeDev: start confirmed
+3.1676 Worker_DAQ  FakeDev: wake requested...
+3.1677 Worker_DAQ  FakeDev: wake confirmed
+3.1677 Worker_DAQ  FakeDev: waiting for wake trigger
+3.4679 Worker_DAQ  FakeDev: wake requested...
+3.4680 Worker_DAQ  FakeDev: wake confirmed
+3.4681 Worker_DAQ  FakeDev: waiting for wake trigger
+3.7682 Worker_DAQ  FakeDev: wake requested...
+3.7683 Worker_DAQ  FakeDev: wake confirmed
+3.7683 Worker_DAQ  FakeDev: waiting for wake trigger
+4.1685 About to quit
+4.1686 Worker_DAQ  FakeDev: stop requested...
+4.1686 Worker_DAQ  FakeDev: stopping
+4.1687 Worker_DAQ  FakeDev: wake confirmed
+4.1687 Worker_DAQ  FakeDev: stop confirmed
+Closing thread FakeDev_DAQ..... done.
+
+Worker_DAQ - CONTINUOUS
+--------------------------------------------------
+4.2693 Worker_DAQ  FakeDev: init @ thread MAIN
+4.2694 Worker_DAQ  FakeDev: start requested...
+4.2696 Worker_DAQ  FakeDev: starting @ thread FakeDev_DAQ
+4.2696 Worker_DAQ  FakeDev: starting up paused
+4.2697 Worker_DAQ  FakeDev: start confirmed
+4.2699 ---> Received signal: DAQ_paused
+4.2699 Worker_DAQ  FakeDev: unpause requested...
+4.2806 Worker_DAQ  FakeDev: unpause confirmed
+4.2807 Worker_DAQ  FakeDev: lock   # 1
+4.3817 device replied
+4.3818 Worker_DAQ  FakeDev: unlock # 1
+4.3819 Worker_DAQ  FakeDev: lock   # 2
+4.3827 ---> Received signal: DAQ_updated
+4.4828 device replied
+4.4829 Worker_DAQ  FakeDev: unlock # 2
+4.4829 Worker_DAQ  FakeDev: lock   # 3
+4.4838 ---> Received signal: DAQ_updated
+4.5699 Worker_DAQ  FakeDev: pause requested...
+4.5839 device replied
+4.5840 Worker_DAQ  FakeDev: unlock # 3
+4.5840 Worker_DAQ  FakeDev: pause confirmed
+4.5849 ---> Received signal: DAQ_updated
+4.5850 ---> Received signal: DAQ_paused
+4.8702 Worker_DAQ  FakeDev: unpause requested...
+4.8812 Worker_DAQ  FakeDev: unpause confirmed
+4.8813 Worker_DAQ  FakeDev: lock   # 4
+4.9823 device replied
+4.9823 Worker_DAQ  FakeDev: unlock # 4
+4.9824 Worker_DAQ  FakeDev: lock   # 5
+4.9833 ---> Received signal: DAQ_updated
+5.0834 device replied
+5.0834 Worker_DAQ  FakeDev: unlock # 5
+5.0835 Worker_DAQ  FakeDev: lock   # 6
+5.0844 ---> Received signal: DAQ_updated
+5.1705 Worker_DAQ  FakeDev: pause requested...
+5.1845 device replied
+5.1845 Worker_DAQ  FakeDev: unlock # 6
+5.1845 Worker_DAQ  FakeDev: pause confirmed
+5.1855 ---> Received signal: DAQ_updated
+5.1855 ---> Received signal: DAQ_paused
+5.4707 Worker_DAQ  FakeDev: unpause requested...
+5.4817 Worker_DAQ  FakeDev: unpause confirmed
+5.4818 Worker_DAQ  FakeDev: lock   # 7
+5.5828 device replied
+5.5829 Worker_DAQ  FakeDev: unlock # 7
+5.5829 Worker_DAQ  FakeDev: lock   # 8
+5.5838 ---> Received signal: DAQ_updated
+5.6839 device replied
+5.6839 Worker_DAQ  FakeDev: unlock # 8
+5.6840 Worker_DAQ  FakeDev: lock   # 9
+5.6849 ---> Received signal: DAQ_updated
+5.7850 device replied
+5.7850 Worker_DAQ  FakeDev: unlock # 9
+5.7851 Worker_DAQ  FakeDev: lock   # 10
+5.7860 ---> Received signal: DAQ_updated
+5.8701 About to quit
+5.8701 Worker_DAQ  FakeDev: stop requested...
+5.8701 Worker_DAQ  FakeDev: stopping
+5.8861 device replied
+5.8861 Worker_DAQ  FakeDev: unlock # 10
+5.8862 Worker_DAQ  FakeDev: stop confirmed
+Closing thread FakeDev_DAQ..... done.
+
+Worker_DAQ - CONTINUOUS - start dead
+--------------------------------------------------
+5.9869 Worker_DAQ  FakeDev: init @ thread MAIN
+
+Worker_DAQ FakeDev: WARNING - Device is not alive.
+
+5.9869 Worker_DAQ  FakeDev: start requested...
+5.9871 Worker_DAQ  FakeDev: starting @ thread FakeDev_DAQ
+5.9872 Worker_DAQ  FakeDev: starting up paused
+5.9872 Worker_DAQ  FakeDev: start confirmed
+5.9874 ---> Received signal: DAQ_paused
+5.9874 Worker_DAQ  FakeDev: unpause requested...
+5.9982 Worker_DAQ  FakeDev: unpause confirmed
+6.2975 Worker_DAQ  FakeDev: pause requested...
+6.3075 Worker_DAQ  FakeDev: pause confirmed
+6.3085 ---> Received signal: DAQ_paused
+6.5878 Worker_DAQ  FakeDev: unpause requested...
+6.5907 Worker_DAQ  FakeDev: unpause confirmed
+6.8930 Worker_DAQ  FakeDev: pause requested...
+6.9030 Worker_DAQ  FakeDev: pause confirmed
+6.9041 ---> Received signal: DAQ_paused
+7.1873 Worker_DAQ  FakeDev: unpause requested...
+7.1923 Worker_DAQ  FakeDev: unpause confirmed
+7.5876 About to quit
+7.5976 Worker_DAQ  FakeDev: stop requested...
+7.6077 Worker_DAQ  FakeDev: stopping
+7.6177 Worker_DAQ  FakeDev: stop confirmed
+Closing thread FakeDev_DAQ..... done.
+
+Worker_send
+--------------------------------------------------
+7.7185 Worker_send FakeDev: init @ thread MAIN
+7.7185 Worker_send FakeDev: start requested...
+7.7187 Worker_send FakeDev: starting @ thread FakeDev_send
+7.7187 Worker_send FakeDev: waiting for wake trigger
+7.7187 Worker_send FakeDev: start confirmed
+7.8689 Worker_send FakeDev: wake requested...
+7.8690 Worker_send FakeDev: wake confirmed
+7.8690 Worker_send FakeDev: lock   # 1
+7.8690 Worker_send FakeDev: fake_query ()
+7.8691 device replied
+7.8691 Worker_send FakeDev: unlock # 1
+7.8692 Worker_send FakeDev: waiting for wake trigger
+7.8699 ---> Received signal: send_updated
+7.9690 Worker_send FakeDev: wake requested...
+7.9691 Worker_send FakeDev: wake confirmed
+7.9691 Worker_send FakeDev: lock   # 2
+7.9691 Worker_send FakeDev: fake_query ()
+7.9692 device replied
+7.9692 Worker_send FakeDev: unlock # 2
+7.9692 Worker_send FakeDev: waiting for wake trigger
+7.9700 ---> Received signal: send_updated
+8.3694 Worker_send FakeDev: wake requested...
+8.3694 Worker_send FakeDev: wake confirmed
+8.3695 Worker_send FakeDev: lock   # 3
+8.3695 Worker_send FakeDev: fake_command_with_argument (0,)
+8.3696 device received command
+8.3696 Worker_send FakeDev: fake_command_with_argument (0,)
+8.3696 device received command
+8.3696 Worker_send FakeDev: fake_command_with_argument (0,)
+8.3696 device received command
+8.3697 Worker_send FakeDev: unlock # 3
+8.3697 Worker_send FakeDev: waiting for wake trigger
+8.3704 ---> Received signal: send_updated
+8.4695 Worker_send FakeDev: wake requested...
+8.4695 Worker_send FakeDev: wake confirmed
+8.4696 Worker_send FakeDev: lock   # 4
+8.4696 Worker_send FakeDev: trigger_illegal_function_call_error ()
+
+Fancy traceback (most recent call last):
+File "DvG_QDeviceIO.py", line 1064, in _do_work
+File "DvG_QDeviceIO.py", line 76, in wrapped
+File "DvG_QDeviceIO.py", line 1117, in _perform_send
+TypeError: 'str' object is not callable
+8.4698 Worker_send FakeDev: unlock # 4
+8.4698 Worker_send FakeDev: waiting for wake trigger
+8.4704 ---> Received signal: send_updated
+8.7697 About to quit
+8.7698 Worker_send FakeDev: stop requested...
+8.7698 Worker_send FakeDev: stopping
+8.7698 Worker_send FakeDev: wake confirmed
+8.7699 Worker_send FakeDev: stop confirmed
+Closing thread FakeDev_send.... done.
+
+Worker_send - start dead
+--------------------------------------------------
+8.8704 Worker_send FakeDev: init @ thread MAIN
+
+Worker_send FakeDev: WARNING - Device is not alive.
+
+8.8705 Worker_send FakeDev: start requested...
+8.8707 Worker_send FakeDev: starting @ thread FakeDev_send
+8.8707 Worker_send FakeDev: waiting for wake trigger
+8.8707 Worker_send FakeDev: start confirmed
+9.0200 Worker_send FakeDev: wake requested...
+9.0200 Worker_send FakeDev: wake confirmed
+9.0201 Worker_send FakeDev: waiting for wake trigger
+9.1201 Worker_send FakeDev: wake requested...
+9.1201 Worker_send FakeDev: wake confirmed
+9.1202 Worker_send FakeDev: waiting for wake trigger
+9.5204 Worker_send FakeDev: wake requested...
+9.5205 Worker_send FakeDev: wake confirmed
+9.5206 Worker_send FakeDev: waiting for wake trigger
+9.6205 Worker_send FakeDev: wake requested...
+9.6206 Worker_send FakeDev: wake confirmed
+9.6207 Worker_send FakeDev: waiting for wake trigger
+9.9208 About to quit
+9.9208 Worker_send FakeDev: stop requested...
+9.9208 Worker_send FakeDev: stopping
+9.9209 Worker_send FakeDev: wake confirmed
+9.9209 Worker_send FakeDev: stop confirmed
+Closing thread FakeDev_send.... done.
+
+Worker_send - alternative jobs
+--------------------------------------------------
+10.0216 Worker_send FakeDev: init @ thread MAIN
+10.0216 Worker_send FakeDev: start requested...
+10.0218 Worker_send FakeDev: starting @ thread FakeDev_send
+10.0218 Worker_send FakeDev: waiting for wake trigger
+10.0219 Worker_send FakeDev: start confirmed
+10.0719 Worker_send FakeDev: wake requested...
+10.0720 Worker_send FakeDev: wake confirmed
+10.0720 Worker_send FakeDev: lock   # 1
+10.0721 Worker_send FakeDev: fake_query ()
+10.0721 device replied
+10.0721 Worker_send FakeDev: unlock # 1
+10.0722 ---> Received signal: send_updated
+10.0722 Worker_send FakeDev: waiting for wake trigger
+10.1730 Worker_send FakeDev: wake requested...
+10.1731 Worker_send FakeDev: wake confirmed
+10.1731 Worker_send FakeDev: lock   # 2
+10.1731 Worker_send FakeDev: special command ()
+10.1732 device replied
+10.1732 Worker_send FakeDev: unlock # 2
+10.1732 Worker_send FakeDev: waiting for wake trigger
+10.1740 ---> Received signal: send_updated
+10.2721 Worker_send FakeDev: wake requested...
+10.2722 Worker_send FakeDev: wake confirmed
+10.2722 Worker_send FakeDev: lock   # 3
+10.2723 Worker_send FakeDev: fake_command_with_argument (0,)
+10.2723 device received command
+10.2723 Worker_send FakeDev: unlock # 3
+10.2723 Worker_send FakeDev: waiting for wake trigger
+10.2731 ---> Received signal: send_updated
+10.5723 About to quit
+10.5724 Worker_send FakeDev: stop requested...
+10.5724 Worker_send FakeDev: stopping
+10.5725 Worker_send FakeDev: wake confirmed
+10.5725 Worker_send FakeDev: stop confirmed
+Closing thread FakeDev_send.... done.
+
+Attach device twice
+--------------------------------------------------
+
+Fancy traceback (most recent call last):
+File "test_DvG_qdeviceio.py", line 608, in <module>
+File "test_DvG_qdeviceio.py", line 427, in test_attach_device_twice
+File "DvG_QDeviceIO.py", line 257, in attach_device
+Error: Device can be attached only once. Already attached to 'FakeDev'.
+Exit code: 22
+
+Worker_DAQ - no device attached
+--------------------------------------------------
+
+Fancy traceback (most recent call last):
+File "test_DvG_qdeviceio.py", line 609, in <module>
+File "test_DvG_qdeviceio.py", line 441, in test_Worker_DAQ___no_device_attached
+File "DvG_QDeviceIO.py", line 273, in create_worker_DAQ
+Error: Can't create worker_DAQ, because there is no device attached. Did you forget to call 'attach_device()' first?
+Exit code: 99
+
+Worker_send - no device attached
+--------------------------------------------------
+
+Fancy traceback (most recent call last):
+File "test_DvG_qdeviceio.py", line 610, in <module>
+File "test_DvG_qdeviceio.py", line 455, in test_Worker_send__no_device_attached
+File "DvG_QDeviceIO.py", line 294, in create_worker_send
+Error: Can't create worker_send, because there is no device attached. Did you forget to call 'attach_device()' first?
+Exit code: 99
+
+Worker_DAQ - start without create
+--------------------------------------------------
+
+Fancy traceback (most recent call last):
+File "test_DvG_qdeviceio.py", line 611, in <module>
+File "test_DvG_qdeviceio.py", line 471, in test_Worker_DAQ___start_without_create
+File "DvG_QDeviceIO.py", line 326, in start_worker_DAQ
+Error: Worker_DAQ FakeDev: Can't start thread, because it does not exist. Did you forget to call 'create_worker_DAQ()' first?
+Exit code: 404
+
+Worker_send - start without create
+--------------------------------------------------
+
+Fancy traceback (most recent call last):
+File "test_DvG_qdeviceio.py", line 612, in <module>
+File "test_DvG_qdeviceio.py", line 487, in test_Worker_send__start_without_create
+File "DvG_QDeviceIO.py", line 388, in start_worker_send
+Error: Worker_send FakeDev: Can't start thread because it does not exist. Did you forget to call 'create_worker_send()' first?
+Exit code: 404
+
+Worker_DAQ - INTERNAL_TIMER - DAQ rate
+--------------------------------------------------
+10.7270 Worker_DAQ  FakeDev: init @ thread MAIN
+25
+10.7271 Worker_DAQ  FakeDev: start requested...
+10.7273 Worker_DAQ  FakeDev: starting @ thread FakeDev_DAQ
+10.7273 Worker_DAQ  FakeDev: start confirmed
+10.7475 Worker_DAQ  FakeDev: lock   # 1
+nan
+nan
+10.7476 Worker_DAQ  FakeDev: unlock # 1
+10.7675 Worker_DAQ  FakeDev: lock   # 2
+20
+nan
+10.7676 Worker_DAQ  FakeDev: unlock # 2
+10.7876 Worker_DAQ  FakeDev: lock   # 3
+20
+nan
+10.7876 Worker_DAQ  FakeDev: unlock # 3
+10.8076 Worker_DAQ  FakeDev: lock   # 4
+20
+nan
+10.8077 Worker_DAQ  FakeDev: unlock # 4
+10.8276 Worker_DAQ  FakeDev: lock   # 5
+20
+nan
+10.8277 Worker_DAQ  FakeDev: unlock # 5
+10.8476 Worker_DAQ  FakeDev: lock   # 6
+20
+nan
+10.8477 Worker_DAQ  FakeDev: unlock # 6
+10.8676 Worker_DAQ  FakeDev: lock   # 7
+20
+nan
+10.8677 Worker_DAQ  FakeDev: unlock # 7
+10.8877 Worker_DAQ  FakeDev: lock   # 8
+20
+nan
+10.8877 Worker_DAQ  FakeDev: unlock # 8
+10.9077 Worker_DAQ  FakeDev: lock   # 9
+20
+nan
+10.9077 Worker_DAQ  FakeDev: unlock # 9
+10.9277 Worker_DAQ  FakeDev: lock   # 10
+20
+nan
+10.9278 Worker_DAQ  FakeDev: unlock # 10
+10.9477 Worker_DAQ  FakeDev: lock   # 11
+20
+nan
+10.9478 Worker_DAQ  FakeDev: unlock # 11
+10.9677 Worker_DAQ  FakeDev: lock   # 12
+20
+nan
+10.9678 Worker_DAQ  FakeDev: unlock # 12
+10.9877 Worker_DAQ  FakeDev: lock   # 13
+20
+nan
+10.9878 Worker_DAQ  FakeDev: unlock # 13
+11.0078 Worker_DAQ  FakeDev: lock   # 14
+20
+nan
+11.0078 Worker_DAQ  FakeDev: unlock # 14
+11.0278 Worker_DAQ  FakeDev: lock   # 15
+20
+nan
+11.0278 Worker_DAQ  FakeDev: unlock # 15
+11.0478 Worker_DAQ  FakeDev: lock   # 16
+20
+nan
+11.0479 Worker_DAQ  FakeDev: unlock # 16
+11.0678 Worker_DAQ  FakeDev: lock   # 17
+20
+nan
+11.0679 Worker_DAQ  FakeDev: unlock # 17
+11.0879 Worker_DAQ  FakeDev: lock   # 18
+20
+nan
+11.0880 Worker_DAQ  FakeDev: unlock # 18
+11.1079 Worker_DAQ  FakeDev: lock   # 19
+20
+nan
+11.1079 Worker_DAQ  FakeDev: unlock # 19
+11.1279 Worker_DAQ  FakeDev: lock   # 20
+20
+nan
+11.1280 Worker_DAQ  FakeDev: unlock # 20
+11.1479 Worker_DAQ  FakeDev: lock   # 21
+20
+nan
+11.1480 Worker_DAQ  FakeDev: unlock # 21
+11.1679 Worker_DAQ  FakeDev: lock   # 22
+20
+nan
+11.1680 Worker_DAQ  FakeDev: unlock # 22
+11.1879 Worker_DAQ  FakeDev: lock   # 23
+20
+nan
+11.1880 Worker_DAQ  FakeDev: unlock # 23
+11.2080 Worker_DAQ  FakeDev: lock   # 24
+20
+nan
+11.2080 Worker_DAQ  FakeDev: unlock # 24
+11.2280 Worker_DAQ  FakeDev: lock   # 25
+20
+50.0
+11.2280 Worker_DAQ  FakeDev: unlock # 25
+11.2480 Worker_DAQ  FakeDev: lock   # 26
+21
+50.0
+11.2481 Worker_DAQ  FakeDev: unlock # 26
+11.2680 Worker_DAQ  FakeDev: lock   # 27
+20
+50.0
+11.2681 Worker_DAQ  FakeDev: unlock # 27
+11.2880 Worker_DAQ  FakeDev: lock   # 28
+20
+50.0
+11.2881 Worker_DAQ  FakeDev: unlock # 28
+11.3081 Worker_DAQ  FakeDev: lock   # 29
+20
+50.0
+11.3082 Worker_DAQ  FakeDev: unlock # 29
+11.3280 Worker_DAQ  FakeDev: lock   # 30
+20
+50.0
+11.3281 Worker_DAQ  FakeDev: unlock # 30
+11.3481 Worker_DAQ  FakeDev: lock   # 31
+20
+50.0
+11.3481 Worker_DAQ  FakeDev: unlock # 31
+11.3681 Worker_DAQ  FakeDev: lock   # 32
+20
+50.0
+11.3681 Worker_DAQ  FakeDev: unlock # 32
+11.3881 Worker_DAQ  FakeDev: lock   # 33
+20
+50.0
+11.3882 Worker_DAQ  FakeDev: unlock # 33
+11.4081 Worker_DAQ  FakeDev: lock   # 34
+20
+50.0
+11.4082 Worker_DAQ  FakeDev: unlock # 34
+11.4282 Worker_DAQ  FakeDev: lock   # 35
+20
+50.0
+11.4282 Worker_DAQ  FakeDev: unlock # 35
+11.4482 Worker_DAQ  FakeDev: lock   # 36
+20
+50.0
+11.4482 Worker_DAQ  FakeDev: unlock # 36
+11.4682 Worker_DAQ  FakeDev: lock   # 37
+20
+50.0
+11.4683 Worker_DAQ  FakeDev: unlock # 37
+11.4882 Worker_DAQ  FakeDev: lock   # 38
+20
+50.0
+11.4883 Worker_DAQ  FakeDev: unlock # 38
+11.5082 Worker_DAQ  FakeDev: lock   # 39
+20
+50.0
+11.5083 Worker_DAQ  FakeDev: unlock # 39
+11.5282 Worker_DAQ  FakeDev: lock   # 40
+20
+50.0
+11.5283 Worker_DAQ  FakeDev: unlock # 40
+11.5483 Worker_DAQ  FakeDev: lock   # 41
+20
+50.0
+11.5483 Worker_DAQ  FakeDev: unlock # 41
+11.5683 Worker_DAQ  FakeDev: lock   # 42
+20
+50.0
+11.5683 Worker_DAQ  FakeDev: unlock # 42
+11.5883 Worker_DAQ  FakeDev: lock   # 43
+20
+50.0
+11.5884 Worker_DAQ  FakeDev: unlock # 43
+11.6083 Worker_DAQ  FakeDev: lock   # 44
+20
+50.0
+11.6084 Worker_DAQ  FakeDev: unlock # 44
+11.6283 Worker_DAQ  FakeDev: lock   # 45
+20
+50.0
+11.6284 Worker_DAQ  FakeDev: unlock # 45
+11.6483 Worker_DAQ  FakeDev: lock   # 46
+20
+50.0
+11.6484 Worker_DAQ  FakeDev: unlock # 46
+11.6684 Worker_DAQ  FakeDev: lock   # 47
+20
+50.0
+11.6684 Worker_DAQ  FakeDev: unlock # 47
+11.6884 Worker_DAQ  FakeDev: lock   # 48
+20
+50.0
+11.6884 Worker_DAQ  FakeDev: unlock # 48
+11.7084 Worker_DAQ  FakeDev: lock   # 49
+20
+50.0
+11.7085 Worker_DAQ  FakeDev: unlock # 49
+11.7284 Worker_DAQ  FakeDev: lock   # 50
+20
+49.9001996007984
+11.7285 Worker_DAQ  FakeDev: unlock # 50
+11.7474 About to quit
+11.7474 Worker_DAQ  FakeDev: stop requested...
+11.7475 Worker_DAQ  FakeDev: stopping
+11.7476 Worker_DAQ  FakeDev: stop confirmed
+Closing thread FakeDev_DAQ..... done.
+
+Worker_DAQ - INTERNAL_TIMER - lose connection
+--------------------------------------------------
+11.8481 Worker_DAQ  FakeDev: init @ thread MAIN
+11.8482 Worker_DAQ  FakeDev: start requested...
+11.8484 Worker_DAQ  FakeDev: starting @ thread FakeDev_DAQ
+11.8485 Worker_DAQ  FakeDev: start confirmed
+11.8686 Worker_DAQ  FakeDev: lock   # 1
+11.8686 device replied
+nan
+nan
+11.8686 Worker_DAQ  FakeDev: unlock # 1
+11.8886 Worker_DAQ  FakeDev: lock   # 2
+11.8886 device replied
+20
+nan
+11.8887 Worker_DAQ  FakeDev: unlock # 2
+11.9086 Worker_DAQ  FakeDev: lock   # 3
+11.9086 device replied
+20
+nan
+11.9087 Worker_DAQ  FakeDev: unlock # 3
+11.9286 Worker_DAQ  FakeDev: lock   # 4
+11.9286 device replied
+20
+nan
+11.9287 Worker_DAQ  FakeDev: unlock # 4
+11.9486 Worker_DAQ  FakeDev: lock   # 5
+11.9487 device replied
+20
+nan
+11.9487 Worker_DAQ  FakeDev: unlock # 5
+11.9687 Worker_DAQ  FakeDev: lock   # 6
+11.9687 device replied
+20
+nan
+11.9688 Worker_DAQ  FakeDev: unlock # 6
+11.9887 Worker_DAQ  FakeDev: lock   # 7
+11.9887 device replied
+20
+nan
+11.9887 Worker_DAQ  FakeDev: unlock # 7
+12.0087 Worker_DAQ  FakeDev: lock   # 8
+12.0087 device replied
+20
+nan
+12.0088 Worker_DAQ  FakeDev: unlock # 8
+12.0288 Worker_DAQ  FakeDev: lock   # 9
+12.0289 device replied
+20
+nan
+12.0289 Worker_DAQ  FakeDev: unlock # 9
+12.0487 Worker_DAQ  FakeDev: lock   # 10
+12.0488 device replied
+20
+nan
+12.0488 Worker_DAQ  FakeDev: unlock # 10
+12.0687 Worker_DAQ  FakeDev: lock   # 11
+12.0688 device replied
+20
+nan
+12.0688 Worker_DAQ  FakeDev: unlock # 11
+12.0888 Worker_DAQ  FakeDev: lock   # 12
+12.0888 device replied
+20
+nan
+12.0888 Worker_DAQ  FakeDev: unlock # 12
+12.1088 Worker_DAQ  FakeDev: lock   # 13
+12.1088 device replied
+20
+nan
+12.1088 Worker_DAQ  FakeDev: unlock # 13
+12.1288 Worker_DAQ  FakeDev: lock   # 14
+12.1288 device replied
+20
+nan
+12.1289 Worker_DAQ  FakeDev: unlock # 14
+12.1488 Worker_DAQ  FakeDev: lock   # 15
+12.1488 device replied
+20
+nan
+12.1489 Worker_DAQ  FakeDev: unlock # 15
+12.1688 Worker_DAQ  FakeDev: lock   # 16
+12.1689 device replied
+20
+nan
+12.1689 Worker_DAQ  FakeDev: unlock # 16
+12.1888 Worker_DAQ  FakeDev: lock   # 17
+12.1889 device replied
+20
+nan
+12.1889 Worker_DAQ  FakeDev: unlock # 17
+12.2088 Worker_DAQ  FakeDev: lock   # 18
+12.2089 device replied
+20
+nan
+12.2089 Worker_DAQ  FakeDev: unlock # 18
+12.2289 Worker_DAQ  FakeDev: lock   # 19
+12.2289 device replied
+20
+nan
+12.2289 Worker_DAQ  FakeDev: unlock # 19
+12.2489 Worker_DAQ  FakeDev: lock   # 20
+12.2489 device replied
+20
+50.0
+12.2490 Worker_DAQ  FakeDev: unlock # 20
+12.2689 Worker_DAQ  FakeDev: lock   # 21
+12.2689 device replied
+20
+50.0
+12.2690 Worker_DAQ  FakeDev: unlock # 21
+12.2889 Worker_DAQ  FakeDev: lock   # 22
+12.2890 device replied
+20
+50.0
+12.2890 Worker_DAQ  FakeDev: unlock # 22
+12.3090 Worker_DAQ  FakeDev: lock   # 23
+12.3090 device replied
+20
+50.0
+12.3090 Worker_DAQ  FakeDev: unlock # 23
+12.3290 Worker_DAQ  FakeDev: lock   # 24
+12.3290 device replied
+20
+50.0
+12.3290 Worker_DAQ  FakeDev: unlock # 24
+12.3490 Worker_DAQ  FakeDev: lock   # 25
+12.3490 device replied
+20
+50.0
+12.3491 Worker_DAQ  FakeDev: unlock # 25
+12.3690 Worker_DAQ  FakeDev: lock   # 26
+12.3691 device replied
+20
+50.0
+12.3691 Worker_DAQ  FakeDev: unlock # 26
+12.3890 Worker_DAQ  FakeDev: lock   # 27
+12.3891 device replied
+20
+50.0
+12.3891 Worker_DAQ  FakeDev: unlock # 27
+12.4090 Worker_DAQ  FakeDev: lock   # 28
+12.4091 device replied
+20
+50.0
+12.4091 Worker_DAQ  FakeDev: unlock # 28
+12.4291 Worker_DAQ  FakeDev: lock   # 29
+12.4291 device replied
+20
+50.0
+12.4291 Worker_DAQ  FakeDev: unlock # 29
+12.4491 Worker_DAQ  FakeDev: lock   # 30
+12.5491 SIMULATED I/O ERROR
+20
+50.0
+12.5492 Worker_DAQ  FakeDev: unlock # 30
+12.5493 Worker_DAQ  FakeDev: lock   # 31
+12.6502 SIMULATED I/O ERROR
+101
+50.0
+12.6503 Worker_DAQ  FakeDev: unlock # 31
+12.6504 Worker_DAQ  FakeDev: lock   # 32
+12.7513 SIMULATED I/O ERROR
+101
+50.0
+12.7514 Worker_DAQ  FakeDev: unlock # 32
+12.7514 Worker_DAQ  FakeDev: lock   # 33
+
+Worker_DAQ FakeDev: Lost connection to device.
+
+12.7515 Worker_DAQ  FakeDev: stopping
+12.7515 Worker_DAQ  FakeDev: stop confirmed
+12.7523 ---> Received signal: connection_lost
+12.7533 About to quit
+12.7533 Worker_DAQ  FakeDev: stop requested...
+12.7534 Worker_DAQ  FakeDev: stopping
+12.7535 Worker_DAQ  FakeDev: stop confirmed
+Closing thread FakeDev_DAQ..... done.
