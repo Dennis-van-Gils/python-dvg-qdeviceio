@@ -396,7 +396,29 @@ class QDeviceIO(QtCore.QObject):
         else:
             self.worker_send._started_okay = True
         
+        if self.worker_send.DEBUG:
+            tprint("Worker_send %s: start requested..." %
+                   self.dev.name, ANSI.WHITE)
+        
         self._thread_send.start(priority)
+        
+        # Wait for worker_send to confirm having started
+        locker_wait = QtCore.QMutexLocker(self._mutex_wait_worker_send)
+        self._qwc_worker_send_started.wait(self._mutex_wait_worker_send)
+        locker_wait.unlock()
+        
+        # Wait a tiny amount of extra time for the worker to have entered 
+        # 'self._qwc.wait(self._mutex_wait)' of method '_do_work()'.
+        # Unfortunately, we can't use
+        #   'QTimer.singleShot(500, confirm_started(self))'
+        # inside the '_do_work()' routine, because it won't never resolve
+        # due to the upcoming blocking 'self._qwc.wait(self._mutex_wait)'.
+        # Hence, we use a blocking 'time.sleep()' here. Also note we can't
+        # use 'QtCore.QCoreApplication.processEvents()' instead of
+        # 'time.sleep()', because it involves a QWaitCondition and not an
+        # signal event.
+        time.sleep(.05)
+        
         return self.worker_send._started_okay
 
     # --------------------------------------------------------------------------
@@ -461,7 +483,13 @@ class QDeviceIO(QtCore.QObject):
         if self.worker_send.DEBUG:
             tprint("Worker_send %s: stop requested..." %
                    self.dev.name, ANSI.WHITE)
-                
+        
+        # The QWaitCondition inside the SINGLE_SHOT_WAKE_UP '_do_work()'-
+        # routine will likely have locked worker_DAQ. Hence, a
+        # '_signal_stop_worker_DAQ' signal might not get handled by
+        # worker_DAQ when emitted from out of this thread. Instead,
+        # we directly call '_stop()' from out of this different thread,
+        # which is perfectly fine as per my design.
         self.worker_send._stop()
         
         # Wait for worker_send to confirm having stopped
@@ -997,18 +1025,38 @@ class QDeviceIO(QtCore.QObject):
         @coverage_resolve_trace
         @QtCore.pyqtSlot()
         def _do_work(self):
+            init = True
+            
+            def confirm_started(self):
+                if self.DEBUG:
+                    tprint("Worker_send %s: start confirmed" %
+                           self.dev.name, self.DEBUG_color)
+                self.outer._qwc_worker_send_started.wakeAll()
+            
             if self.DEBUG:
                 tprint("Worker_send %s: starting @ thread %s" %
                        (self.dev.name, cur_thread_name()), self.DEBUG_color)
 
+            locker_wait = QtCore.QMutexLocker(self._mutex_wait)
+            locker_wait.unlock()
+
             while self._running:
-                locker_wait = QtCore.QMutexLocker(self._mutex_wait)
+                locker_wait.relock()
 
                 if self.DEBUG:
-                    tprint("Worker_send %s: waiting for trigger" %
+                    tprint("Worker_send %s: waiting for wake trigger" %
                            self.dev.name, self.DEBUG_color)
 
+                if init:
+                    confirm_started(self)
+                    init = False
+
                 self._qwc.wait(self._mutex_wait)
+                
+                                    
+                if self.DEBUG:
+                    tprint("Worker_send %s: wake confirmed" %
+                           self.dev.name, self.DEBUG_color)
                 
                 # Needed check to prevent _perform_send() at final wake up
                 # when _stop() has been called
@@ -1117,6 +1165,8 @@ class QDeviceIO(QtCore.QObject):
                     tuple, but for convenience any other type will also be
                     accepted if it concerns just a single argument that needs to
                     be passed.
+                    
+            NOTE: This method can be called from the MAIN/GUI thread all right.
             """
             if type(pass_args) is not tuple: pass_args = (pass_args,)
             self._queue.put((instruction, *pass_args))
@@ -1127,7 +1177,12 @@ class QDeviceIO(QtCore.QObject):
 
         def process_queue(self):
             """Trigger processing the worker_send queue until empty.
+            NOTE: This method can be called from the MAIN/GUI thread all right.
             """
+            if self.DEBUG:
+                tprint("Worker_send %s: wake requested..." % 
+                       self.dev.name, ANSI.WHITE)
+                 
             self._qwc.wakeAll()
 
         # ----------------------------------------------------------------------
@@ -1137,6 +1192,7 @@ class QDeviceIO(QtCore.QObject):
         def queued_instruction(self, instruction, pass_args=()):
             """Put an instruction on the worker_send queue and process the
             queue until empty. See 'add_to_queue' for more details.
+            NOTE: This method can be called from the MAIN/GUI thread all right.
             """
             self.add_to_queue(instruction, pass_args)
             self.process_queue()

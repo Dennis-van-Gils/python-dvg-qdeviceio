@@ -188,7 +188,7 @@ def test_Worker_DAQ___SINGLE_SHOT_WAKE_UP(start_alive=True):
     
     assert qdevio.start_worker_DAQ() == start_alive
     
-    # Immediately fire a 'wake_up' to test if the worker is ready for it
+    # Immediately fire a call to test if the worker is ready for it
     qdevio.worker_DAQ.wake_up()
     
     # Simulate device runtime
@@ -265,7 +265,7 @@ def test_Worker_DAQ___CONTINUOUS(start_alive=True):
     
     assert qdevio.start_worker_DAQ() == start_alive
     
-    # Immediately fire an 'unpause' to test if the worker is ready for it
+    # Immediately fire a call to test if the worker is ready for it
     qdevio.worker_DAQ.unpause()
     
     # Simulate device runtime
@@ -324,15 +324,11 @@ def test_Worker_send(start_alive=True):
     
     assert qdevio.start_worker_send() == start_alive
     
-    # Give time to enter '_do_work'. TODO: Should be implemented by a mechanism inside DvG_QDeviceIO
-    start_time = time.perf_counter()
-    while time.perf_counter() - start_time < .1:
-        app.processEvents()
-        time.sleep(.001)    # Do not hog the CPU
+    # Immediately fire a call to test if the worker is ready for it
+    qdevio.worker_send.add_to_queue(dev.fake_query)
     
     # Simulate device runtime
     start_time = time.perf_counter()
-    QtCore.QTimer.singleShot(000, lambda: qdevio.worker_send.add_to_queue(dev.fake_query))
     QtCore.QTimer.singleShot(100, lambda: qdevio.worker_send.process_queue())
     QtCore.QTimer.singleShot(200, lambda: qdevio.worker_send.queued_instruction(dev.fake_query))
     QtCore.QTimer.singleShot(300, lambda: qdevio.worker_send.add_to_queue(dev.fake_command_with_argument, 0))
@@ -397,15 +393,11 @@ def test_Worker_send__alt_jobs():
     
     assert qdevio.start_worker_send() == True
     
-    # Give time to enter '_do_work'. TODO: Should be implemented by a mechanism inside DvG_QDeviceIO
-    start_time = time.perf_counter()
-    while time.perf_counter() - start_time < .1:
-        app.processEvents()
-        time.sleep(.001)    # Do not hog the CPU
+    # Immediately fire a call to test if the worker is ready for it
+    qdevio.worker_send.queued_instruction(dev.fake_query)
     
     # Simulate device runtime
     start_time = time.perf_counter()
-    QtCore.QTimer.singleShot(000, lambda: qdevio.worker_send.queued_instruction(dev.fake_query))
     QtCore.QTimer.singleShot(100, lambda: qdevio.worker_send.queued_instruction("special command"))
     QtCore.QTimer.singleShot(200, lambda: qdevio.worker_send.queued_instruction(dev.fake_command_with_argument, 0))
     while time.perf_counter() - start_time < .5:
@@ -628,8 +620,9 @@ if __name__ == "__main__":
         
         import msvcrt
         while True:
-            test_Worker_DAQ___SINGLE_SHOT_WAKE_UP()
-            test_Worker_DAQ___SINGLE_SHOT_WAKE_UP__start_dead()
+            test_Worker_send()
+            test_Worker_send__start_dead()
+            test_Worker_send__alt_jobs()
             if msvcrt.kbhit() and msvcrt.getch() == chr(27).encode():
                 break
             
