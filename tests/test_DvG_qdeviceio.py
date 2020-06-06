@@ -4,6 +4,9 @@ from PyQt5 import QtCore
 import DvG_QDeviceIO
 from DvG_debug_functions import dprint, tprint, ANSI
 
+# Show extra debug info in terminal?
+DEBUG = True
+
 """
 DAQ_trigger.INTERNAL_TIMER
     I/O device slaved to an external timer originating from Worker_DAQ
@@ -118,7 +121,7 @@ def test_Worker_DAQ___INTERNAL_TIMER(start_alive=True):
         DAQ_timer_type                  = QtCore.Qt.CoarseTimer,
         DAQ_critical_not_alive_count    = 10,
         calc_DAQ_rate_every_N_iter      = 5,
-        DEBUG                           = True)
+        DEBUG                           = DEBUG)
     
     assert qdevio.start_worker_DAQ() == start_alive
     
@@ -181,7 +184,7 @@ def test_Worker_DAQ___SINGLE_SHOT_WAKE_UP(start_alive=True):
         DAQ_function_to_run_each_update = DAQ_function,
         DAQ_critical_not_alive_count    = 1,
         calc_DAQ_rate_every_N_iter      = 5,
-        DEBUG                           = True)
+        DEBUG                           = DEBUG)
     
     assert qdevio.start_worker_DAQ() == start_alive
     
@@ -258,7 +261,7 @@ def test_Worker_DAQ___CONTINUOUS(start_alive=True):
         DAQ_function_to_run_each_update = DAQ_function,
         DAQ_critical_not_alive_count    = 1,
         calc_DAQ_rate_every_N_iter      = 5,
-        DEBUG                           = True)
+        DEBUG                           = DEBUG)
     
     assert qdevio.start_worker_DAQ() == start_alive
     
@@ -317,7 +320,7 @@ def test_Worker_send(start_alive=True):
         
     qdevio.signal_send_updated.connect(process_send_updated)
     
-    qdevio.create_worker_send(DEBUG=True)
+    qdevio.create_worker_send(DEBUG=DEBUG)
     
     assert qdevio.start_worker_send() == start_alive
     
@@ -390,7 +393,7 @@ def test_Worker_send__alt_jobs():
     
     qdevio.create_worker_send(
         alt_process_jobs_function=my_alt_process_jobs_function,
-        DEBUG=True)
+        DEBUG=DEBUG)
     
     assert qdevio.start_worker_send() == True
     
@@ -519,7 +522,7 @@ def test_Worker_DAQ___rate():
         DAQ_timer_type                  = QtCore.Qt.PreciseTimer,
         DAQ_critical_not_alive_count    = 1,
         calc_DAQ_rate_every_N_iter      = 25,
-        DEBUG                           = True)
+        DEBUG                           = DEBUG)
     
     print(qdevio.worker_DAQ.calc_DAQ_rate_every_N_iter)
     assert qdevio.start_worker_DAQ() == True
@@ -568,7 +571,7 @@ def test_Worker_DAQ___lose_connection():
         DAQ_timer_type                  = QtCore.Qt.PreciseTimer,
         DAQ_critical_not_alive_count    = 3,
         calc_DAQ_rate_every_N_iter      = 20,
-        DEBUG                           = True)
+        DEBUG                           = DEBUG)
     
     # NOTE: The global 'go' mechanism used here is a quick and dirty way to
     # pytest. In production, it should be implemented by an boolean external
@@ -599,7 +602,7 @@ def test_Worker_DAQ___lose_connection():
     
     
 if __name__ == "__main__":
-    ALL = False
+    ALL = True
     if ALL:
         test_Worker_DAQ___INTERNAL_TIMER()
         test_Worker_DAQ___INTERNAL_TIMER__start_dead()
