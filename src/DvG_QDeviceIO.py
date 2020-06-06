@@ -336,7 +336,7 @@ class QDeviceIO(QtCore.QObject):
         
         if self.worker_DAQ.DEBUG:
             tprint("Worker_DAQ  %s: start requested..." %
-                   self.dev.name, self.worker_DAQ.DEBUG_color)
+                   self.dev.name, ANSI.WHITE)
         
         self._thread_DAQ.start(priority)
         
@@ -345,17 +345,18 @@ class QDeviceIO(QtCore.QObject):
         self._qwc_worker_DAQ_started.wait(self._mutex_wait_worker_DAQ)
         locker_wait.unlock()
         
-        # Wait a tiny amount of extra time for the worker to have entered 
-        # self._qwc.wait(self._mutex_wait) of method '_do_work()' in the case of
-        # SINGLE_SHOT_WAKE_UP. Unfortunately, we can't use
-        #   QTimer.singleShot(500, confirm_started(self))
-        # inside the '_do_work()' routine, because it won't never resolve due to
-        # the upcoming blocking 'self._qwc.wait(self._mutex_wait)'. Hence, we
-        # use a blocking 'time.sleep(.05)' here.
         if self.worker_DAQ._trigger_by == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
-            #time.sleep(.05)
-            QtCore.QCoreApplication.processEvents()
-            #pass
+            # Wait a tiny amount of extra time for the worker to have entered 
+            # 'self._qwc.wait(self._mutex_wait)' of method '_do_work()'.
+            # Unfortunately, we can't use
+            #   'QTimer.singleShot(500, confirm_started(self))'
+            # inside the '_do_work()' routine, because it won't never resolve
+            # due to the upcoming blocking 'self._qwc.wait(self._mutex_wait)'.
+            # Hence, we use a blocking 'time.sleep()' here. Also note we can't
+            # use 'QtCore.QCoreApplication.processEvents()' instead of
+            # 'time.sleep()', because it involves a QWaitCondition and not an
+            # signal event.
+            time.sleep(.05)
             
         if self.worker_DAQ._trigger_by == DAQ_trigger.CONTINUOUS:
             # We expect a 'signal_DAQ_paused' being emitted at start-up by this
@@ -412,7 +413,7 @@ class QDeviceIO(QtCore.QObject):
         
         if self.worker_DAQ.DEBUG:
             tprint("Worker_DAQ  %s: stop requested..." %
-                   self.dev.name, self.worker_DAQ.DEBUG_color)
+                   self.dev.name, ANSI.WHITE)
         
         if self.worker_DAQ._trigger_by == DAQ_trigger.INTERNAL_TIMER:
             """The QTimer inside the INTERNAL_TIMER '_do_work()'-routine has to
@@ -460,7 +461,7 @@ class QDeviceIO(QtCore.QObject):
         
         if self.worker_send.DEBUG:
             tprint("Worker_send %s: stop requested..." %
-                   self.dev.name, self.worker_send.DEBUG_color)
+                   self.dev.name, ANSI.WHITE)
                 
         self.worker_send._stop()
         
