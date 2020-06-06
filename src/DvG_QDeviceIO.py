@@ -77,7 +77,7 @@ def coverage_resolve_trace(fn):
     return wrapped    
 
 import numpy as np
-from PyQt5 import QtCore, QtWidgets
+from PyQt5 import QtCore
 from DvG_debug_functions import (print_fancy_traceback as pft,
                                  dprint, tprint, ANSI)
 
@@ -206,14 +206,8 @@ class QDeviceIO(QtCore.QObject):
     signal_send_updated    = QtCore.pyqtSignal()
     
     # Necessary for INTERNAL_TIMER
-    _signal_stop_worker_DAQ    = QtCore.pyqtSignal()
+    _signal_stop_worker_DAQ = QtCore.pyqtSignal()
     
-    """
-    # Test-case for CONTINUOUS
-    _signal_pause_worker_DAQ   = QtCore.pyqtSignal()
-    _signal_unpause_worker_DAQ = QtCore.pyqtSignal()
-    """
-
     def __init__(self, parent=None):
         super(QDeviceIO, self).__init__(parent=parent)
 
@@ -282,12 +276,6 @@ class QDeviceIO(QtCore.QObject):
         
         self.worker_DAQ = self.Worker_DAQ(**kwargs)            
         self._signal_stop_worker_DAQ.connect(self.worker_DAQ._stop)
-        
-        """
-        # Test-case for CONTINUOUS
-        self._signal_pause_worker_DAQ.connect(self.worker_DAQ.pause)
-        self._signal_unpause_worker_DAQ.connect(self.worker_DAQ.unpause)
-        """
         
         self._thread_DAQ = QtCore.QThread()
         self._thread_DAQ.setObjectName("%s_DAQ" % self.dev.name)            
@@ -366,11 +354,15 @@ class QDeviceIO(QtCore.QObject):
         # use a blocking 'time.sleep(.05)' here.
         if self.worker_DAQ._trigger_by == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
             time.sleep(.05)
+            #QtCore.QCoreApplication.processEvents()
+            #pass
             
         if self.worker_DAQ._trigger_by == DAQ_trigger.CONTINUOUS:
-            # We expect a 'signal_DAQ_paused' being emitted at startup by this
-            # worker. Make sure this signal gets send out as soon as possible as
-            # a convenience to the user.
+            # We expect a 'signal_DAQ_paused' being emitted at start-up by this
+            # worker. Make sure this signal gets processed as soon as possible,
+            # and prior to any other subsequent actions the user might request
+            # from this worker after having returned back from the user's call
+            # to 'start_worker_DAQ()'.
             QtCore.QCoreApplication.processEvents()
             
         return self.worker_DAQ._started_okay
@@ -439,7 +431,8 @@ class QDeviceIO(QtCore.QObject):
             """
             self.worker_DAQ._stop()
         
-        else:
+        elif self.worker_DAQ._trigger_by == DAQ_trigger.CONTINUOUS:
+            #TODO: comment
             self.worker_DAQ._stop()
         
         # Wait for worker_DAQ to confirm having stopped
@@ -492,16 +485,6 @@ class QDeviceIO(QtCore.QObject):
         Returns True when successful, False otherwise.
         """
         return (self.quit_worker_DAQ() & self.quit_worker_send())
-    
-    """
-    # Test-case for CONTINUOUS
-    def pause(self):
-        self._signal_pause_worker_DAQ.emit()
-    
-    def unpause(self):
-        print("yoilo")
-        self._signal_unpause_worker_DAQ.emit()
-    """
 
     # --------------------------------------------------------------------------
     #   Worker_DAQ
@@ -638,18 +621,13 @@ class QDeviceIO(QtCore.QObject):
                 self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
             
             # Members specifically for CONTINUOUS
-            # At start, the worker will directly go into a paused state and
-            # trigger a 'signal_DAQ_paused' PyQt signal
+            # Note: At start-up, the worker will directly go into a paused state
+            # and trigger a 'signal_DAQ_paused' PyQt signal
             elif self._trigger_by == DAQ_trigger.CONTINUOUS:
                 self._running = True
-                self._pause   = True  # [True]
-                self.paused   = False # [False]
+                self._pause   = None  # Will be set at init of '_do_work()' when 'start_worker_DAQ()' is called
+                self.paused   = None  # Will be set at init of '_do_work()' when 'start_worker_DAQ()' is called
                 self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
-                
-                """
-                # Test-case for CONTINUOUS
-                self._mutex_pause = QtCore.QMutex()
-                """
                 
             # QElapsedTimer (QET) to keep track of DAQ interval and DAQ rate
             self._QET_DAQ = QtCore.QElapsedTimer()
@@ -721,47 +699,30 @@ class QDeviceIO(QtCore.QObject):
                     
             # CONTINUOUS
             elif self._trigger_by == DAQ_trigger.CONTINUOUS:
-                # TODO: learn from and implement https://forum.qt.io/topic/92932/how-to-process-events-during-infinite-loop-in-worker-thread/2
-                """
-                # Test-case for CONTINUOUS
-                locker_pause = QtCore.QMutexLocker(self._mutex_pause)
-                locker_pause.unlock()
-                """
-                
                 while self._running:
-                    """
-                    # Test-case for CONTINUOUS
-                    locker_pause.relock()
-                    """
+                    if init:
+                        self._pause = True
+                        self.paused = True
+                        
+                        if self.DEBUG:
+                            tprint("Worker_DAQ  %s: starting up paused" % 
+                                   self.dev.name, self.DEBUG_color)
+                        
+                        self.outer.signal_DAQ_paused.emit()
+                        confirm_started(self)
+                        init = False
                     
-                    if self._pause:
-                        # _pause == True
+                    if self._pause: # == True
                         if (self._pause != self.paused):
-                            if self.DEBUG and init:
-                                tprint("Worker_DAQ  %s: starting up paused" % 
-                                       self.dev.name, self.DEBUG_color)
-                            elif self.DEBUG and not init:
+                            if self.DEBUG and not init:
                                 tprint("Worker_DAQ  %s: pause confirmed" % 
                                    self.dev.name, self.DEBUG_color)
                             self.outer.signal_DAQ_paused.emit()
                             self.paused = True
                         
-                        if init:
-                            # Remember: The start-up state of this worker is
-                            # 'paused' from the get go by design. Hence,
-                            # the following 'confirm_started()' can be put over
-                            # here, the latest as possible. This makes sure the
-                            # order of events gets properly handled. I.e.
-                            #   First, send out signal 'signal_DAQ_paused'
-                            #   Then, wake up the QWaitCondition on the other
-                            # main thread to signal that the worker has started.
-                            confirm_started(self)
-                            init = False
-                        
                         time.sleep(0.01)  # Do not hog the CPU while paused
                         
-                    else:
-                        # _pause == False
+                    else:           # == False
                         if (self._pause != self.paused):
                             if self.DEBUG:
                                 tprint("Worker_DAQ  %s: unpause confirmed" % 
@@ -769,11 +730,6 @@ class QDeviceIO(QtCore.QObject):
                             self.paused = False
                         
                         self._perform_DAQ()
-                    
-                    """
-                    # Test-case for CONTINUOUS
-                    locker_pause.unlock()
-                    """
                         
                 if self.DEBUG:
                     tprint("Worker_DAQ  %s: stop confirmed" %
@@ -892,15 +848,6 @@ class QDeviceIO(QtCore.QObject):
             """Only useful with DAQ_trigger.CONTINUOUS
             """
             if self._trigger_by == DAQ_trigger.CONTINUOUS:
-                """
-                # Test-case for CONTINUOUS
-                locker = QtCore.QMutexLocker(self._mutex_pause)
-                self._pause = True
-                locker.unlock()
-                
-                print(cur_thread_name())
-                """
-                
                 self._pause = True
                 
                 if self.DEBUG:
@@ -912,13 +859,6 @@ class QDeviceIO(QtCore.QObject):
             """Only useful with DAQ_trigger.CONTINUOUS
             """
             if self._trigger_by == DAQ_trigger.CONTINUOUS:
-                """
-                # Test-case for CONTINUOUS
-                locker = QtCore.QMutexLocker(self._mutex_pause)
-                self._pause = False
-                locker.unlock()
-                """
-                
                 self._pause = False
                 
                 if self.DEBUG:
