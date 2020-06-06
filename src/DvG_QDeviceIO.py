@@ -353,8 +353,8 @@ class QDeviceIO(QtCore.QObject):
         # the upcoming blocking 'self._qwc.wait(self._mutex_wait)'. Hence, we
         # use a blocking 'time.sleep(.05)' here.
         if self.worker_DAQ._trigger_by == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
-            time.sleep(.05)
-            #QtCore.QCoreApplication.processEvents()
+            #time.sleep(.05)
+            QtCore.QCoreApplication.processEvents()
             #pass
             
         if self.worker_DAQ._trigger_by == DAQ_trigger.CONTINUOUS:
