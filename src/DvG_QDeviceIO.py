@@ -430,8 +430,22 @@ class QDeviceIO(QtCore.QObject):
         
         Returns True when successful, False otherwise.
         """
-        if self._thread_DAQ is None or not self.worker_DAQ._started_okay:
+        if self._thread_DAQ is None or self.worker_DAQ._started_okay is None:
+            # CASE: quit() without create()
+            #   _thread_DAQ == None
+            #   _started_okay = None
+            # CASE: quit() without start()
+            #   _thread_DAQ == QThread()
+            #   _started_okay = None
             return True
+        
+        # CASE: quit() with a device dead from the start
+        #   _thread_DAQ == QThread()
+        #   _started_okay = False
+        
+        # CASE: quit() with a device alive from the start
+        #   _thread_DAQ == QThread()
+        #   _started_okay = True
         
         if self.worker_DAQ.DEBUG:
             tprint("Worker_DAQ  %s: stop requested..." %
@@ -477,8 +491,22 @@ class QDeviceIO(QtCore.QObject):
         
         Returns True when successful, False otherwise.
         """
-        if self._thread_send is None or not self.worker_send._started_okay:
+        if self._thread_send is None or self.worker_send._started_okay is None:
+            # CASE: quit() without create()
+            #   _thread_DAQ == None
+            #   _started_okay = None
+            # CASE: quit() without start()
+            #   _thread_DAQ == QThread()
+            #   _started_okay = None
             return True
+        
+        # CASE: quit() with a device dead from the start
+        #   _thread_DAQ == QThread()
+        #   _started_okay = False
+        
+        # CASE: quit() with a device alive from the start
+        #   _thread_DAQ == QThread()
+        #   _started_okay = True
         
         if self.worker_send.DEBUG:
             tprint("Worker_send %s: stop requested..." %

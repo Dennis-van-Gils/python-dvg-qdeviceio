@@ -648,6 +648,8 @@ if __name__ == "__main__":
         test_Worker_send__no_device_attached()
         test_Worker_DAQ___start_without_create()
         test_Worker_send__start_without_create()
+        test_Worker_DAQ___close_without_start()
+        test_Worker_send__close_without_start()
         test_Worker_DAQ___rate()
         test_Worker_DAQ___lose_connection()
     else:
@@ -680,7 +682,8 @@ if __name__ == "__main__":
         #test_Worker_send__no_device_attached()
         #test_Worker_send__start_without_create()
 
+        test_Worker_DAQ___INTERNAL_TIMER__start_dead()
         test_Worker_DAQ___close_without_start()
-        test_Worker_send__close_without_start
+        #test_Worker_send__close_without_start()
 
         #test_attach_device_twice()
