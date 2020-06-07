@@ -701,9 +701,16 @@ class QDeviceIO(QtCore.QObject):
             init = True
             
             def confirm_started(self):
+                # Wait a tiny amount of extra time for QDeviceIO to have entered 
+                # 'self._qwc_worker_###_started.wait(self._mutex_wait_worker_###)'
+                # of method 'start_worker_###()'.
+                time.sleep(.05)
+                
                 if self.DEBUG:
                     tprint("Worker_DAQ  %s: start confirmed" %
                            self.dev.name, self.DEBUG_color)
+                
+                # Send confirmation
                 self.outer._qwc_worker_DAQ_started.wakeAll()
             
             if self.DEBUG:
@@ -769,6 +776,7 @@ class QDeviceIO(QtCore.QObject):
                                    self.dev.name, self.DEBUG_color)
                         
                         self.outer.signal_DAQ_paused.emit()
+                        
                         confirm_started(self)
                         init = False
                     

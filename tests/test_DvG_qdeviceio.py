@@ -653,22 +653,20 @@ if __name__ == "__main__":
         test_Worker_DAQ___rate()
         test_Worker_DAQ___lose_connection()
     else:
-        #test_Worker_DAQ___INTERNAL_TIMER()
+        test_Worker_DAQ___INTERNAL_TIMER()
         #test_Worker_DAQ___INTERNAL_TIMER__start_dead()
-        #test_Worker_DAQ___SINGLE_SHOT_WAKE_UP()
+        test_Worker_DAQ___SINGLE_SHOT_WAKE_UP()
         #test_Worker_DAQ___SINGLE_SHOT_WAKE_UP__start_dead()
         
         """
         import msvcrt
         while True:
-            test_Worker_send()
-            test_Worker_send__start_dead()
-            test_Worker_send__alt_jobs()
+            test_Worker_DAQ___CONTINUOUS()
             if msvcrt.kbhit() and msvcrt.getch() == chr(27).encode():
                 break
         """
             
-        #test_Worker_DAQ___CONTINUOUS()
+        test_Worker_DAQ___CONTINUOUS()
         #test_Worker_DAQ___CONTINUOUS__start_dead()
         
         #test_Worker_DAQ___rate()
@@ -682,8 +680,7 @@ if __name__ == "__main__":
         #test_Worker_send__no_device_attached()
         #test_Worker_send__start_without_create()
 
-        test_Worker_DAQ___INTERNAL_TIMER__start_dead()
-        test_Worker_DAQ___close_without_start()
+        #test_Worker_DAQ___close_without_start()
         #test_Worker_send__close_without_start()
 
         #test_attach_device_twice()
