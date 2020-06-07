@@ -579,6 +579,7 @@ class QDeviceIO(QtCore.QObject):
     def send(self, instruction, pass_args=()):
         """Put an instruction on the worker_send queue and process the
          queue until empty.
+         E.g. send(dev.write, "toggle LED")
          
          See 'Worker_send.add_to_queue()' for more details.
         """
@@ -587,7 +588,7 @@ class QDeviceIO(QtCore.QObject):
 
     def add_to_send_queue(self, instruction, pass_args=()):
         """Put an instruction on the worker_send queue.
-        E.g. add_to_queue(self.dev.write, "toggle LED")
+        E.g. add_to_send_queue(dev.write, "toggle LED")
         
         See 'Worker_send.add_to_queue()' for more details.
         """
@@ -595,7 +596,7 @@ class QDeviceIO(QtCore.QObject):
             self.worker_send.add_to_queue(instruction, pass_args)
                 
     def process_send_queue(self):
-        """Trigger processing the worker_send queue until empty.
+        """Trigger processing the worker_send queue and send until empty.
         """
         if self.worker_send is not None:
             self.worker_send.process_queue()
@@ -1248,7 +1249,7 @@ class QDeviceIO(QtCore.QObject):
 
         def add_to_queue(self, instruction, pass_args=()):
             """Put an instruction on the worker_send queue.
-            E.g. add_to_queue(self.dev.write, "toggle LED")
+            E.g. add_to_queue(dev.write, "toggle LED")
 
             Args:
                 instruction:
@@ -1277,7 +1278,8 @@ class QDeviceIO(QtCore.QObject):
         # ----------------------------------------------------------------------
 
         def process_queue(self):
-            """Trigger processing the worker_send queue until empty.
+            """Trigger processing the worker_send queue and send until empty.
+            
             NOTE: This method can be called from the MAIN/GUI thread all right.
             """
             if self.DEBUG:
@@ -1293,6 +1295,8 @@ class QDeviceIO(QtCore.QObject):
         def queued_instruction(self, instruction, pass_args=()):
             """Put an instruction on the worker_send queue and process the
             queue until empty. See 'add_to_queue()' for more details.
+            E.g. queued_instruction(dev.write, "toggle LED")
+            
             NOTE: This method can be called from the MAIN/GUI thread all right.
             """
             self.add_to_queue(instruction, pass_args)
