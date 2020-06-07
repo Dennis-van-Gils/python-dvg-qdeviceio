@@ -573,6 +573,34 @@ class QDeviceIO(QtCore.QObject):
         return (self.quit_worker_DAQ() & self.quit_worker_send())
 
     # --------------------------------------------------------------------------
+    #   worker_send related
+    # --------------------------------------------------------------------------
+    
+    def send(self, instruction, pass_args=()):
+        """Put an instruction on the worker_send queue and process the
+         queue until empty.
+         
+         See 'Worker_send.add_to_queue()' for more details.
+        """
+        if self.worker_send is not None:
+            self.worker_send.queued_instruction(instruction, pass_args)
+
+    def add_to_send_queue(self, instruction, pass_args=()):
+        """Put an instruction on the worker_send queue.
+        E.g. add_to_queue(self.dev.write, "toggle LED")
+        
+        See 'Worker_send.add_to_queue()' for more details.
+        """
+        if self.worker_send is not None:
+            self.worker_send.add_to_queue(instruction, pass_args)
+                
+    def process_send_queue(self):
+        """Trigger processing the worker_send queue until empty.
+        """
+        if self.worker_send is not None:
+            self.worker_send.process_queue()
+            
+    # --------------------------------------------------------------------------
     #   Worker_DAQ
     # --------------------------------------------------------------------------
 
@@ -1264,7 +1292,7 @@ class QDeviceIO(QtCore.QObject):
 
         def queued_instruction(self, instruction, pass_args=()):
             """Put an instruction on the worker_send queue and process the
-            queue until empty. See 'add_to_queue' for more details.
+            queue until empty. See 'add_to_queue()' for more details.
             NOTE: This method can be called from the MAIN/GUI thread all right.
             """
             self.add_to_queue(instruction, pass_args)

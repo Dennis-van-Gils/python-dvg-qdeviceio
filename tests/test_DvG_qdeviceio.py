@@ -325,17 +325,17 @@ def test_Worker_send(start_alive=True):
     assert qdevio.start() == start_alive
     
     # Immediately fire a call to test if the worker is ready for it
-    qdevio.worker_send.add_to_queue(dev.fake_query)
+    qdevio.add_to_send_queue(dev.fake_query)
     
     # Simulate device runtime
     start_time = time.perf_counter()
-    QtCore.QTimer.singleShot(100, lambda: qdevio.worker_send.process_queue())
-    QtCore.QTimer.singleShot(200, lambda: qdevio.worker_send.queued_instruction(dev.fake_query))
-    QtCore.QTimer.singleShot(300, lambda: qdevio.worker_send.add_to_queue(dev.fake_command_with_argument, 0))
-    QtCore.QTimer.singleShot(400, lambda: qdevio.worker_send.add_to_queue(dev.fake_command_with_argument, 0))
-    QtCore.QTimer.singleShot(500, lambda: qdevio.worker_send.add_to_queue(dev.fake_command_with_argument, 0))
-    QtCore.QTimer.singleShot(600, lambda: qdevio.worker_send.process_queue())
-    QtCore.QTimer.singleShot(700, lambda: qdevio.worker_send.queued_instruction("trigger_illegal_function_call_error"))
+    QtCore.QTimer.singleShot(100, lambda: qdevio.process_send_queue())
+    QtCore.QTimer.singleShot(200, lambda: qdevio.send(dev.fake_query))
+    QtCore.QTimer.singleShot(300, lambda: qdevio.add_to_send_queue(dev.fake_command_with_argument, 0))
+    QtCore.QTimer.singleShot(400, lambda: qdevio.add_to_send_queue(dev.fake_command_with_argument, 0))
+    QtCore.QTimer.singleShot(500, lambda: qdevio.add_to_send_queue(dev.fake_command_with_argument, 0))
+    QtCore.QTimer.singleShot(600, lambda: qdevio.process_send_queue())
+    QtCore.QTimer.singleShot(700, lambda: qdevio.send("trigger_illegal_function_call_error"))
     while time.perf_counter() - start_time < 1:
         app.processEvents()
         time.sleep(.001)    # Do not hog the CPU
@@ -394,12 +394,12 @@ def test_Worker_send__alt_jobs():
     assert qdevio.start() == True
     
     # Immediately fire a call to test if the worker is ready for it
-    qdevio.worker_send.queued_instruction(dev.fake_query)
+    qdevio.send(dev.fake_query)
     
     # Simulate device runtime
     start_time = time.perf_counter()
-    QtCore.QTimer.singleShot(100, lambda: qdevio.worker_send.queued_instruction("special command"))
-    QtCore.QTimer.singleShot(200, lambda: qdevio.worker_send.queued_instruction(dev.fake_command_with_argument, 0))
+    QtCore.QTimer.singleShot(100, lambda: qdevio.send("special command"))
+    QtCore.QTimer.singleShot(200, lambda: qdevio.send(dev.fake_command_with_argument, 0))
     while time.perf_counter() - start_time < .5:
         app.processEvents()
         time.sleep(.001)    # Do not hog the CPU
