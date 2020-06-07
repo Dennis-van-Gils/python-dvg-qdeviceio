@@ -47,8 +47,8 @@ MAIN CONTENTS:
 __author__      = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__         = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
-__date__        = "01-06-2020"
-__version__     = "0.0.4"   # DvG_QDeviceIO.py v0.0.1 on PyPI is based on the pre-PyPI prototype DvG_dev_Base__pyqt_lib.py v1.3.3
+__date__        = "07-06-2020"
+__version__     = "0.0.6"   # DvG_QDeviceIO.py v0.0.1 on PyPI is based on the pre-PyPI prototype DvG_dev_Base__pyqt_lib.py v1.3.3
 
 from enum import IntEnum, unique
 import queue
@@ -430,7 +430,7 @@ class QDeviceIO(QtCore.QObject):
         
         Returns True when successful, False otherwise.
         """
-        if self._thread_DAQ is None:
+        if self._thread_DAQ is None or not self.worker_DAQ._started_okay:
             return True
         
         if self.worker_DAQ.DEBUG:
@@ -477,7 +477,7 @@ class QDeviceIO(QtCore.QObject):
         
         Returns True when successful, False otherwise.
         """
-        if self._thread_send is None:
+        if self._thread_send is None or not self.worker_send._started_okay:
             return True
         
         if self.worker_send.DEBUG:

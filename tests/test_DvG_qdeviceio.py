@@ -489,6 +489,44 @@ def test_Worker_send__start_without_create():
     dprint("Exit code: %i" % pytest_wrapped_e.value.code)
     assert pytest_wrapped_e.value.code == 404
 
+
+
+def test_Worker_DAQ___close_without_start():
+    print_title("Worker_DAQ - close without start")    
+    app = create_QApplication()
+    
+    # Simulate a device
+    dev = FakeDevice()    
+    
+    qdevio = DvG_QDeviceIO.QDeviceIO()
+    assert qdevio.attach_device(dev) == True
+    
+    qdevio.create_worker_DAQ()
+    
+    tprint("About to quit")
+    app.processEvents()    
+    assert qdevio.quit_all_workers() == True
+    app.quit()
+    
+    
+    
+def test_Worker_send__close_without_start():
+    print_title("Worker_send - close without start")    
+    app = create_QApplication()
+    
+    # Simulate a device
+    dev = FakeDevice()    
+    
+    qdevio = DvG_QDeviceIO.QDeviceIO()
+    assert qdevio.attach_device(dev) == True
+    
+    qdevio.create_worker_send()
+    
+    tprint("About to quit")
+    app.processEvents()    
+    assert qdevio.quit_all_workers() == True
+    app.quit()
+    
     
     
 def test_Worker_DAQ___rate():
@@ -594,7 +632,7 @@ def test_Worker_DAQ___lose_connection():
     
     
 if __name__ == "__main__":
-    ALL = True
+    ALL = False
     if ALL:
         test_Worker_DAQ___INTERNAL_TIMER()
         test_Worker_DAQ___INTERNAL_TIMER__start_dead()
@@ -618,6 +656,7 @@ if __name__ == "__main__":
         #test_Worker_DAQ___SINGLE_SHOT_WAKE_UP()
         #test_Worker_DAQ___SINGLE_SHOT_WAKE_UP__start_dead()
         
+        """
         import msvcrt
         while True:
             test_Worker_send()
@@ -625,6 +664,7 @@ if __name__ == "__main__":
             test_Worker_send__alt_jobs()
             if msvcrt.kbhit() and msvcrt.getch() == chr(27).encode():
                 break
+        """
             
         #test_Worker_DAQ___CONTINUOUS()
         #test_Worker_DAQ___CONTINUOUS__start_dead()
@@ -639,5 +679,8 @@ if __name__ == "__main__":
         #test_Worker_send__alt_jobs()
         #test_Worker_send__no_device_attached()
         #test_Worker_send__start_without_create()
+
+        test_Worker_DAQ___close_without_start()
+        test_Worker_send__close_without_start
 
         #test_attach_device_twice()
