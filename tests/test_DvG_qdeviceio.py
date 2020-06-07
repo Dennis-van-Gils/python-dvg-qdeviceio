@@ -123,7 +123,7 @@ def test_Worker_DAQ___INTERNAL_TIMER(start_alive=True):
         calc_DAQ_rate_every_N_iter      = 5,
         DEBUG                           = DEBUG)
     
-    assert qdevio.start_worker_DAQ() == start_alive
+    assert qdevio.start() == start_alive
     
     # Simulate device runtime
     start_time = time.perf_counter()
@@ -135,7 +135,7 @@ def test_Worker_DAQ___INTERNAL_TIMER(start_alive=True):
     
     tprint("About to quit")
     app.processEvents()
-    assert qdevio.quit_all_workers() == True
+    assert qdevio.quit() == True
     app.quit()
     
     if start_alive:
@@ -186,7 +186,7 @@ def test_Worker_DAQ___SINGLE_SHOT_WAKE_UP(start_alive=True):
         calc_DAQ_rate_every_N_iter      = 5,
         DEBUG                           = DEBUG)
     
-    assert qdevio.start_worker_DAQ() == start_alive
+    assert qdevio.start() == start_alive
     
     # Immediately fire a call to test if the worker is ready for it
     qdevio.worker_DAQ.wake_up()
@@ -201,7 +201,7 @@ def test_Worker_DAQ___SINGLE_SHOT_WAKE_UP(start_alive=True):
 
     tprint("About to quit")
     app.processEvents()
-    assert qdevio.quit_all_workers() == True
+    assert qdevio.quit() == True
     app.quit()
     
     if start_alive:
@@ -263,7 +263,7 @@ def test_Worker_DAQ___CONTINUOUS(start_alive=True):
         calc_DAQ_rate_every_N_iter      = 5,
         DEBUG                           = DEBUG)
     
-    assert qdevio.start_worker_DAQ() == start_alive
+    assert qdevio.start() == start_alive
     
     # Immediately fire a call to test if the worker is ready for it
     qdevio.worker_DAQ.unpause()
@@ -282,7 +282,7 @@ def test_Worker_DAQ___CONTINUOUS(start_alive=True):
     
     tprint("About to quit")
     app.processEvents()
-    assert qdevio.quit_all_workers() == True
+    assert qdevio.quit() == True
     app.quit()
     
     if start_alive:
@@ -322,7 +322,7 @@ def test_Worker_send(start_alive=True):
     
     qdevio.create_worker_send(DEBUG=DEBUG)
     
-    assert qdevio.start_worker_send() == start_alive
+    assert qdevio.start() == start_alive
     
     # Immediately fire a call to test if the worker is ready for it
     qdevio.worker_send.add_to_queue(dev.fake_query)
@@ -342,7 +342,7 @@ def test_Worker_send(start_alive=True):
     
     tprint("About to quit")
     app.processEvents()
-    assert qdevio.quit_all_workers() == True
+    assert qdevio.quit() == True
     app.quit()
     
     if start_alive:
@@ -391,7 +391,7 @@ def test_Worker_send__alt_jobs():
         alt_process_jobs_function=my_alt_process_jobs_function,
         DEBUG=DEBUG)
     
-    assert qdevio.start_worker_send() == True
+    assert qdevio.start() == True
     
     # Immediately fire a call to test if the worker is ready for it
     qdevio.worker_send.queued_instruction(dev.fake_query)
@@ -406,7 +406,7 @@ def test_Worker_send__alt_jobs():
     
     tprint("About to quit")
     app.processEvents()
-    assert qdevio.quit_all_workers() == True
+    assert qdevio.quit() == True
     app.quit()
     
     assert dev.count_commands == 3
@@ -491,8 +491,8 @@ def test_Worker_send__start_without_create():
 
 
 
-def test_Worker_DAQ___close_without_start():
-    print_title("Worker_DAQ - close without start")    
+def test_Worker_DAQ___quit_without_start():
+    print_title("Worker_DAQ - quit without start")    
     app = create_QApplication()
     
     # Simulate a device
@@ -505,13 +505,13 @@ def test_Worker_DAQ___close_without_start():
     
     tprint("About to quit")
     app.processEvents()    
-    assert qdevio.quit_all_workers() == True
+    assert qdevio.quit() == True
     app.quit()
     
     
     
-def test_Worker_send__close_without_start():
-    print_title("Worker_send - close without start")    
+def test_Worker_send__quit_without_start():
+    print_title("Worker_send - quit without start")    
     app = create_QApplication()
     
     # Simulate a device
@@ -524,7 +524,7 @@ def test_Worker_send__close_without_start():
     
     tprint("About to quit")
     app.processEvents()    
-    assert qdevio.quit_all_workers() == True
+    assert qdevio.quit() == True
     app.quit()
     
     
@@ -555,7 +555,7 @@ def test_Worker_DAQ___rate():
         DEBUG                           = DEBUG)
     
     print(qdevio.worker_DAQ.calc_DAQ_rate_every_N_iter)
-    assert qdevio.start_worker_DAQ() == True
+    assert qdevio.start() == True
     
     # Simulate device runtime
     start_time = time.perf_counter()
@@ -565,7 +565,7 @@ def test_Worker_DAQ___rate():
     
     tprint("About to quit")
     app.processEvents()
-    assert qdevio.quit_all_workers() == True
+    assert qdevio.quit() == True
     app.quit()
     
     assert (
@@ -617,7 +617,7 @@ def test_Worker_DAQ___lose_connection():
 
     qdevio.signal_connection_lost.connect(process_connection_lost)
     
-    assert qdevio.start_worker_DAQ() == True
+    assert qdevio.start() == True
     
     # Simulate device runtime
     while go:
@@ -626,13 +626,13 @@ def test_Worker_DAQ___lose_connection():
         
     tprint("About to quit")
     app.processEvents()
-    assert qdevio.quit_all_workers() == True
+    assert qdevio.quit() == True
     app.quit()
     
     
     
 if __name__ == "__main__":
-    ALL = False
+    ALL = True
     if ALL:
         test_Worker_DAQ___INTERNAL_TIMER()
         test_Worker_DAQ___INTERNAL_TIMER__start_dead()
@@ -648,8 +648,8 @@ if __name__ == "__main__":
         test_Worker_send__no_device_attached()
         test_Worker_DAQ___start_without_create()
         test_Worker_send__start_without_create()
-        test_Worker_DAQ___close_without_start()
-        test_Worker_send__close_without_start()
+        test_Worker_DAQ___quit_without_start()
+        test_Worker_send__quit_without_start()
         test_Worker_DAQ___rate()
         test_Worker_DAQ___lose_connection()
     else:
@@ -680,7 +680,7 @@ if __name__ == "__main__":
         #test_Worker_send__no_device_attached()
         #test_Worker_send__start_without_create()
 
-        #test_Worker_DAQ___close_without_start()
-        #test_Worker_send__close_without_start()
+        #test_Worker_DAQ___quit_without_start()
+        #test_Worker_send__quit_without_start()
 
         #test_attach_device_twice()

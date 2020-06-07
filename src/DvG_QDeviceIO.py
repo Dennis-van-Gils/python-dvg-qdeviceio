@@ -421,6 +421,36 @@ class QDeviceIO(QtCore.QObject):
         
         return self.worker_send._started_okay
 
+    def start(self,
+              DAQ_priority=QtCore.QThread.InheritPriority,
+              send_priority=QtCore.QThread.InheritPriority):
+        """Start the event loop of all of any created workers.
+        
+        Args:
+            DAQ_priority (PyQt5.QtCore.QThread.Priority, optional, default=
+                      QtCore.QThread.InheritPriority):
+                By default, the 'worker' thread runs in the operating system
+                at the same thread priority as the main/GUI thread. You can
+                change to higher priority by setting 'priority' to, e.g.,
+                'QtCore.QThread.TimeCriticalPriority'. Be aware that this is
+                resource heavy, so use sparingly.
+            
+            send_priority (PyQt5.QtCore.QThread.Priority, optional, default=
+                      QtCore.QThread.InheritPriority):
+                See argument DAQ_priority.
+        
+        Returns True when successful, False otherwise.
+        """
+        success = True
+        
+        if self._thread_send is not None:
+            success &= self.start_worker_send(priority=send_priority)
+        
+        if self._thread_DAQ is not None:
+            success &= self.start_worker_DAQ(priority=DAQ_priority)
+            
+        return success
+
     # --------------------------------------------------------------------------
     #   Quit workers
     # --------------------------------------------------------------------------
@@ -535,7 +565,7 @@ class QDeviceIO(QtCore.QObject):
             print("FAILED.\n", end='')      # pragma: no cover
             return False                    # pragma: no cover
 
-    def quit_all_workers(self):
+    def quit(self):
         """Stop all of any running workers and close their respective threads.
         
         Returns True when successful, False otherwise.
