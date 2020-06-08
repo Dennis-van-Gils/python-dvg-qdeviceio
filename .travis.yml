@@ -9,7 +9,6 @@ jobs:
         bash ./miniconda.sh -b -p ${HOME}/miniconda;
         export PATH=${HOME}/miniconda/bin:$PATH;
         conda install --yes python="3.6";
-        pip install pytest-cov;
 
     - name: "py3.7 miniconda"
       python: 3.7
@@ -18,7 +17,6 @@ jobs:
         bash ./miniconda.sh -b -p ${HOME}/miniconda;
         export PATH=${HOME}/miniconda/bin:$PATH;
         conda install --yes python="3.7";
-        pip install pytest-cov;
 
     - name: "py3.8 miniconda"
       python: 3.8
@@ -27,12 +25,12 @@ jobs:
         bash ./miniconda.sh -b -p ${HOME}/miniconda;
         export PATH=${HOME}/miniconda/bin:$PATH;
         conda install --yes python="3.8";
-        pip install pytest-cov;
     
     - name: "py3.8"
       python: 3.8
 
 install:
+  - pip install pytest-cov
   - pip install coveralls
   - pip install -e .
 
