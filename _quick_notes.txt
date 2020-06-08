@@ -1,10 +1,14 @@
 pip install pytest-cov
 pip install check-manifest
 
-python setup.py bdist_wheel
 pip install --no-deps -e .
 pytest --cov-report term-missing --cov=src -vv
-python setup.py sdist
-check-manifest --create
+
+black -l 80 src\DvG_QDeviceIO.py
+black -l 80 tests\test_DvG_qdeviceio.py
+black -l 80 setup.py
+
+del /q dist\*.*
 python setup.py bdist_wheel sdist
+check-manifest --create
 twine upload dist/*
