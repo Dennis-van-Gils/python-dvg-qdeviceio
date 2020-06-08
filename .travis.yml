@@ -9,7 +9,6 @@ jobs:
         bash ./miniconda.sh -b -p ${HOME}/miniconda;
         export PATH=${HOME}/miniconda/bin:$PATH;
         conda install --yes python="3.6";
-        pip install pytest;
 
     - name: "py3.7 with PyQt5"
       python: 3.7
@@ -18,7 +17,6 @@ jobs:
         bash ./miniconda.sh -b -p ${HOME}/miniconda;
         export PATH=${HOME}/miniconda/bin:$PATH;
         conda install --yes python="3.7";
-        pip install pytest;
 
     - name: "py3.8 with PyQt5"
       python: 3.8
@@ -27,20 +25,16 @@ jobs:
         bash ./miniconda.sh -b -p ${HOME}/miniconda;
         export PATH=${HOME}/miniconda/bin:$PATH;
         conda install --yes python="3.8";
-        pip install pytest;
 
 install:
+  - pip install pytest-cov
   - pip install coveralls
-  - pip install -e .[dev]
+  - pip install -e .
 
 script:
-  #- coverage run -p --source=src -m pytest
-  #- PYTHONPATH=src pytest --cov src --cov-append
   - pytest --cov src -s
     
 after_success:
-  #- coverage combine
-  #- coverage combine .coverage
   - coverage report -m
   - coveralls
   

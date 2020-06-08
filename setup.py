@@ -75,5 +75,5 @@ setup(
         "numpy>=1.15,<2",
         "dvg-debug-functions>=1.1.1",
     ],
-    extras_require={"dev": ["pytest-cov",]},
+    extras_require={},
 )
