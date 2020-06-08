@@ -6,6 +6,6 @@
 [![CodeStyle: Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 
 # DvG_QDeviceIO
-PyQt5 module containing the framework for multithreaded communication and periodical data acquisition for an I/O device.
+PyQt5 framework for multithreaded periodical data acquisition and communication with an I/O device.
 
 Stable beta. Documentation will be added next. Within a month (at July 2020) I expect a proper release.
