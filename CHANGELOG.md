@@ -13,3 +13,9 @@ Changelog
 ------------------
 * Added start(), renamed quit_all_workers() to quit()
 * Added send(), add_to_send_queue(), process_send_queue()
+
+0.0.8 (2020-006-09)
+------------------
+* Added pause_DAQ, unpause_DAQ(), wake_up_DAQ()
+* Changed many attribute and method names
+* Code style: black
