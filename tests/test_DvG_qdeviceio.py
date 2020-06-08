@@ -368,8 +368,8 @@ def test_Worker_send__start_dead():
     test_Worker_send(start_alive=False)
 
 
-def test_Worker_send__alt_jobs():
-    print_title("Worker_send - alternative jobs")
+def test_Worker_send__jobs_function():
+    print_title("Worker_send - jobs_function")
     app = create_QApplication()
 
     # Simulate a device
@@ -652,7 +652,7 @@ if __name__ == "__main__":
         test_Worker_DAQ___CONTINUOUS__start_dead()
         test_Worker_send()
         test_Worker_send__start_dead()
-        test_Worker_send__alt_jobs()
+        test_Worker_send__jobs_function()
         test_attach_device_twice()
         test_Worker_DAQ___no_device_attached()
         test_Worker_send__no_device_attached()
@@ -686,7 +686,7 @@ if __name__ == "__main__":
 
         # test_Worker_send()
         # test_Worker_send__start_dead()
-        # test_Worker_send__alt_jobs()
+        # test_Worker_send__jobs_function()
         # test_Worker_send__no_device_attached()
         # test_Worker_send__start_without_create()
 
