@@ -73,7 +73,7 @@ setup(
     install_requires=[
         "pyqt5>=5.9.2,<6",
         "numpy>=1.15,<2",
-        "dvg-debug-functions>=1.1.1",
+        "dvg-debug-functions>=1.1.2",
     ],
     extras_require={},
 )
