@@ -1,7 +1,7 @@
 import sys
 import time
 from PyQt5 import QtCore
-import DvG_QDeviceIO
+from DvG_QDeviceIO import QDeviceIO, DAQ_trigger
 from DvG_debug_functions import dprint, tprint, ANSI
 
 # Show extra debug info in terminal?
@@ -116,13 +116,13 @@ def test_Worker_DAQ___INTERNAL_TIMER(start_alive=True):
     # fmt: off
     # Worker_DAQ in mode INTERNAL TIMER
     qdevio.create_worker_DAQ(
-        DAQ_trigger                     = DvG_QDeviceIO.DAQ_trigger.INTERNAL_TIMER,
-        DAQ_function                    = DAQ_function,
-        DAQ_interval_ms                 = 100,
-        DAQ_timer_type                  = QtCore.Qt.CoarseTimer,
-        critical_not_alive_count        = 10,
-        calc_DAQ_rate_every_N_iter      = 5,
-        DEBUG                           = DEBUG)
+        DAQ_trigger                = DAQ_trigger.INTERNAL_TIMER,
+        DAQ_function               = DAQ_function,
+        DAQ_interval_ms            = 100,
+        DAQ_timer_type             = QtCore.Qt.CoarseTimer,
+        critical_not_alive_count   = 10,
+        calc_DAQ_rate_every_N_iter = 5,
+        DEBUG                      = DEBUG)
     # fmt: on
 
     assert qdevio.start() == start_alive
@@ -163,7 +163,7 @@ def test_Worker_DAQ___SINGLE_SHOT_WAKE_UP(start_alive=True):
     dev = FakeDevice()
     dev.is_alive = start_alive
 
-    qdevio = DvG_QDeviceIO.QDeviceIO()
+    qdevio = QDeviceIO()
     assert qdevio.attach_device(dev) == True
 
     def DAQ_function():
@@ -186,11 +186,11 @@ def test_Worker_DAQ___SINGLE_SHOT_WAKE_UP(start_alive=True):
     # fmt: off
     # Worker_DAQ in mode SINGLE_SHOT_WAKE_UP
     qdevio.create_worker_DAQ(
-        DAQ_trigger                     = DvG_QDeviceIO.DAQ_trigger.SINGLE_SHOT_WAKE_UP,
-        DAQ_function                    = DAQ_function,
-        critical_not_alive_count        = 1,
-        calc_DAQ_rate_every_N_iter      = 5,
-        DEBUG                           = DEBUG)
+        DAQ_trigger                = DAQ_trigger.SINGLE_SHOT_WAKE_UP,
+        DAQ_function               = DAQ_function,
+        critical_not_alive_count   = 1,
+        calc_DAQ_rate_every_N_iter = 5,
+        DEBUG                      = DEBUG)
     # fmt: on
 
     assert qdevio.start() == start_alive
@@ -231,7 +231,7 @@ def test_Worker_DAQ___CONTINUOUS(start_alive=True):
     dev = FakeDevice()
     dev.is_alive = start_alive
 
-    qdevio = DvG_QDeviceIO.QDeviceIO()
+    qdevio = QDeviceIO()
     assert qdevio.attach_device(dev) == True
 
     def DAQ_function():
@@ -266,11 +266,11 @@ def test_Worker_DAQ___CONTINUOUS(start_alive=True):
     # fmt: off
     # Worker_DAQ in mode CONTINUOUS
     qdevio.create_worker_DAQ(
-        DAQ_trigger                     = DvG_QDeviceIO.DAQ_trigger.CONTINUOUS,
-        DAQ_function                    = DAQ_function,
-        critical_not_alive_count        = 1,
-        calc_DAQ_rate_every_N_iter      = 5,
-        DEBUG                           = DEBUG)
+        DAQ_trigger                = DAQ_trigger.CONTINUOUS,
+        DAQ_function               = DAQ_function,
+        critical_not_alive_count   = 1,
+        calc_DAQ_rate_every_N_iter = 5,
+        DEBUG                      = DEBUG)
     # fmt: on
 
     assert qdevio.start() == start_alive
@@ -316,7 +316,7 @@ def test_Worker_send(start_alive=True):
     dev = FakeDevice()
     dev.is_alive = start_alive
 
-    qdevio = DvG_QDeviceIO.QDeviceIO()
+    qdevio = QDeviceIO()
     assert qdevio.attach_device(dev) == True
 
     global signal_counter
@@ -375,7 +375,7 @@ def test_Worker_send__alt_jobs():
     # Simulate a device
     dev = FakeDevice()
 
-    qdevio = DvG_QDeviceIO.QDeviceIO()
+    qdevio = QDeviceIO()
     assert qdevio.attach_device(dev) == True
 
     global signal_counter
@@ -433,7 +433,7 @@ def test_attach_device_twice():
     import pytest
 
     dev = FakeDevice()
-    qdevio = DvG_QDeviceIO.QDeviceIO()
+    qdevio = QDeviceIO()
     assert qdevio.attach_device(dev) == True
 
     with pytest.raises(SystemExit) as pytest_wrapped_e:
@@ -447,7 +447,7 @@ def test_Worker_DAQ___no_device_attached():
     print_title("Worker_DAQ - no device attached")
     import pytest
 
-    qdevio = DvG_QDeviceIO.QDeviceIO()
+    qdevio = QDeviceIO()
 
     with pytest.raises(SystemExit) as pytest_wrapped_e:
         qdevio.create_worker_DAQ()
@@ -460,7 +460,7 @@ def test_Worker_send__no_device_attached():
     print_title("Worker_send - no device attached")
     import pytest
 
-    qdevio = DvG_QDeviceIO.QDeviceIO()
+    qdevio = QDeviceIO()
 
     with pytest.raises(SystemExit) as pytest_wrapped_e:
         qdevio.create_worker_send()
@@ -474,7 +474,7 @@ def test_Worker_DAQ___start_without_create():
     import pytest
 
     dev = FakeDevice()
-    qdevio = DvG_QDeviceIO.QDeviceIO()
+    qdevio = QDeviceIO()
     assert qdevio.attach_device(dev) == True
 
     with pytest.raises(SystemExit) as pytest_wrapped_e:
@@ -489,7 +489,7 @@ def test_Worker_send__start_without_create():
     import pytest
 
     dev = FakeDevice()
-    qdevio = DvG_QDeviceIO.QDeviceIO()
+    qdevio = QDeviceIO()
     assert qdevio.attach_device(dev) == True
 
     with pytest.raises(SystemExit) as pytest_wrapped_e:
@@ -506,7 +506,7 @@ def test_Worker_DAQ___quit_without_start():
     # Simulate a device
     dev = FakeDevice()
 
-    qdevio = DvG_QDeviceIO.QDeviceIO()
+    qdevio = QDeviceIO()
     assert qdevio.attach_device(dev) == True
 
     qdevio.create_worker_DAQ()
@@ -524,7 +524,7 @@ def test_Worker_send__quit_without_start():
     # Simulate a device
     dev = FakeDevice()
 
-    qdevio = DvG_QDeviceIO.QDeviceIO()
+    qdevio = QDeviceIO()
     assert qdevio.attach_device(dev) == True
 
     qdevio.create_worker_send()
@@ -542,7 +542,7 @@ def test_Worker_DAQ___rate():
     # Simulate a device
     dev = FakeDevice()
 
-    qdevio = DvG_QDeviceIO.QDeviceIO()
+    qdevio = QDeviceIO()
     assert qdevio.attach_device(dev) == True
 
     def DAQ_function():
@@ -553,13 +553,13 @@ def test_Worker_DAQ___rate():
     # fmt: off
     # Worker_DAQ in mode INTERNAL TIMER
     qdevio.create_worker_DAQ(
-        DAQ_trigger                     = DvG_QDeviceIO.DAQ_trigger.INTERNAL_TIMER,
-        DAQ_function                    = DAQ_function,
-        DAQ_interval_ms                 = 20,
-        DAQ_timer_type                  = QtCore.Qt.PreciseTimer,
-        critical_not_alive_count        = 1,
-        calc_DAQ_rate_every_N_iter      = 25,
-        DEBUG                           = DEBUG)
+        DAQ_trigger                = DAQ_trigger.INTERNAL_TIMER,
+        DAQ_function               = DAQ_function,
+        DAQ_interval_ms            = 20,
+        DAQ_timer_type             = QtCore.Qt.PreciseTimer,
+        critical_not_alive_count   = 1,
+        calc_DAQ_rate_every_N_iter = 25,
+        DEBUG                      = DEBUG)
     # fmt: on
 
     print(qdevio.worker_DAQ.calc_DAQ_rate_every_N_iter)
@@ -591,7 +591,7 @@ def test_Worker_DAQ___lose_connection():
     # Simulate a device
     dev = FakeDevice()
 
-    qdevio = DvG_QDeviceIO.QDeviceIO()
+    qdevio = QDeviceIO()
     assert qdevio.attach_device(dev) == True
 
     def DAQ_function():
@@ -605,13 +605,13 @@ def test_Worker_DAQ___lose_connection():
     # fmt: off
     # Worker_DAQ in mode INTERNAL TIMER
     qdevio.create_worker_DAQ(
-        DAQ_trigger                     = DvG_QDeviceIO.DAQ_trigger.INTERNAL_TIMER,
-        DAQ_function                    = DAQ_function,
-        DAQ_interval_ms                 = 20,
-        DAQ_timer_type                  = QtCore.Qt.PreciseTimer,
-        critical_not_alive_count        = 3,
-        calc_DAQ_rate_every_N_iter      = 20,
-        DEBUG                           = DEBUG)
+        DAQ_trigger                = DAQ_trigger.INTERNAL_TIMER,
+        DAQ_function               = DAQ_function,
+        DAQ_interval_ms            = 20,
+        DAQ_timer_type             = QtCore.Qt.PreciseTimer,
+        critical_not_alive_count   = 3,
+        calc_DAQ_rate_every_N_iter = 20,
+        DEBUG                      = DEBUG)
     # fmt: on
 
     # NOTE: The global 'go' mechanism used here is a quick and dirty way to
