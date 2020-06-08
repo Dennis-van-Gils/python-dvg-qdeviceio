@@ -93,7 +93,7 @@ def test_Worker_DAQ___INTERNAL_TIMER(start_alive=True):
     dev = FakeDevice()
     dev.is_alive = start_alive
 
-    qdevio = DvG_QDeviceIO.QDeviceIO()
+    qdevio = QDeviceIO()
     assert qdevio.attach_device(dev) == True
 
     def DAQ_function():
