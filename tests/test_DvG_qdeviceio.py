@@ -19,7 +19,7 @@ DAQ_trigger.SINGLE_SHOT_WAKE_UP
     
     def simultaneously_trigger_update_multiple_devices():
         for qdevio in qdevios:
-            qdevio.worker_DAQ.wake_up()
+            qdevio.wake_up()
             
     timer_qdevios = QtCore.QTimer()
     timer_qdevios.timeout.connect(simultaneously_trigger_update_multiple_devices)
@@ -196,12 +196,12 @@ def test_Worker_DAQ___SINGLE_SHOT_WAKE_UP(start_alive=True):
     assert qdevio.start() == start_alive
 
     # Immediately fire a call to test if the worker is ready for it
-    qdevio.worker_DAQ.wake_up()
+    qdevio.wake_up_DAQ()
 
     # Simulate device runtime
     start_time = time.perf_counter()
-    QtCore.QTimer.singleShot(300, lambda: qdevio.worker_DAQ.wake_up())
-    QtCore.QTimer.singleShot(600, lambda: qdevio.worker_DAQ.wake_up())
+    QtCore.QTimer.singleShot(300, lambda: qdevio.wake_up_DAQ())
+    QtCore.QTimer.singleShot(600, lambda: qdevio.wake_up_DAQ())
     while time.perf_counter() - start_time < 1:
         app.processEvents()
         time.sleep(0.001)  # Do not hog the CPU
@@ -276,14 +276,14 @@ def test_Worker_DAQ___CONTINUOUS(start_alive=True):
     assert qdevio.start() == start_alive
 
     # Immediately fire a call to test if the worker is ready for it
-    qdevio.worker_DAQ.unpause()
+    qdevio.unpause_DAQ()
 
     # Simulate device runtime
     start_time = time.perf_counter()
-    QtCore.QTimer.singleShot(300, lambda: qdevio.worker_DAQ.pause())
-    QtCore.QTimer.singleShot(600, lambda: qdevio.worker_DAQ.unpause())
-    QtCore.QTimer.singleShot(900, lambda: qdevio.worker_DAQ.pause())
-    QtCore.QTimer.singleShot(1200, lambda: qdevio.worker_DAQ.unpause())
+    QtCore.QTimer.singleShot(300, lambda: qdevio.pause_DAQ())
+    QtCore.QTimer.singleShot(600, lambda: qdevio.unpause_DAQ())
+    QtCore.QTimer.singleShot(900, lambda: qdevio.pause_DAQ())
+    QtCore.QTimer.singleShot(1200, lambda: qdevio.unpause_DAQ())
     while time.perf_counter() - start_time < 1.6:
         app.processEvents()
         if dev.count_commands == 12:
@@ -663,9 +663,9 @@ if __name__ == "__main__":
         test_Worker_DAQ___rate()
         test_Worker_DAQ___lose_connection()
     else:
-        test_Worker_DAQ___INTERNAL_TIMER()
+        # test_Worker_DAQ___INTERNAL_TIMER()
         # test_Worker_DAQ___INTERNAL_TIMER__start_dead()
-        test_Worker_DAQ___SINGLE_SHOT_WAKE_UP()
+        # test_Worker_DAQ___SINGLE_SHOT_WAKE_UP()
         # test_Worker_DAQ___SINGLE_SHOT_WAKE_UP__start_dead()
 
         """

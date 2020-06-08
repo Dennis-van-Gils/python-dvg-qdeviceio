@@ -621,9 +621,38 @@ class QDeviceIO(QtCore.QObject):
         return self.quit_worker_DAQ() & self.quit_worker_send()
 
     # --------------------------------------------------------------------------
+    #   worker_DAQ related
+    # --------------------------------------------------------------------------
+
+    @QtCore.pyqtSlot()
+    def pause_DAQ(self):
+        """Only useful with DAQ_trigger.CONTINUOUS
+        NOTE: This method can be called from the MAIN/GUI thread all right.
+        """
+        if self.worker_DAQ is not None:
+            self.worker_DAQ.pause()
+
+    @QtCore.pyqtSlot()
+    def unpause_DAQ(self):
+        """Only useful with DAQ_trigger.CONTINUOUS
+        NOTE: This method can be called from the MAIN/GUI thread all right.
+        """
+        if self.worker_DAQ is not None:
+            self.worker_DAQ.unpause()
+
+    @QtCore.pyqtSlot()
+    def wake_up_DAQ(self):
+        """Only useful with DAQ_trigger.SINGLE_SHOT_WAKE_UP
+        NOTE: This method can be called from the MAIN/GUI thread all right.
+        """
+        if self.worker_DAQ is not None:
+            self.worker_DAQ.wake_up()
+
+    # --------------------------------------------------------------------------
     #   worker_send related
     # --------------------------------------------------------------------------
 
+    @QtCore.pyqtSlot()
     def send(self, instruction, pass_args=()):
         """Put an instruction on the worker_send queue and process the
          queue until empty.
@@ -634,6 +663,7 @@ class QDeviceIO(QtCore.QObject):
         if self.worker_send is not None:
             self.worker_send.queued_instruction(instruction, pass_args)
 
+    @QtCore.pyqtSlot()
     def add_to_send_queue(self, instruction, pass_args=()):
         """Put an instruction on the worker_send queue.
         E.g. add_to_send_queue(dev.write, "toggle LED")
@@ -643,6 +673,7 @@ class QDeviceIO(QtCore.QObject):
         if self.worker_send is not None:
             self.worker_send.add_to_queue(instruction, pass_args)
 
+    @QtCore.pyqtSlot()
     def process_send_queue(self):
         """Trigger processing the worker_send queue and send until empty.
         """
@@ -663,7 +694,8 @@ class QDeviceIO(QtCore.QObject):
         Instead, connect to the 'signal_DAQ_updated' signal to instigate GUI
         changes when needed.
 
-        The worker should be placed inside a separate thread. 
+        The worker will be placed inside a separate thread by its parent class
+        QDeviceIO. 
 
         The Worker_DAQ routine is robust in the following sense. It can be set
         to quit as soon as a communication error appears, or it could be set to
@@ -1130,15 +1162,14 @@ class QDeviceIO(QtCore.QObject):
         operations to the device, first in first out (FIFO), until the queue is
         empty again.
 
-        The worker should be placed inside a separate thread. This worker uses
-        the QWaitCondition mechanism. Hence, it will only send out all
-        operations collected in the queue, whenever the thread it lives in is
-        woken up by calling 'Worker_send.process_queue()'. When it has emptied
-        the queue, the thread will go back to sleep again.
+        The worker will be placed inside a separate thread by its parent class
+        QDeviceIO. 
 
-        No direct changes to the GUI should be performed inside this class. If
-        needed, use the QtCore.pyqtSignal() mechanism to instigate GUI changes.
-        TODO: implement PyQt signal 'signal_send_updated'
+        This worker uses the QWaitCondition mechanism. Hence, it will only send
+        out all operations collected in the queue, whenever the thread it lives
+        in is woken up by calling 'Worker_send.process_queue()'. When it has
+        emptied the queue, the thread will go back to sleep again.
+
         No direct changes to the GUI should be performed inside this class.
         Instead, connect to the 'signal_send_updated' signal to instigate GUI
         changes when needed.
