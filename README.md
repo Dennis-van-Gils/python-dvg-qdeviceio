@@ -1,5 +1,5 @@
-[![PyPI version](https://badge.fury.io/py/dvg-qdeviceio.svg)](https://badge.fury.io/py/dvg-qdeviceio)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/dvg-qdeviceio)
+[![PyPI](https://img.shields.io/pypi/v/dvg-qdeviceio)](https://pypi.org/project/dvg-qdeviceio)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/dvg-qdeviceio)](https://pypi.org/project/dvg-qdeviceio)
 [![Build Status](https://travis-ci.org/Dennis-van-Gils/python-dvg-qdeviceio.svg?branch=master)](https://travis-ci.org/Dennis-van-Gils/python-dvg-qdeviceio)
 [![Coverage Status](https://coveralls.io/repos/github/Dennis-van-Gils/python-dvg-qdeviceio/badge.svg?branch=master)](https://coveralls.io/github/Dennis-van-Gils/python-dvg-qdeviceio?branch=master)
 [![License: MIT](https://img.shields.io/badge/License-MIT-purple.svg)](https://github.com/Dennis-van-Gils/python-dvg-qdeviceio/blob/master/LICENSE.txt)
