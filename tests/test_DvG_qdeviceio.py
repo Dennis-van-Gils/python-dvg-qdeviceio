@@ -116,11 +116,11 @@ def test_Worker_DAQ___INTERNAL_TIMER(start_alive=True):
     # fmt: off
     # Worker_DAQ in mode INTERNAL TIMER
     qdevio.create_worker_DAQ(
-        DAQ_trigger_by                  = DvG_QDeviceIO.DAQ_trigger.INTERNAL_TIMER,
-        DAQ_function_to_run_each_update = DAQ_function,
-        DAQ_update_interval_ms          = 100,
+        DAQ_trigger                     = DvG_QDeviceIO.DAQ_trigger.INTERNAL_TIMER,
+        DAQ_function                    = DAQ_function,
+        DAQ_interval_ms                 = 100,
         DAQ_timer_type                  = QtCore.Qt.CoarseTimer,
-        DAQ_critical_not_alive_count    = 10,
+        critical_not_alive_count        = 10,
         calc_DAQ_rate_every_N_iter      = 5,
         DEBUG                           = DEBUG)
     # fmt: on
@@ -186,9 +186,9 @@ def test_Worker_DAQ___SINGLE_SHOT_WAKE_UP(start_alive=True):
     # fmt: off
     # Worker_DAQ in mode SINGLE_SHOT_WAKE_UP
     qdevio.create_worker_DAQ(
-        DAQ_trigger_by                  = DvG_QDeviceIO.DAQ_trigger.SINGLE_SHOT_WAKE_UP,
-        DAQ_function_to_run_each_update = DAQ_function,
-        DAQ_critical_not_alive_count    = 1,
+        DAQ_trigger                     = DvG_QDeviceIO.DAQ_trigger.SINGLE_SHOT_WAKE_UP,
+        DAQ_function                    = DAQ_function,
+        critical_not_alive_count        = 1,
         calc_DAQ_rate_every_N_iter      = 5,
         DEBUG                           = DEBUG)
     # fmt: on
@@ -266,9 +266,9 @@ def test_Worker_DAQ___CONTINUOUS(start_alive=True):
     # fmt: off
     # Worker_DAQ in mode CONTINUOUS
     qdevio.create_worker_DAQ(
-        DAQ_trigger_by                  = DvG_QDeviceIO.DAQ_trigger.CONTINUOUS,
-        DAQ_function_to_run_each_update = DAQ_function,
-        DAQ_critical_not_alive_count    = 1,
+        DAQ_trigger                     = DvG_QDeviceIO.DAQ_trigger.CONTINUOUS,
+        DAQ_function                    = DAQ_function,
+        critical_not_alive_count        = 1,
         calc_DAQ_rate_every_N_iter      = 5,
         DEBUG                           = DEBUG)
     # fmt: on
@@ -390,7 +390,7 @@ def test_Worker_send__alt_jobs():
 
     qdevio.signal_send_updated.connect(process_send_updated)
 
-    def my_alt_process_jobs_function(func, args):
+    def jobs_function(func, args):
         if func == "special command":
             dev.fake_query()
         else:
@@ -400,7 +400,7 @@ def test_Worker_send__alt_jobs():
             func(*args)
 
     qdevio.create_worker_send(
-        alt_process_jobs_function=my_alt_process_jobs_function, DEBUG=DEBUG
+        jobs_function=jobs_function, DEBUG=DEBUG,
     )
 
     assert qdevio.start() == True
@@ -546,18 +546,18 @@ def test_Worker_DAQ___rate():
     assert qdevio.attach_device(dev) == True
 
     def DAQ_function():
-        dprint(qdevio.obtained_DAQ_update_interval_ms)
+        dprint(qdevio.obtained_DAQ_interval_ms)
         dprint(qdevio.obtained_DAQ_rate_Hz)
         return True
 
     # fmt: off
     # Worker_DAQ in mode INTERNAL TIMER
     qdevio.create_worker_DAQ(
-        DAQ_trigger_by                  = DvG_QDeviceIO.DAQ_trigger.INTERNAL_TIMER,
-        DAQ_function_to_run_each_update = DAQ_function,
-        DAQ_update_interval_ms          = 20,
+        DAQ_trigger                     = DvG_QDeviceIO.DAQ_trigger.INTERNAL_TIMER,
+        DAQ_function                    = DAQ_function,
+        DAQ_interval_ms                 = 20,
         DAQ_timer_type                  = QtCore.Qt.PreciseTimer,
-        DAQ_critical_not_alive_count    = 1,
+        critical_not_alive_count        = 1,
         calc_DAQ_rate_every_N_iter      = 25,
         DEBUG                           = DEBUG)
     # fmt: on
@@ -577,8 +577,8 @@ def test_Worker_DAQ___rate():
     app.quit()
 
     assert (
-        qdevio.obtained_DAQ_update_interval_ms
-        >= 19 & qdevio.obtained_DAQ_update_interval_ms
+        qdevio.obtained_DAQ_interval_ms
+        >= 19 & qdevio.obtained_DAQ_interval_ms
         <= 21
     )
     assert round(qdevio.obtained_DAQ_rate_Hz) == 50
@@ -595,21 +595,21 @@ def test_Worker_DAQ___lose_connection():
     assert qdevio.attach_device(dev) == True
 
     def DAQ_function():
-        if qdevio.DAQ_update_counter == 30:
+        if qdevio.update_counter_DAQ == 30:
             dev.is_alive = False
         reply = dev.fake_query()
-        dprint(qdevio.obtained_DAQ_update_interval_ms)
+        dprint(qdevio.obtained_DAQ_interval_ms)
         dprint(qdevio.obtained_DAQ_rate_Hz)
         return reply[-14:] == "device replied"
 
     # fmt: off
     # Worker_DAQ in mode INTERNAL TIMER
     qdevio.create_worker_DAQ(
-        DAQ_trigger_by                  = DvG_QDeviceIO.DAQ_trigger.INTERNAL_TIMER,
-        DAQ_function_to_run_each_update = DAQ_function,
-        DAQ_update_interval_ms          = 20,
+        DAQ_trigger                     = DvG_QDeviceIO.DAQ_trigger.INTERNAL_TIMER,
+        DAQ_function                    = DAQ_function,
+        DAQ_interval_ms                 = 20,
         DAQ_timer_type                  = QtCore.Qt.PreciseTimer,
-        DAQ_critical_not_alive_count    = 3,
+        critical_not_alive_count        = 3,
         calc_DAQ_rate_every_N_iter      = 20,
         DEBUG                           = DEBUG)
     # fmt: on
