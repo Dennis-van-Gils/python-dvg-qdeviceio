@@ -2,33 +2,23 @@ language: python
 
 jobs:
   include:
-    - name: "py3.6 with PyQt5"
+    #- name: "py3.6 with PyQt5"
+    #  python: 3.6
+    #  before_install:
+    #    wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    #    bash ./miniconda.sh -b -p ${HOME}/miniconda;
+    #    export PATH=${HOME}/miniconda/bin:$PATH;
+    #    conda install --yes python="3.6";
+
+    - name: "py36"
       python: 3.6
-      before_install:
-        wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-        bash ./miniconda.sh -b -p ${HOME}/miniconda;
-        export PATH=${HOME}/miniconda/bin:$PATH;
-        conda install --yes python="3.6";
 
-    - name: "py3.7 with PyQt5"
+    - name: "py37"
       python: 3.7
-      before_install:
-        wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-        bash ./miniconda.sh -b -p ${HOME}/miniconda;
-        export PATH=${HOME}/miniconda/bin:$PATH;
-        conda install --yes python="3.7";
-
-    - name: "py3.8 with PyQt5"
+      
+    - name: "py38"
       python: 3.8
-      before_install:
-        wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-        bash ./miniconda.sh -b -p ${HOME}/miniconda;
-        export PATH=${HOME}/miniconda/bin:$PATH;
-        conda install --yes python="3.8";
     
-    - name: "py3.8"
-      python: 3.8
-
 install:
   - pip install pytest-cov
   - pip install coveralls
