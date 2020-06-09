@@ -228,7 +228,7 @@ class QDeviceIO(QtCore.QObject):
 
     def __init__(self, dev=None, parent=None):
         super(QDeviceIO, self).__init__(parent=parent)
-        
+
         self.dev = self.NoAttachedDevice()
         if dev is not None:
             self.attach_device(dev)
