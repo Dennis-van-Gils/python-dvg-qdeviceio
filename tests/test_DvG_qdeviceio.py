@@ -93,8 +93,8 @@ def test_Worker_DAQ___INTERNAL_TIMER(start_alive=True):
     dev = FakeDevice()
     dev.is_alive = start_alive
 
-    qdevio = QDeviceIO()
-    assert qdevio.attach_device(dev) == True
+    qdevio = QDeviceIO(dev)
+    #assert qdevio.attach_device(dev) == True
 
     def DAQ_function():
         # Must return True when successful, False otherwise
@@ -642,7 +642,7 @@ def test_Worker_DAQ___lose_connection():
 
 
 if __name__ == "__main__":
-    ALL = True
+    ALL = False
     if ALL:
         test_Worker_DAQ___INTERNAL_TIMER()
         test_Worker_DAQ___INTERNAL_TIMER__start_dead()
@@ -663,8 +663,8 @@ if __name__ == "__main__":
         test_Worker_DAQ___rate()
         test_Worker_DAQ___lose_connection()
     else:
-        # test_Worker_DAQ___INTERNAL_TIMER()
-        # test_Worker_DAQ___INTERNAL_TIMER__start_dead()
+        test_Worker_DAQ___INTERNAL_TIMER()
+        test_Worker_DAQ___INTERNAL_TIMER__start_dead()
         # test_Worker_DAQ___SINGLE_SHOT_WAKE_UP()
         # test_Worker_DAQ___SINGLE_SHOT_WAKE_UP__start_dead()
 
@@ -676,7 +676,7 @@ if __name__ == "__main__":
                 break
         """
 
-        test_Worker_DAQ___CONTINUOUS()
+        # test_Worker_DAQ___CONTINUOUS()
         # test_Worker_DAQ___CONTINUOUS__start_dead()
 
         # test_Worker_DAQ___rate()

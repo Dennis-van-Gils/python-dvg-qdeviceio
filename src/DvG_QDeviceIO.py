@@ -226,10 +226,12 @@ class QDeviceIO(QtCore.QObject):
     # Necessary for INTERNAL_TIMER
     _signal_stop_worker_DAQ = QtCore.pyqtSignal()
 
-    def __init__(self, parent=None):
+    def __init__(self, dev=None, parent=None):
         super(QDeviceIO, self).__init__(parent=parent)
-
+        
         self.dev = self.NoAttachedDevice()
+        if dev is not None:
+            self.attach_device(dev)
 
         self._thread_DAQ = None
         self._thread_send = None
