@@ -36,6 +36,32 @@ DAQ_trigger.CONTINUOUS
     
 """
 
+global cnt_DAQ_updated, cnt_send_updated, cnt_DAQ_paused
+
+
+@QtCore.pyqtSlot()
+def process_DAQ_updated():
+    # In production code, your GUI update routine would go here
+    tprint("---> received: DAQ_updated")
+    global cnt_DAQ_updated
+    cnt_DAQ_updated += 1
+
+
+@QtCore.pyqtSlot()
+def process_DAQ_paused():
+    # In production code, your GUI update routine would go here
+    tprint("---> received: DAQ_paused")
+    global cnt_DAQ_paused
+    cnt_DAQ_paused += 1
+
+
+@QtCore.pyqtSlot()
+def process_send_updated():
+    # In production code, your GUI update routine would go here
+    tprint("---> received: send_updated")
+    global cnt_send_updated
+    cnt_send_updated += 1
+
 
 class FakeDevice:
     def __init__(self, start_alive=True):
@@ -52,24 +78,24 @@ class FakeDevice:
         if self.is_alive:
             # Simulate successful device output
             self.count_replies += 1
-            tprint(data_to_be_send)
+            tprint_tab(data_to_be_send)
             return data_to_be_send
         else:
             # Simulate device failure
             time.sleep(0.1)
-            tprint("SIMULATED I/O ERROR")
+            tprint_tab("SIMULATED I/O ERROR")
             return "SIMULATED I/O ERROR"
 
     def fake_query_1(self):
         self.count_commands += 1
-        return self._send("device replied v1")
+        return self._send("-> reply 0101")
 
     def fake_query_2(self):
         self.count_commands += 1
-        return self._send("device replied v2")
+        return self._send("-> reply ~~~~")
 
     def fake_command_with_argument(self, val: int):
-        tprint("device received command(arg=%i)" % val)
+        tprint_tab("-> command(arg=%i)" % val)
         self.count_commands += 1
 
 
@@ -79,6 +105,12 @@ def create_QApplication():
     # QtWidgets are not needed for pytest and will fail standard Travis test
     # app = QtWidgets.QApplication(sys.argv)
     app = QtCore.QCoreApplication(sys.argv)  # Use QCoreApplication instead
+
+    global cnt_DAQ_updated, cnt_DAQ_paused, cnt_send_updated
+    cnt_DAQ_updated = 0
+    cnt_DAQ_paused = 0
+    cnt_send_updated = 0
+
     return app
 
 
@@ -87,36 +119,33 @@ def print_title(title):
     dprint("-" * 50, ANSI.PURPLE)
 
 
+def tprint_tab(str_msg, ANSI_color=None):
+    dprint(" " * 60 + "%.4f %s" % (time.perf_counter(), str_msg), ANSI_color)
+
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
+
+
 def test_Worker_DAQ___INTERNAL_TIMER(start_alive=True):
     print_title(
         "Worker_DAQ - INTERNAL_TIMER" + ("" if start_alive else " - start dead")
     )
-    app = create_QApplication()
 
     def DAQ_function():
         # Must return True when successful, False otherwise
         reply = dev.fake_query_1()
-        return reply[-17:] == "device replied v1"
+        return reply[-4:] == "0101"
 
-    global signal_counter
-    signal_counter = 0
-
-    @QtCore.pyqtSlot()
-    def process_DAQ_updated():
-        # In production code, your GUI update routine would go here
-        tprint("---> Received signal: DAQ_updated")
-        global signal_counter
-        signal_counter += 1
-
+    app = create_QApplication()
     dev = FakeDevice(start_alive=start_alive)
-
     qdevio = QDeviceIO(dev)
     # fmt: off
     qdevio.create_worker_DAQ(
         DAQ_trigger                = DAQ_trigger.INTERNAL_TIMER,
         DAQ_function               = DAQ_function,
         DAQ_interval_ms            = 100,
-        DAQ_timer_type             = QtCore.Qt.CoarseTimer,
+        DAQ_timer_type             = QtCore.Qt.PreciseTimer,
         critical_not_alive_count   = 10,
         calc_DAQ_rate_every_N_iter = 5,
         DEBUG                      = DEBUG)
@@ -141,8 +170,8 @@ def test_Worker_DAQ___INTERNAL_TIMER(start_alive=True):
         assert dev.count_commands >= 3
         assert dev.count_replies >= 3
         assert (
-            signal_counter >= 2
-        )  # Third signal is not always received before thread is quit
+            cnt_DAQ_updated >= 2
+        )  # Last signal is not always received before thread is quit
 
 
 def test_Worker_DAQ___INTERNAL_TIMER__start_dead():
@@ -154,25 +183,14 @@ def test_Worker_DAQ___SINGLE_SHOT_WAKE_UP(start_alive=True):
         "Worker_DAQ - SINGLE_SHOT_WAKE_UP"
         + ("" if start_alive else " - start dead")
     )
-    app = create_QApplication()
 
     def DAQ_function():
         # Must return True when successful, False otherwise
         reply = dev.fake_query_1()
-        return reply[-17:] == "device replied v1"
+        return reply[-4:] == "0101"
 
-    global signal_counter
-    signal_counter = 0
-
-    @QtCore.pyqtSlot()
-    def process_DAQ_updated():
-        # In production code, your GUI update routine would go here
-        tprint("---> Received signal: DAQ_updated")
-        global signal_counter
-        signal_counter += 1
-
+    app = create_QApplication()
     dev = FakeDevice(start_alive=start_alive)
-
     qdevio = QDeviceIO(dev)
     # fmt: off
     qdevio.create_worker_DAQ(
@@ -204,7 +222,7 @@ def test_Worker_DAQ___SINGLE_SHOT_WAKE_UP(start_alive=True):
     if start_alive:
         assert dev.count_commands == 3
         assert dev.count_replies == 3
-        assert signal_counter == 3
+        assert cnt_DAQ_updated == 3
 
 
 def test_Worker_DAQ___SINGLE_SHOT_WAKE_UP__start_dead():
@@ -215,36 +233,15 @@ def test_Worker_DAQ___CONTINUOUS(start_alive=True):
     print_title(
         "Worker_DAQ - CONTINUOUS" + ("" if start_alive else " - start dead")
     )
-    app = create_QApplication()
 
     def DAQ_function():
         # Must return True when successful, False otherwise
         time.sleep(0.1)  # Simulate blocking processing time on the device
         reply = dev.fake_query_1()
-        return reply[-17:] == "device replied v1"
+        return reply[-4:] == "0101"
 
-    global signal_counter_updated
-    signal_counter_updated = 0
-
-    @QtCore.pyqtSlot()
-    def process_DAQ_updated():
-        # In production code, your GUI update routine would go here
-        tprint("---> Received signal: DAQ_updated")
-        global signal_counter_updated
-        signal_counter_updated += 1
-
-    global signal_counter_paused
-    signal_counter_paused = 0
-
-    @QtCore.pyqtSlot()
-    def process_DAQ_paused():
-        # In production code, your GUI update routine would go here
-        tprint("---> Received signal: DAQ_paused")
-        global signal_counter_paused
-        signal_counter_paused += 1
-
+    app = create_QApplication()
     dev = FakeDevice(start_alive=start_alive)
-
     qdevio = QDeviceIO(dev)
     # fmt: off
     qdevio.create_worker_DAQ(
@@ -283,9 +280,9 @@ def test_Worker_DAQ___CONTINUOUS(start_alive=True):
         assert dev.count_commands >= 10
         assert dev.count_replies >= 10
         assert (
-            signal_counter_updated >= 9
+            cnt_DAQ_updated >= 9
         )  # Last signal is not always received before thread is quit
-        assert signal_counter_paused == 3
+        assert cnt_DAQ_paused == 3
 
 
 def test_Worker_DAQ___CONTINUOUS__start_dead():
@@ -294,20 +291,9 @@ def test_Worker_DAQ___CONTINUOUS__start_dead():
 
 def test_Worker_send(start_alive=True):
     print_title("Worker_send" + ("" if start_alive else " - start dead"))
+
     app = create_QApplication()
-
-    global signal_counter
-    signal_counter = 0
-
-    @QtCore.pyqtSlot()
-    def process_send_updated():
-        # In production code, your GUI update routine would go here
-        tprint("---> Received signal: send_updated")
-        global signal_counter
-        signal_counter += 1
-
     dev = FakeDevice(start_alive=start_alive)
-
     qdevio = QDeviceIO(dev)
     qdevio.create_worker_send(DEBUG=DEBUG)
     qdevio.signal_send_updated.connect(process_send_updated)
@@ -339,7 +325,7 @@ def test_Worker_send(start_alive=True):
     if start_alive:
         assert dev.count_commands == 5
         assert dev.count_replies == 2
-        assert signal_counter == 4
+        assert cnt_send_updated == 4
 
 
 def test_Worker_send__start_dead():
@@ -348,17 +334,6 @@ def test_Worker_send__start_dead():
 
 def test_Worker_send__jobs_function():
     print_title("Worker_send - jobs_function")
-    app = create_QApplication()
-
-    global signal_counter
-    signal_counter = 0
-
-    @QtCore.pyqtSlot()
-    def process_send_updated():
-        # In production code, your GUI update routine would go here
-        tprint("---> Received signal: send_updated")
-        global signal_counter
-        signal_counter += 1
 
     def jobs_function(func, args):
         if func == "special command":
@@ -369,8 +344,8 @@ def test_Worker_send__jobs_function():
             # args = ("toggle LED",)
             func(*args)
 
+    app = create_QApplication()
     dev = FakeDevice()
-
     qdevio = QDeviceIO(dev)
     qdevio.create_worker_send(
         jobs_function=jobs_function, DEBUG=DEBUG,
@@ -398,7 +373,7 @@ def test_Worker_send__jobs_function():
 
     assert dev.count_commands == 3
     assert dev.count_replies == 2
-    assert signal_counter == 3
+    assert cnt_send_updated == 3
 
 
 def test_attach_device_twice():
@@ -468,8 +443,8 @@ def test_Worker_send__start_without_create():
 
 def test_Worker_DAQ___quit_without_start():
     print_title("Worker_DAQ - quit without start")
-    app = create_QApplication()
 
+    app = create_QApplication()
     qdevio = QDeviceIO(FakeDevice())
     qdevio.create_worker_DAQ()
 
@@ -481,8 +456,8 @@ def test_Worker_DAQ___quit_without_start():
 
 def test_Worker_send__quit_without_start():
     print_title("Worker_send - quit without start")
-    app = create_QApplication()
 
+    app = create_QApplication()
     qdevio = QDeviceIO(FakeDevice())
     qdevio.create_worker_send()
 
@@ -494,31 +469,31 @@ def test_Worker_send__quit_without_start():
 
 def test_Worker_DAQ___rate():
     print_title("Worker_DAQ - INTERNAL_TIMER - DAQ rate")
-    app = create_QApplication()
 
     def DAQ_function():
-        dprint(qdevio.obtained_DAQ_interval_ms)
-        dprint(qdevio.obtained_DAQ_rate_Hz)
-        return True
+        # Must return True when successful, False otherwise
+        reply = dev.fake_query_1()
+        dprint(" " * 50 + "%.1f Hz" % qdevio.obtained_DAQ_rate_Hz)
+        return reply[-4:] == "0101"
 
+    app = create_QApplication()
+    dev = FakeDevice()
+    qdevio = QDeviceIO(dev)
     # fmt: off
-    # Worker_DAQ in mode INTERNAL TIMER
-    qdevio = QDeviceIO(FakeDevice())
     qdevio.create_worker_DAQ(
         DAQ_trigger                = DAQ_trigger.INTERNAL_TIMER,
         DAQ_function               = DAQ_function,
-        DAQ_interval_ms            = 20,
+        DAQ_interval_ms            = 10,
         DAQ_timer_type             = QtCore.Qt.PreciseTimer,
         critical_not_alive_count   = 1,
-        calc_DAQ_rate_every_N_iter = 25,
+        calc_DAQ_rate_every_N_iter = 20,
         DEBUG                      = DEBUG)
     # fmt: on
-    print(qdevio.worker_DAQ.calc_DAQ_rate_every_N_iter)
     assert qdevio.start() == True
 
     # Simulate device runtime
     start_time = time.perf_counter()
-    while time.perf_counter() - start_time < 1.02:
+    while time.perf_counter() - start_time < 0.51:
         app.processEvents()
         time.sleep(0.001)  # Do not hog the CPU
 
@@ -528,24 +503,24 @@ def test_Worker_DAQ___rate():
     app.quit()
 
     assert (
-        qdevio.obtained_DAQ_interval_ms
-        >= 19 & qdevio.obtained_DAQ_interval_ms
-        <= 21
+        qdevio.obtained_DAQ_interval_ms >= 9
+        and qdevio.obtained_DAQ_interval_ms <= 11
     )
-    assert round(qdevio.obtained_DAQ_rate_Hz) == 50
+    assert (
+        qdevio.obtained_DAQ_rate_Hz >= 99 and qdevio.obtained_DAQ_rate_Hz <= 101
+    )
 
 
 def test_Worker_DAQ___lose_connection():
     print_title("Worker_DAQ - INTERNAL_TIMER - lose connection")
-    app = create_QApplication()
 
     def DAQ_function():
-        if qdevio.update_counter_DAQ == 30:
+        # Must return True when successful, False otherwise
+        if qdevio.update_counter_DAQ == 10:
             dev.is_alive = False
+
         reply = dev.fake_query_1()
-        dprint(qdevio.obtained_DAQ_interval_ms)
-        dprint(qdevio.obtained_DAQ_rate_Hz)
-        return reply[-17:] == "device replied v1"
+        return reply[-4:] == "0101"
 
     # NOTE: The global 'go' mechanism used here is a quick and dirty way to
     # pytest. In production, it should be implemented by an boolean external
@@ -555,12 +530,12 @@ def test_Worker_DAQ___lose_connection():
 
     @QtCore.pyqtSlot()
     def process_connection_lost():
-        tprint("---> Received signal: connection_lost")
+        tprint("---> received: connection_lost")
         global go
         go = False
 
+    app = create_QApplication()
     dev = FakeDevice()
-
     qdevio = QDeviceIO(dev)
     # fmt: off
     qdevio.create_worker_DAQ(
@@ -610,35 +585,14 @@ class QDeviceIO_subclassed(QDeviceIO, QtCore.QObject):
 
 def test_Worker_DAQ___INTERNAL_TIMER__mixin_class():
     print_title("Worker_DAQ - INTERNAL_TIMER - mixin class")
-    app = create_QApplication()
 
     def DAQ_function():
         # Must return True when successful, False otherwise
         reply = dev.fake_query_1()
-        return reply[-17:] == "device replied v1"
+        return reply[-4:] == "0101"
 
-    global signal_counter
-    signal_counter = 0
-
-    @QtCore.pyqtSlot()
-    def process_DAQ_updated():
-        # In production code, your GUI update routine would go here
-        tprint("---> Received signal: DAQ_updated")
-        global signal_counter
-        signal_counter += 1
-
-    global signal_counter_send
-    signal_counter_send = 0
-
-    @QtCore.pyqtSlot()
-    def process_send_updated():
-        # In production code, your GUI update routine would go here
-        tprint("---> Received signal: send_updated")
-        global signal_counter_send
-        signal_counter_send += 1
-
+    app = create_QApplication()
     dev = FakeDevice()
-
     qdevio = QDeviceIO_subclassed(
         dev=dev, DAQ_function=DAQ_function, DEBUG=DEBUG,
     )
@@ -664,13 +618,17 @@ def test_Worker_DAQ___INTERNAL_TIMER__mixin_class():
     assert dev.count_commands >= 11
     assert dev.count_replies >= 10
     assert (
-        signal_counter >= 9
+        cnt_DAQ_updated >= 9
     )  # Last signal is not always received before thread is quit
-    assert signal_counter_send == 2
+    assert cnt_send_updated == 2
+
+
+# ------------------------------------------------------------------------------
+# ------------------------------------------------------------------------------
 
 
 if __name__ == "__main__":
-    ALL = False
+    ALL = True
     if ALL:
         test_Worker_DAQ___INTERNAL_TIMER()
         test_Worker_DAQ___INTERNAL_TIMER__start_dead()
@@ -690,6 +648,7 @@ if __name__ == "__main__":
         test_Worker_send__quit_without_start()
         test_Worker_DAQ___rate()
         test_Worker_DAQ___lose_connection()
+        test_Worker_DAQ___INTERNAL_TIMER__mixin_class()
     else:
         # test_Worker_DAQ___INTERNAL_TIMER()
         # test_Worker_DAQ___INTERNAL_TIMER__start_dead()
@@ -707,7 +666,7 @@ if __name__ == "__main__":
         # test_Worker_DAQ___CONTINUOUS()
         # test_Worker_DAQ___CONTINUOUS__start_dead()
 
-        # test_Worker_DAQ___rate()
+        test_Worker_DAQ___rate()
         # test_Worker_DAQ___lose_connection()
         # test_Worker_DAQ___no_device_attached()
         # test_Worker_DAQ___start_without_create()
@@ -723,4 +682,4 @@ if __name__ == "__main__":
 
         # test_attach_device_twice()
 
-        test_Worker_DAQ___INTERNAL_TIMER__mixin_class()
+        # test_Worker_DAQ___INTERNAL_TIMER__mixin_class()
