@@ -121,20 +121,20 @@ class QDeviceIO(QtCore.QObject):
             Reference to a user-supplied *device* class instance containing your
             I/O methods.
         
-        worker_DAQ (Worker_DAQ):
+        worker_DAQ (:obj:`Worker_DAQ`):
             Periodically acquires data from the device. Runs in a dedicated
             thread.
         
-        worker_send (Worker_send):
+        worker_send (:obj:`Worker_send`):
              Maintains a thread-safe queue where desired device I/O operations
              can be put onto, and sends the queued operations first in first out
              (FIFO) to the device. Runs in a dedicated thread.
         
-        update_counter_DAQ (int):
-            Increments every time ``worker_DAQ`` updates.
+        update_counter_DAQ (:obj:`int`):
+            Increments every time ``worker_DAQ`` tries to update.
         
-        update_counter_send (int):
-            Increments every time ``worker_send`` updates.
+        update_counter_send (:obj:`int`):
+            Increments every time ``worker_send`` tries to update.
         
         obtained_DAQ_interval_ms:
             Obtained time interval in milliseconds since the previous
@@ -146,23 +146,23 @@ class QDeviceIO(QtCore.QObject):
     .. _`signals`:
     
     :Signals:
-        Type: :obj:`PyQt5.QtCore.pyqtSignal()`
+        Type: :obj:`PyQt5.QtCore.pyqtSignal`
             ..
             
-        signal_DAQ_updated():
+        **signal_DAQ_updated()**:
             Emitted by ``worker_DAQ`` when the ``DAQ_function`` has run and
-            finished.
+            finished succesfully.
 
-        signal_send_updated():
+        **signal_send_updated()**:
             Emitted by ``worker_send`` when all pending jobs in the queue have
             been sent out to the device. It is a response to ``send()`` or
             ``process_send_queue()``.
         
-        signal_DAQ_paused():
+        **signal_DAQ_paused()**:
             Emitted by ``worker_DAQ`` to confirm the worker has entered the
             `pause` state. It is a response to ``pause_DAQ()``.
         
-        signal_connection_lost():
+        **signal_connection_lost()**:
             Emitted by ``worker_DAQ`` to indicate that we lost connection to the
             device. This happens when `N` consecutive device I/O operations have
             failed, where `N` equals the argument ``critical_not_alive_count`` 
@@ -217,6 +217,11 @@ class QDeviceIO(QtCore.QObject):
     def attach_device(self, dev):
         """Attaches a reference to a *device* instance containing your I/O
         methods.
+        
+        Args:
+            dev (:obj:`object`):
+                Reference to a user-supplied *device* class instance containing
+                your I/O methods.
         
         Returns:
             True if successful, False otherwise.
