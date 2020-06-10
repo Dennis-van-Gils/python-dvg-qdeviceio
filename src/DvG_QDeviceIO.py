@@ -1,56 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""PyQt5 framework for multithreaded periodical data acquisition and
-communication with an I/O device.
-
-TODO: Watch https://sphinx-rtd-tutorial.readthedocs.io/en/latest/docstrings.html
-
-MAIN CONTENTS:
---------------
-
-    Class:
-        QDeviceIO(...)
-            Methods:
-                attach_device(...)
-                
-                create_worker_DAQ(...)
-                create_worker_send(...)
-                
-                start_worker_DAQ(...)
-                start_worker_send(...)
-                
-                quit_worker_DAQ()
-                quit_worker_send()
-                quit_all_workers()
-
-            Inner-class instances:
-                worker_DAQ(...)
-                    Methods:
-                        pause()
-                        unpause()
-                        wake_up()
-
-                worker_send(...):
-                    Methods:
-                        add_to_queue(...)
-                        process_queue()
-                        queued_instruction(...)
-
-            Main data attributes:
-                update_counter_DAQ
-                obtained_DAQ_interval_ms
-                obtained_DAQ_rate_Hz
-
-            Signals:
-                signal_DAQ_updated()
-                signal_DAQ_paused()
-                signal_connection_lost()
+"""PyQt5 framework for multithreaded periodical data acquisition and communication with an I/O device.
 """
 __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
-__date__ = "09-06-2020"
-__version__ = "0.0.8"  # v0.0.1 on PyPI is based on prototype DvG_dev_Base__pyqt_lib.py v1.3.3
+__date__ = "10-06-2020"
+__version__ = "0.0.9"  # v0.0.1 on PyPI is based on prototype DvG_dev_Base__pyqt_lib.py v1.3.3
 
 from enum import IntEnum, unique
 import queue
@@ -160,7 +116,7 @@ class QDeviceIO(QtCore.QObject):
         worker_DAQ
         worker_send
 
-    Main data attributes:
+    Attributes:
         dev:
             Reference to a 'device' instance with I/O methods. Needs to be set
             by calling 'attach_device(...)'.
@@ -278,7 +234,7 @@ class QDeviceIO(QtCore.QObject):
             )
             sys.exit(99)
 
-        self.worker_DAQ = Worker_DAQ(qdevio=self, **kwargs)
+        self.worker_DAQ = Worker_DAQ(qdev=self, **kwargs)
         self._signal_stop_worker_DAQ.connect(self.worker_DAQ._stop)
 
         self._thread_DAQ = QtCore.QThread()
@@ -301,7 +257,7 @@ class QDeviceIO(QtCore.QObject):
             )
             sys.exit(99)
 
-        self.worker_send = Worker_send(qdevio=self, **kwargs)
+        self.worker_send = Worker_send(qdev=self, **kwargs)
 
         self._thread_send = QtCore.QThread()
         self._thread_send.setObjectName("%s_send" % self.dev.name)
@@ -738,14 +694,14 @@ class Worker_send(QtCore.QObject):
     """
 
     def __init__(
-        self, *, qdevio=None, jobs_function=None, DEBUG=False,
+        self, *, qdev=None, jobs_function=None, DEBUG=False,
     ):
         super().__init__(None)
         self.DEBUG = DEBUG
         self.DEBUG_color = ANSI.YELLOW
 
-        self.qdevio = qdevio
-        self.dev = qdevio.dev
+        self.qdev = qdev
+        self.dev = None if qdev is None else qdev.dev
 
         self.jobs_function = jobs_function
         self._started_okay = None
@@ -785,7 +741,7 @@ class Worker_send(QtCore.QObject):
                 )
 
             # Send confirmation
-            self.qdevio._qwc_worker_send_started.wakeAll()
+            self.qdev._qwc_worker_send_started.wakeAll()
 
         if self.DEBUG:
             tprint(
@@ -834,7 +790,7 @@ class Worker_send(QtCore.QObject):
         # Wait a tiny amount for the other thread to have entered the
         # QWaitCondition lock, before giving a wakingAll().
         QtCore.QTimer.singleShot(
-            100, lambda: self.qdevio._qwc_worker_send_stopped.wakeAll()
+            100, lambda: self.qdev._qwc_worker_send_stopped.wakeAll()
         )
 
     @coverage_resolve_trace
@@ -844,12 +800,12 @@ class Worker_send(QtCore.QObject):
             return
 
         locker = QtCore.QMutexLocker(self.dev.mutex)
-        self.qdevio.update_counter_send += 1
+        self.qdev.update_counter_send += 1
 
         if self.DEBUG:
             tprint(
                 "Worker_send %s: lock   # %i"
-                % (self.dev.name, self.qdevio.update_counter_send),
+                % (self.dev.name, self.qdev.update_counter_send),
                 self.DEBUG_color,
             )
 
@@ -894,12 +850,12 @@ class Worker_send(QtCore.QObject):
         if self.DEBUG:
             tprint(
                 "Worker_send %s: unlock # %i"
-                % (self.dev.name, self.qdevio.update_counter_send),
+                % (self.dev.name, self.qdev.update_counter_send),
                 self.DEBUG_color,
             )
 
         locker.unlock()
-        self.qdevio.signal_send_updated.emit()
+        self.qdev.signal_send_updated.emit()
 
     @QtCore.pyqtSlot()
     def _stop(self):
@@ -1077,7 +1033,7 @@ class Worker_DAQ(QtCore.QObject):
     def __init__(
         self,
         *,
-        qdevio=None,
+        qdev=None,
         DAQ_trigger=DAQ_trigger.INTERNAL_TIMER,
         DAQ_function=None,
         DAQ_interval_ms=1000,
@@ -1090,8 +1046,8 @@ class Worker_DAQ(QtCore.QObject):
         self.DEBUG = DEBUG
         self.DEBUG_color = ANSI.CYAN
 
-        self.qdevio = qdevio
-        self.dev = qdevio.dev
+        self.qdev = qdev
+        self.dev = None if qdev is None else qdev.dev
 
         self.DAQ_function = DAQ_function
         self.critical_not_alive_count = critical_not_alive_count
@@ -1156,7 +1112,7 @@ class Worker_DAQ(QtCore.QObject):
                 )
 
             # Send confirmation
-            self.qdevio._qwc_worker_DAQ_started.wakeAll()
+            self.qdev._qwc_worker_DAQ_started.wakeAll()
 
         if self.DEBUG:
             tprint(
@@ -1217,7 +1173,7 @@ class Worker_DAQ(QtCore.QObject):
             # Wait a tiny amount for the other thread to have entered the
             # QWaitCondition lock, before giving a wakingAll().
             QtCore.QTimer.singleShot(
-                100, lambda: self.qdevio._qwc_worker_DAQ_stopped.wakeAll()
+                100, lambda: self.qdev._qwc_worker_DAQ_stopped.wakeAll()
             )
 
         # CONTINUOUS
@@ -1234,7 +1190,7 @@ class Worker_DAQ(QtCore.QObject):
                             self.DEBUG_color,
                         )
 
-                    self.qdevio.signal_DAQ_paused.emit()
+                    self.qdev.signal_DAQ_paused.emit()
 
                     confirm_started(self)
                     init = False
@@ -1247,7 +1203,7 @@ class Worker_DAQ(QtCore.QObject):
                                 % self.dev.name,
                                 self.DEBUG_color,
                             )
-                        self.qdevio.signal_DAQ_paused.emit()
+                        self.qdev.signal_DAQ_paused.emit()
                         self._paused = True
 
                     time.sleep(0.01)  # Do not hog the CPU while paused
@@ -1274,7 +1230,7 @@ class Worker_DAQ(QtCore.QObject):
             # in a different thread than this one, to have entered the
             # QWaitCondition lock, before giving a wakingAll().
             QtCore.QTimer.singleShot(
-                100, lambda: self.qdevio._qwc_worker_DAQ_stopped.wakeAll()
+                100, lambda: self.qdev._qwc_worker_DAQ_stopped.wakeAll()
             )
 
     @coverage_resolve_trace
@@ -1284,40 +1240,37 @@ class Worker_DAQ(QtCore.QObject):
             return
 
         locker = QtCore.QMutexLocker(self.dev.mutex)
-        self.qdevio.update_counter_DAQ += 1
+        self.qdev.update_counter_DAQ += 1
 
         if self.DEBUG:
             tprint(
                 "Worker_DAQ  %s: lock   # %i"
-                % (self.dev.name, self.qdevio.update_counter_DAQ),
+                % (self.dev.name, self.qdev.update_counter_DAQ),
                 self.DEBUG_color,
             )
 
         # Keep track of the obtained DAQ update interval
         now = self._QET_DAQ.elapsed()
-        if self.qdevio.update_counter_DAQ > 1:
-            self.qdevio.obtained_DAQ_interval_ms = (
+        if self.qdev.update_counter_DAQ > 1:
+            self.qdev.obtained_DAQ_interval_ms = (
                 now - self._prev_tick_DAQ_update
             )
         self._prev_tick_DAQ_update = now
 
         # Keep track of the obtained DAQ rate
-        if (
-            self.qdevio.update_counter_DAQ % self.calc_DAQ_rate_every_N_iter
-            == 0
-        ):
+        if self.qdev.update_counter_DAQ % self.calc_DAQ_rate_every_N_iter == 0:
             try:
-                self.qdevio.obtained_DAQ_rate_Hz = (
+                self.qdev.obtained_DAQ_rate_Hz = (
                     self.calc_DAQ_rate_every_N_iter
                     / (now - self._prev_tick_DAQ_rate)
                     * 1e3
                 )
             except ZeroDivisionError:  # pragma: no cover
-                self.qdevio.obtained_DAQ_rate_Hz = np.nan  # pragma: no cover
+                self.qdev.obtained_DAQ_rate_Hz = np.nan  # pragma: no cover
             self._prev_tick_DAQ_rate = now
 
         # Check the not alive counter
-        if self.qdevio.not_alive_counter_DAQ >= self.critical_not_alive_count:
+        if self.qdev.not_alive_counter_DAQ >= self.critical_not_alive_count:
             dprint(
                 "\nWorker_DAQ %s: Lost connection to device.\n" % self.dev.name,
                 ANSI.RED,
@@ -1326,8 +1279,8 @@ class Worker_DAQ(QtCore.QObject):
 
             locker.unlock()
             self._stop()
-            self.qdevio.signal_DAQ_updated.emit()
-            self.qdevio.signal_connection_lost.emit()
+            self.qdev.signal_DAQ_updated.emit()
+            self.qdev.signal_connection_lost.emit()
             return
 
         # ----------------------------------
@@ -1338,10 +1291,10 @@ class Worker_DAQ(QtCore.QObject):
             if self.DAQ_function():
                 # Did return True, hence was succesfull
                 # --> Reset the 'not alive' counter
-                self.qdevio.not_alive_counter_DAQ = 0
+                self.qdev.not_alive_counter_DAQ = 0
             else:
                 # Did return False, hence was unsuccesfull
-                self.qdevio.not_alive_counter_DAQ += 1
+                self.qdev.not_alive_counter_DAQ += 1
 
         # ----------------------------------
         #   End user-supplied DAQ function
@@ -1350,12 +1303,12 @@ class Worker_DAQ(QtCore.QObject):
         if self.DEBUG:
             tprint(
                 "Worker_DAQ  %s: unlock # %i"
-                % (self.dev.name, self.qdevio.update_counter_DAQ),
+                % (self.dev.name, self.qdev.update_counter_DAQ),
                 self.DEBUG_color,
             )
 
         locker.unlock()
-        self.qdevio.signal_DAQ_updated.emit()
+        self.qdev.signal_DAQ_updated.emit()
 
     @QtCore.pyqtSlot()
     def _stop(self):
@@ -1377,7 +1330,7 @@ class Worker_DAQ(QtCore.QObject):
             # Wait a tiny amount for the other thread to have entered the
             # QWaitCondition lock, before giving a wakingAll().
             QtCore.QTimer.singleShot(
-                100, lambda: self.qdevio._qwc_worker_DAQ_stopped.wakeAll()
+                100, lambda: self.qdev._qwc_worker_DAQ_stopped.wakeAll()
             )
 
         elif self._DAQ_trigger == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
