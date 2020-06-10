@@ -1,54 +1,12 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""PyQt5 framework for multithreaded periodical data acquisition and
-communication with an I/O device.
-
-MAIN CONTENTS:
---------------
-
-    Class:
-        QDeviceIO(...)
-            Methods:
-                attach_device(...)
-                
-                create_worker_DAQ(...)
-                create_worker_send(...)
-                
-                start_worker_DAQ(...)
-                start_worker_send(...)
-                
-                quit_worker_DAQ()
-                quit_worker_send()
-                quit_all_workers()
-
-            Inner-class instances:
-                worker_DAQ(...)
-                    Methods:
-                        pause()
-                        unpause()
-                        wake_up()
-
-                worker_send(...):
-                    Methods:
-                        add_to_queue(...)
-                        process_queue()
-                        queued_instruction(...)
-
-            Main data attributes:
-                update_counter_DAQ
-                obtained_DAQ_interval_ms
-                obtained_DAQ_rate_Hz
-
-            Signals:
-                signal_DAQ_updated()
-                signal_DAQ_paused()
-                signal_connection_lost()
+"""PyQt5 framework for multithreaded periodical data acquisition and communication with an I/O device.
 """
 __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
-__date__ = "09-06-2020"
-__version__ = "0.0.8"  # v0.0.1 on PyPI is based on prototype DvG_dev_Base__pyqt_lib.py v1.3.3
+__date__ = "10-06-2020"
+__version__ = "0.0.9"  # v0.0.1 on PyPI is based on prototype DvG_dev_Base__pyqt_lib.py v1.3.3
 
 from enum import IntEnum, unique
 import queue
@@ -98,29 +56,6 @@ def cur_thread_name():
 @unique
 class DAQ_trigger(IntEnum):
     [INTERNAL_TIMER, SINGLE_SHOT_WAKE_UP, CONTINUOUS] = range(3)
-
-
-# ------------------------------------------------------------------------------
-#   InnerClassDescriptor
-# ------------------------------------------------------------------------------
-
-
-class InnerClassDescriptor(object):
-    """Allows an inner class instance to get the attributes from the outer class
-    instance by referring to 'self.outer'. Used in this module by the
-    'Worker_DAQ' and 'Worker_send' classes. Usage: @InnerClassDescriptor.
-    Not to be used outside of this module.
-    """
-
-    def __init__(self, cls):
-        self.cls = cls
-
-    def __get__(self, instance, outerclass):
-        class Wrapper(self.cls):
-            outer = instance
-
-        Wrapper.__name__ = self.cls.__name__
-        return Wrapper
 
 
 # ------------------------------------------------------------------------------
@@ -181,7 +116,7 @@ class QDeviceIO(QtCore.QObject):
         worker_DAQ
         worker_send
 
-    Main data attributes:
+    Attributes:
         dev:
             Reference to a 'device' instance with I/O methods. Needs to be set
             by calling 'attach_device(...)'.
@@ -299,7 +234,7 @@ class QDeviceIO(QtCore.QObject):
             )
             sys.exit(99)
 
-        self.worker_DAQ = self.Worker_DAQ(**kwargs)
+        self.worker_DAQ = Worker_DAQ(qdev=self, **kwargs)
         self._signal_stop_worker_DAQ.connect(self.worker_DAQ._stop)
 
         self._thread_DAQ = QtCore.QThread()
@@ -322,7 +257,7 @@ class QDeviceIO(QtCore.QObject):
             )
             sys.exit(99)
 
-        self.worker_send = self.Worker_send(**kwargs)
+        self.worker_send = Worker_send(qdev=self, **kwargs)
 
         self._thread_send = QtCore.QThread()
         self._thread_send.setObjectName("%s_send" % self.dev.name)
@@ -683,606 +618,520 @@ class QDeviceIO(QtCore.QObject):
         if self.worker_send is not None:
             self.worker_send.process_queue()
 
-    # --------------------------------------------------------------------------
-    #   Worker_DAQ
-    # --------------------------------------------------------------------------
 
-    @InnerClassDescriptor
-    class Worker_DAQ(QtCore.QObject):
-        """This worker acquires data from the I/O device. It does so by calling
-        a user-supplied function, passed as argument 'DAQ_function_to_run_each_
-        update', containing your device I/O operations (and/or data parsing,
-        processing or more), every iteration of the worker's event loop. 
-        No direct changes to the GUI should be performed inside this function.
-        Instead, connect to the 'signal_DAQ_updated' signal to instigate GUI
-        changes when needed.
+# --------------------------------------------------------------------------
+#   Worker_send
+# --------------------------------------------------------------------------
 
-        The worker will be placed inside a separate thread by its parent class
-        QDeviceIO. 
 
-        The Worker_DAQ routine is robust in the following sense. It can be set
-        to quit as soon as a communication error appears, or it could be set to
-        allow a certain number of communication errors before it quits. The
-        latter can be useful in non-critical implementations where continuity of
-        the program is of more importance than preventing drops in data
-        transmission. This, obviously, is a work-around for not having to tackle
-        the source of the communication error, but sometimes you just need to
-        struggle on. E.g., when your Arduino is out in the field and picks up
-        occasional unwanted interference/ground noise that messes with your data
-        transmission.
+class Worker_send(QtCore.QObject):
+    """This worker maintains a thread-safe queue where desired device I/O
+    operations, a.k.a. jobs, can be put onto. The worker will send out the
+    operations to the device, first in first out (FIFO), until the queue is
+    empty again.
 
-        Args:
-            DAQ_interval_ms:
-                TODO: Rewrite and explain different DAQ_trigger methods
-                Desired data acquisition update interval in milliseconds.
+    The worker will be placed inside a separate thread by its parent class
+    QDeviceIO. 
 
-            DAQ_function (optional, default=None):
-                Reference to a user-supplied function containing the device
-                query operations and subsequent data processing, to be invoked
-                every DAQ update. It must return True when everything went
-                successful, and False otherwise.
+    This worker uses the QWaitCondition mechanism. Hence, it will only send
+    out all operations collected in the queue, whenever the thread it lives
+    in is woken up by calling 'Worker_send.process_queue()'. When it has
+    emptied the queue, the thread will go back to sleep again.
 
-                NOTE: No direct changes to the GUI should run inside this
-                function! If you do anyhow, expect a penalty in the timing
-                stability of this worker.
+    No direct changes to the GUI should be performed inside this class.
+    Instead, connect to the 'signal_send_updated' signal to instigate GUI
+    changes when needed.
 
-                Example pseudo-code, where 'time' and 'temperature' are
-                variables that live at a higher scope, presumably at main/GUI
-                scope level:
+    Args:
+        jobs_function (optional, default=None):
+            Reference to an user-supplied function performing an alternative
+            job handling when processing the worker_send queue. The default
+            job handling effectuates calling 'func(*args)', where 'func' and
+            'args' are retrieved from the worker_send queue, and nothing
+            more. The default is sufficient when 'func' corresponds to an
+            I/O operation that is an one-way send, i.e. a write operation
+            without a reply.
 
-                def my_update_function():
-                    # Query the device for its state. In this example we assume
-                    # the device replies with a time stamp and a temperature
-                    # reading. The function 'dev.query_temperature()' is also
-                    # supplied by the user and handles the direct communication
-                    # with the I/O device, returning..
-                    # BLABLABLA. TODO: rewrite and provide more clear example
-                    [success, reply] = dev.query_temperature()
-                    if not(success):
-                        print("Device IOerror")
-                        return False
+            Instead of just write operations, you can also put a single or
+            multiple query operation(s) in the queue and process each reply
+            of the device accordingly. This is the purpose of this argument:
+            To provide your own 'job processing routines' function. The
+            function you supply must take two arguments, where the first
+            argument will be 'func' and the second argument will be
+            'args', which is a tuple. Both 'func' and 'args' will be
+            retrieved from the worker_send queue and passed onto your
+            own function.
 
-                    # Parse readings into separate variables and store them
-                    try:
-                        [time, temperature] = parse(reply)
-                    except Exception as err:
-                        print(err)
-                        return False
+            Example of a query operation by sending and checking for a
+            special string value of 'func':
 
-                    return True
+                def jobs_function(func, args):
+                    if func == "query_id?":
+                        # Query the device for its identity string
+                        [success, ans_str] = self.dev.query("id?")
+                        # And store the reply 'ans_str' in another variable
+                        # at a higher scope or do stuff with it here.
+                    else:
+                        # Default job handling where, e.g.
+                        # func = self.dev.write
+                        # args = ("toggle LED",)
+                        func(*args)
 
-            critical_not_alive_count (optional, default=1):
-                The worker will allow for up to a certain number of consecutive
-                communication failures with the device before hope is given up
-                and a 'signal_connection_lost' signal is emitted. Use at your
-                own discretion.
+        DEBUG (bool, optional, default=False):
+            Show debug info in terminal? Warning: Slow! Do not leave on
+            unintentionally.
 
-            DAQ_timer_type (PyQt5.QtCore.Qt.TimerType, optional, default=
-                            PyQt5.QtCore.Qt.CoarseTimer):
-                The update interval is timed to a QTimer running inside
-                Worker_DAQ. The accuracy of the timer can be improved by setting
-                it to PyQt5.QtCore.Qt.PreciseTimer with ~1 ms granularity, but
-                it is resource heavy. Use sparingly.
+    Methods:
+        add_to_queue(...):
+            Put an instruction on the worker_send queue.
 
-            DAQ_trigger (optional, default=DAQ_trigger.INTERNAL_TIMER):
-                TODO: write description
+        process_queue():
+            Trigger processing the worker_send queue until empty.
 
-            DEBUG (bool, optional, default=False):
-                Show debug info in terminal? Warning: Slow! Do not leave on
-                unintentionally.
-                
-        Methods:
-            pause():
-                Only useful with DAQ_trigger.CONTINUOUS
+        queued_instruction(...):
+            Put an instruction on the worker_send queue and process the
+            queue until empty.
+    """
 
-            unpause():
-                Only useful with DAQ_trigger.CONTINUOUS
+    def __init__(
+        self, *, qdev=None, jobs_function=None, DEBUG=False,
+    ):
+        super().__init__(None)
+        self.DEBUG = DEBUG
+        self.DEBUG_color = ANSI.YELLOW
 
-            wake_up():
-                Only useful with DAQ_trigger.SINGLE_SHOT_WAKE_UP
-        """
+        self.qdev = qdev
+        self.dev = None if qdev is None else qdev.dev
 
-        def __init__(
-            self,
-            *,
-            DAQ_trigger=DAQ_trigger.INTERNAL_TIMER,
-            DAQ_function=None,
-            DAQ_interval_ms=1000,
-            DAQ_timer_type=QtCore.Qt.CoarseTimer,
-            critical_not_alive_count=1,
-            calc_DAQ_rate_every_N_iter=25,  # TODO: set default value to 'auto' and implement further down. When integer, take over that value.
-            DEBUG=False,
-        ):
-            super().__init__(None)
-            self.DEBUG = DEBUG
-            self.DEBUG_color = ANSI.CYAN
+        self.jobs_function = jobs_function
+        self._started_okay = None
 
-            self.dev = self.outer.dev
-            self.DAQ_function = DAQ_function
-            self.critical_not_alive_count = critical_not_alive_count
-            self._DAQ_trigger = DAQ_trigger
-            self._started_okay = None
+        self._running = True
+        self._qwc = QtCore.QWaitCondition()
+        self._mutex_wait = QtCore.QMutex()
 
-            # Members specifically for INTERNAL_TIMER
-            if self._DAQ_trigger == DAQ_trigger.INTERNAL_TIMER:
-                self._DAQ_interval_ms = DAQ_interval_ms
-                self._timer_type = DAQ_timer_type
-                self._timer = None
-                self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
-                # TODO: create a special value, like string 'auto_1_Hz' to
-                # trigger below calculation
-                # self.calc_DAQ_rate_every_N_iter = max(
-                #        round(1e3/self._DAQ_interval_ms), 1)
+        # Use a 'sentinel' value to signal the start and end of the queue
+        # to ensure proper multithreaded operation.
+        self._sentinel = None
+        self._queue = queue.Queue()
+        self._queue.put(self._sentinel)
 
-            # Members specifically for SINGLE_SHOT_WAKE_UP
-            elif self._DAQ_trigger == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
-                self._running = True
-                self._qwc = QtCore.QWaitCondition()
-                self._mutex_wait = QtCore.QMutex()
-                self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
+        if self.DEBUG:
+            tprint(
+                "Worker_send %s: init @ thread %s"
+                % (self.dev.name, cur_thread_name()),
+                self.DEBUG_color,
+            )
 
-            # Members specifically for CONTINUOUS
-            # Note: At start-up, the worker will directly go into a paused state
-            # and trigger a 'signal_DAQ_paused' PyQt signal
-            elif self._DAQ_trigger == DAQ_trigger.CONTINUOUS:
-                self._running = True
-                self._pause = None  # Will be set at init of '_do_work()' when 'start_worker_DAQ()' is called
-                self._paused = None  # Will be set at init of '_do_work()' when 'start_worker_DAQ()' is called
-                self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
+    @coverage_resolve_trace
+    @QtCore.pyqtSlot()
+    def _do_work(self):
+        init = True
 
-            # QElapsedTimer (QET) to keep track of DAQ interval and DAQ rate
-            self._QET_DAQ = QtCore.QElapsedTimer()
-            self._QET_DAQ.start()
-            self._prev_tick_DAQ_update = 0
-            self._prev_tick_DAQ_rate = 0
+        def confirm_started(self):
+            # Wait a tiny amount of extra time for QDeviceIO to have entered
+            # 'self._qwc_worker_###_started.wait(self._mutex_wait_worker_###)'
+            # of method 'start_worker_###()'.
+            time.sleep(0.05)
 
             if self.DEBUG:
                 tprint(
-                    "Worker_DAQ  %s: init @ thread %s"
-                    % (self.dev.name, cur_thread_name()),
+                    "Worker_send %s: start confirmed" % self.dev.name,
                     self.DEBUG_color,
                 )
 
-        @coverage_resolve_trace
-        @QtCore.pyqtSlot()
-        def _do_work(self):
-            init = True
+            # Send confirmation
+            self.qdev._qwc_worker_send_started.wakeAll()
 
-            def confirm_started(self):
-                # Wait a tiny amount of extra time for QDeviceIO to have entered
-                # 'self._qwc_worker_###_started.wait(self._mutex_wait_worker_###)'
-                # of method 'start_worker_###()'.
-                time.sleep(0.05)
+        if self.DEBUG:
+            tprint(
+                "Worker_send %s: starting @ thread %s"
+                % (self.dev.name, cur_thread_name()),
+                self.DEBUG_color,
+            )
 
-                if self.DEBUG:
-                    tprint(
-                        "Worker_DAQ  %s: start confirmed" % self.dev.name,
-                        self.DEBUG_color,
-                    )
+        locker_wait = QtCore.QMutexLocker(self._mutex_wait)
+        locker_wait.unlock()
 
-                # Send confirmation
-                self.outer._qwc_worker_DAQ_started.wakeAll()
+        while self._running:
+            locker_wait.relock()
 
             if self.DEBUG:
                 tprint(
-                    "Worker_DAQ  %s: starting @ thread %s"
-                    % (self.dev.name, cur_thread_name()),
+                    "Worker_send %s: waiting for wake trigger" % self.dev.name,
                     self.DEBUG_color,
                 )
 
-            # INTERNAL_TIMER
-            if self._DAQ_trigger == DAQ_trigger.INTERNAL_TIMER:
-                self._timer = QtCore.QTimer()
-                self._timer.setInterval(self._DAQ_interval_ms)
-                self._timer.timeout.connect(self._perform_DAQ)
-                self._timer.setTimerType(self._timer_type)
-                self._timer.start()
+            if init:
                 confirm_started(self)
+                init = False
 
-            # SINGLE_SHOT_WAKE_UP
-            elif self._DAQ_trigger == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
-                locker_wait = QtCore.QMutexLocker(self._mutex_wait)
-                locker_wait.unlock()
-
-                while self._running:
-                    locker_wait.relock()
-
-                    if self.DEBUG:
-                        tprint(
-                            "Worker_DAQ  %s: waiting for wake trigger"
-                            % self.dev.name,
-                            self.DEBUG_color,
-                        )
-
-                    if init:
-                        confirm_started(self)
-                        init = False
-
-                    self._qwc.wait(self._mutex_wait)
-
-                    if self.DEBUG:
-                        tprint(
-                            "Worker_DAQ  %s: wake confirmed" % self.dev.name,
-                            self.DEBUG_color,
-                        )
-
-                    # Needed check to prevent _perform_DAQ() at final wake up
-                    # when _stop() has been called
-                    if self._running:
-                        self._perform_DAQ()
-
-                    locker_wait.unlock()
-
-                if self.DEBUG:
-                    tprint(
-                        "Worker_DAQ  %s: stop confirmed" % self.dev.name,
-                        self.DEBUG_color,
-                    )
-
-                # Wait a tiny amount for the other thread to have entered the
-                # QWaitCondition lock, before giving a wakingAll().
-                QtCore.QTimer.singleShot(
-                    100, lambda: self.outer._qwc_worker_DAQ_stopped.wakeAll()
-                )
-
-            # CONTINUOUS
-            elif self._DAQ_trigger == DAQ_trigger.CONTINUOUS:
-                while self._running:
-                    if init:
-                        self._pause = True
-                        self._paused = True
-
-                        if self.DEBUG:
-                            tprint(
-                                "Worker_DAQ  %s: starting up paused"
-                                % self.dev.name,
-                                self.DEBUG_color,
-                            )
-
-                        self.outer.signal_DAQ_paused.emit()
-
-                        confirm_started(self)
-                        init = False
-
-                    if self._pause:  # == True
-                        if self._pause != self._paused:
-                            if self.DEBUG and not init:
-                                tprint(
-                                    "Worker_DAQ  %s: pause confirmed"
-                                    % self.dev.name,
-                                    self.DEBUG_color,
-                                )
-                            self.outer.signal_DAQ_paused.emit()
-                            self._paused = True
-
-                        time.sleep(0.01)  # Do not hog the CPU while paused
-
-                    else:  # == False
-                        if self._pause != self._paused:
-                            if self.DEBUG:
-                                tprint(
-                                    "Worker_DAQ  %s: unpause confirmed"
-                                    % self.dev.name,
-                                    self.DEBUG_color,
-                                )
-                            self._paused = False
-
-                        self._perform_DAQ()
-
-                if self.DEBUG:
-                    tprint(
-                        "Worker_DAQ  %s: stop confirmed" % self.dev.name,
-                        self.DEBUG_color,
-                    )
-
-                # Wait a tiny amount for 'create_worker_DAQ()', which is running
-                # in a different thread than this one, to have entered the
-                # QWaitCondition lock, before giving a wakingAll().
-                QtCore.QTimer.singleShot(
-                    100, lambda: self.outer._qwc_worker_DAQ_stopped.wakeAll()
-                )
-
-        @coverage_resolve_trace
-        @QtCore.pyqtSlot()
-        def _perform_DAQ(self):
-            if not self._started_okay:
-                return
-
-            locker = QtCore.QMutexLocker(self.dev.mutex)
-            self.outer.update_counter_DAQ += 1
+            self._qwc.wait(self._mutex_wait)
 
             if self.DEBUG:
                 tprint(
-                    "Worker_DAQ  %s: lock   # %i"
-                    % (self.dev.name, self.outer.update_counter_DAQ),
+                    "Worker_send %s: wake confirmed" % self.dev.name,
                     self.DEBUG_color,
                 )
 
-            # Keep track of the obtained DAQ update interval
-            now = self._QET_DAQ.elapsed()
-            if self.outer.update_counter_DAQ > 1:
-                self.outer.obtained_DAQ_interval_ms = (
-                    now - self._prev_tick_DAQ_update
-                )
-            self._prev_tick_DAQ_update = now
+            # Needed check to prevent _perform_send() at final wake up
+            # when _stop() has been called
+            if self._running:
+                self._perform_send()
 
-            # Keep track of the obtained DAQ rate
-            if (
-                self.outer.update_counter_DAQ % self.calc_DAQ_rate_every_N_iter
-                == 0
-            ):
-                try:
-                    self.outer.obtained_DAQ_rate_Hz = (
-                        self.calc_DAQ_rate_every_N_iter
-                        / (now - self._prev_tick_DAQ_rate)
-                        * 1e3
-                    )
-                except ZeroDivisionError:  # pragma: no cover
-                    self.outer.obtained_DAQ_rate_Hz = np.nan  # pragma: no cover
-                self._prev_tick_DAQ_rate = now
+            locker_wait.unlock()
 
-            # Check the not alive counter
-            if (
-                self.outer.not_alive_counter_DAQ
-                >= self.critical_not_alive_count
-            ):
-                dprint(
-                    "\nWorker_DAQ %s: Lost connection to device.\n"
-                    % self.dev.name,
-                    ANSI.RED,
-                )
-                self.dev.is_alive = False
+        if self.DEBUG:
+            tprint(
+                "Worker_send %s: stop confirmed" % self.dev.name,
+                self.DEBUG_color,
+            )
 
-                locker.unlock()
-                self._stop()
-                self.outer.signal_DAQ_updated.emit()
-                self.outer.signal_connection_lost.emit()
-                return
+        # Wait a tiny amount for the other thread to have entered the
+        # QWaitCondition lock, before giving a wakingAll().
+        QtCore.QTimer.singleShot(
+            100, lambda: self.qdev._qwc_worker_send_stopped.wakeAll()
+        )
 
-            # ----------------------------------
-            #   User-supplied DAQ function
-            # ----------------------------------
+    @coverage_resolve_trace
+    @QtCore.pyqtSlot()
+    def _perform_send(self):
+        if not self._started_okay:
+            return
 
-            if not self.DAQ_function is None:
-                if self.DAQ_function():
-                    # Did return True, hence was succesfull
-                    # --> Reset the 'not alive' counter
-                    self.outer.not_alive_counter_DAQ = 0
+        locker = QtCore.QMutexLocker(self.dev.mutex)
+        self.qdev.update_counter_send += 1
+
+        if self.DEBUG:
+            tprint(
+                "Worker_send %s: lock   # %i"
+                % (self.dev.name, self.qdev.update_counter_send),
+                self.DEBUG_color,
+            )
+
+        """Process all jobs until the queue is empty. We must iterate 2
+        times because we use a sentinel in a FIFO queue. First iter
+        removes the old sentinel. Second iter processes the remaining
+        queue items and will put back a new sentinel again.
+        """
+        for i in range(2):
+            for job in iter(self._queue.get_nowait, self._sentinel):
+                func = job[0]
+                args = job[1:]
+
+                if self.DEBUG:
+                    if type(func) == str:
+                        tprint(
+                            "Worker_send %s: %s %s"
+                            % (self.dev.name, func, args),
+                            self.DEBUG_color,
+                        )
+                    else:
+                        tprint(
+                            "Worker_send %s: %s %s"
+                            % (self.dev.name, func.__name__, args),
+                            self.DEBUG_color,
+                        )
+
+                if self.jobs_function is None:
+                    # Default job processing:
+                    # Send I/O operation to the device
+                    try:
+                        func(*args)
+                    except Exception as err:
+                        pft(err)
                 else:
-                    # Did return False, hence was unsuccesfull
-                    self.outer.not_alive_counter_DAQ += 1
+                    # User-supplied job processing
+                    self.jobs_function(func, args)
 
-            # ----------------------------------
-            #   End user-supplied DAQ function
-            # ----------------------------------
+            # Put sentinel back in
+            self._queue.put(self._sentinel)
 
-            if self.DEBUG:
-                tprint(
-                    "Worker_DAQ  %s: unlock # %i"
-                    % (self.dev.name, self.outer.update_counter_DAQ),
-                    self.DEBUG_color,
-                )
+        if self.DEBUG:
+            tprint(
+                "Worker_send %s: unlock # %i"
+                % (self.dev.name, self.qdev.update_counter_send),
+                self.DEBUG_color,
+            )
 
-            locker.unlock()
-            self.outer.signal_DAQ_updated.emit()
+        locker.unlock()
+        self.qdev.signal_send_updated.emit()
 
-        @QtCore.pyqtSlot()
-        def _stop(self):
-            """Stop the worker to prepare for quitting the worker thread.
-            """
-            if self.DEBUG:
-                tprint(
-                    "Worker_DAQ  %s: stopping" % self.dev.name, self.DEBUG_color
-                )
+    @QtCore.pyqtSlot()
+    def _stop(self):
+        """Stop the worker to prepare for quitting the worker thread
+        """
+        if self.DEBUG:
+            tprint(
+                "Worker_send %s: stopping" % self.dev.name, self.DEBUG_color,
+            )
 
-            if self._DAQ_trigger == DAQ_trigger.INTERNAL_TIMER:
-                # NOTE: The timer /must/ be stopped from the worker_DAQ thread!
-                self._timer.stop()
+        self._running = False
+        self._qwc.wakeAll()  # Wake up for the final time
 
-                if self.DEBUG:
-                    tprint(
-                        "Worker_DAQ  %s: stop confirmed" % self.dev.name,
-                        self.DEBUG_color,
-                    )
+    # ----------------------------------------------------------------------
+    #   add_to_queue
+    # ----------------------------------------------------------------------
 
-                # Wait a tiny amount for the other thread to have entered the
-                # QWaitCondition lock, before giving a wakingAll().
-                QtCore.QTimer.singleShot(
-                    100, lambda: self.outer._qwc_worker_DAQ_stopped.wakeAll()
-                )
-
-            elif self._DAQ_trigger == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
-                self._running = False
-                self._qwc.wakeAll()  # Wake up for the final time
-
-            elif self._DAQ_trigger == DAQ_trigger.CONTINUOUS:
-                self._running = False
-
-        # ----------------------------------------------------------------------
-        #   pause / unpause
-        # ----------------------------------------------------------------------
-
-        @QtCore.pyqtSlot()
-        def pause(self):
-            """Only useful with DAQ_trigger.CONTINUOUS
-            NOTE: This method can be called from the MAIN/GUI thread all right.
-            """
-            if self._DAQ_trigger == DAQ_trigger.CONTINUOUS:
-                if self.DEBUG:
-                    tprint(
-                        "Worker_DAQ  %s: pause requested..." % self.dev.name,
-                        ANSI.WHITE,
-                    )
-
-                # The possible undefined behavior of changing variable '_pause'
-                # from out of another thread gets handled acceptably correct in
-                # '_do_work()' as per my design.
-                self._pause = True
-
-        @QtCore.pyqtSlot()
-        def unpause(self):
-            """Only useful with DAQ_trigger.CONTINUOUS
-            NOTE: This method can be called from the MAIN/GUI thread all right.
-            """
-            if self._DAQ_trigger == DAQ_trigger.CONTINUOUS:
-                if self.DEBUG:
-                    tprint(
-                        "Worker_DAQ  %s: unpause requested..." % self.dev.name,
-                        ANSI.WHITE,
-                    )
-
-                # The possible undefined behavior of changing variable '_pause'
-                # from out of another thread gets handled acceptably correct in
-                # '_do_work()' as per my design.
-                self._pause = False
-
-        # ----------------------------------------------------------------------
-        #   wake_up
-        # ----------------------------------------------------------------------
-
-        @QtCore.pyqtSlot()
-        def wake_up(self):
-            """Only useful with DAQ_trigger.SINGLE_SHOT_WAKE_UP
-            NOTE: This method can be called from the MAIN/GUI thread all right.
-            """
-            if self._DAQ_trigger == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
-                if self.DEBUG:
-                    tprint(
-                        "Worker_DAQ  %s: wake requested..." % self.dev.name,
-                        ANSI.WHITE,
-                    )
-
-                self._qwc.wakeAll()
-
-    # --------------------------------------------------------------------------
-    #   Worker_send
-    # --------------------------------------------------------------------------
-
-    @InnerClassDescriptor
-    class Worker_send(QtCore.QObject):
-        """This worker maintains a thread-safe queue where desired device I/O
-        operations, a.k.a. jobs, can be put onto. The worker will send out the
-        operations to the device, first in first out (FIFO), until the queue is
-        empty again.
-
-        The worker will be placed inside a separate thread by its parent class
-        QDeviceIO. 
-
-        This worker uses the QWaitCondition mechanism. Hence, it will only send
-        out all operations collected in the queue, whenever the thread it lives
-        in is woken up by calling 'Worker_send.process_queue()'. When it has
-        emptied the queue, the thread will go back to sleep again.
-
-        No direct changes to the GUI should be performed inside this class.
-        Instead, connect to the 'signal_send_updated' signal to instigate GUI
-        changes when needed.
+    def add_to_queue(self, instruction, pass_args=()):
+        """Put an instruction on the worker_send queue.
+        E.g. add_to_queue(dev.write, "toggle LED")
 
         Args:
-            jobs_function (optional, default=None):
-                Reference to an user-supplied function performing an alternative
-                job handling when processing the worker_send queue. The default
-                job handling effectuates calling 'func(*args)', where 'func' and
-                'args' are retrieved from the worker_send queue, and nothing
-                more. The default is sufficient when 'func' corresponds to an
-                I/O operation that is an one-way send, i.e. a write operation
-                without a reply.
+            instruction:
+                Intended to be a reference to a device I/O function such as
+                'self.dev.write'. However, you have the freedom to be
+                creative and put e.g. strings decoding special instructions
+                on the queue as well. Handling such special cases must be
+                programmed by the user by supplying the argument
+                'jobs_function', when instantiating
+                'Worker_send', with your own job-processing-routines
+                function. See 'Worker_send' for more details.
 
-                Instead of just write operations, you can also put a single or
-                multiple query operation(s) in the queue and process each reply
-                of the device accordingly. This is the purpose of this argument:
-                To provide your own 'job processing routines' function. The
-                function you supply must take two arguments, where the first
-                argument will be 'func' and the second argument will be
-                'args', which is a tuple. Both 'func' and 'args' will be
-                retrieved from the worker_send queue and passed onto your
-                own function.
-
-                Example of a query operation by sending and checking for a
-                special string value of 'func':
-
-                    def jobs_function(func, args):
-                        if func == "query_id?":
-                            # Query the device for its identity string
-                            [success, ans_str] = self.dev.query("id?")
-                            # And store the reply 'ans_str' in another variable
-                            # at a higher scope or do stuff with it here.
-                        else:
-                            # Default job handling where, e.g.
-                            # func = self.dev.write
-                            # args = ("toggle LED",)
-                            func(*args)
-
-            DEBUG (bool, optional, default=False):
-                Show debug info in terminal? Warning: Slow! Do not leave on
-                unintentionally.
-
-        Methods:
-            add_to_queue(...):
-                Put an instruction on the worker_send queue.
-
-            process_queue():
-                Trigger processing the worker_send queue until empty.
-
-            queued_instruction(...):
-                Put an instruction on the worker_send queue and process the
-                queue until empty.
+            pass_args (optional, default=()):
+                Argument(s) to be passed to the instruction. Must be a
+                tuple, but for convenience any other type will also be
+                accepted if it concerns just a single argument that needs to
+                be passed.
+                
+        NOTE: This method can be called from the MAIN/GUI thread all right.
         """
+        if type(pass_args) is not tuple:
+            pass_args = (pass_args,)
+        self._queue.put((instruction, *pass_args))
 
-        def __init__(
-            self, *, jobs_function=None, DEBUG=False,
-        ):
-            super().__init__(None)
-            self.DEBUG = DEBUG
-            self.DEBUG_color = ANSI.YELLOW
+    # ----------------------------------------------------------------------
+    #   process_queue
+    # ----------------------------------------------------------------------
 
-            self.dev = self.outer.dev
-            self.jobs_function = jobs_function
-            self._started_okay = None
+    def process_queue(self):
+        """Trigger processing the worker_send queue and send until empty.
+        
+        NOTE: This method can be called from the MAIN/GUI thread all right.
+        """
+        if self.DEBUG:
+            tprint(
+                "Worker_send %s: wake requested..." % self.dev.name, ANSI.WHITE,
+            )
 
+        self._qwc.wakeAll()
+
+    # ----------------------------------------------------------------------
+    #   queued_instruction
+    # ----------------------------------------------------------------------
+
+    def queued_instruction(self, instruction, pass_args=()):
+        """Put an instruction on the worker_send queue and process the
+        queue until empty. See 'add_to_queue()' for more details.
+        E.g. queued_instruction(dev.write, "toggle LED")
+        
+        NOTE: This method can be called from the MAIN/GUI thread all right.
+        """
+        self.add_to_queue(instruction, pass_args)
+        self.process_queue()
+
+
+# --------------------------------------------------------------------------
+#   Worker_DAQ
+# --------------------------------------------------------------------------
+
+
+class Worker_DAQ(QtCore.QObject):
+    """This worker acquires data from the I/O device. It does so by calling
+    a user-supplied function, passed as argument 'DAQ_function_to_run_each_
+    update', containing your device I/O operations (and/or data parsing,
+    processing or more), every iteration of the worker's event loop. 
+    No direct changes to the GUI should be performed inside this function.
+    Instead, connect to the 'signal_DAQ_updated' signal to instigate GUI
+    changes when needed.
+
+    The worker will be placed inside a separate thread by its parent class
+    QDeviceIO. 
+
+    The Worker_DAQ routine is robust in the following sense. It can be set
+    to quit as soon as a communication error appears, or it could be set to
+    allow a certain number of communication errors before it quits. The
+    latter can be useful in non-critical implementations where continuity of
+    the program is of more importance than preventing drops in data
+    transmission. This, obviously, is a work-around for not having to tackle
+    the source of the communication error, but sometimes you just need to
+    struggle on. E.g., when your Arduino is out in the field and picks up
+    occasional unwanted interference/ground noise that messes with your data
+    transmission.
+
+    Args:
+        DAQ_interval_ms:
+            TODO: Rewrite and explain different DAQ_trigger methods
+            Desired data acquisition update interval in milliseconds.
+
+        DAQ_function (optional, default=None):
+            Reference to a user-supplied function containing the device
+            query operations and subsequent data processing, to be invoked
+            every DAQ update. It must return True when everything went
+            successful, and False otherwise.
+
+            NOTE: No direct changes to the GUI should run inside this
+            function! If you do anyhow, expect a penalty in the timing
+            stability of this worker.
+
+            Example pseudo-code, where 'time' and 'temperature' are
+            variables that live at a higher scope, presumably at main/GUI
+            scope level:
+
+            def my_update_function():
+                # Query the device for its state. In this example we assume
+                # the device replies with a time stamp and a temperature
+                # reading. The function 'dev.query_temperature()' is also
+                # supplied by the user and handles the direct communication
+                # with the I/O device, returning..
+                # BLABLABLA. TODO: rewrite and provide more clear example
+                [success, reply] = dev.query_temperature()
+                if not(success):
+                    print("Device IOerror")
+                    return False
+
+                # Parse readings into separate variables and store them
+                try:
+                    [time, temperature] = parse(reply)
+                except Exception as err:
+                    print(err)
+                    return False
+
+                return True
+
+        critical_not_alive_count (optional, default=1):
+            The worker will allow for up to a certain number of consecutive
+            communication failures with the device before hope is given up
+            and a 'signal_connection_lost' signal is emitted. Use at your
+            own discretion.
+
+        DAQ_timer_type (PyQt5.QtCore.Qt.TimerType, optional, default=
+                        PyQt5.QtCore.Qt.CoarseTimer):
+            The update interval is timed to a QTimer running inside
+            Worker_DAQ. The accuracy of the timer can be improved by setting
+            it to PyQt5.QtCore.Qt.PreciseTimer with ~1 ms granularity, but
+            it is resource heavy. Use sparingly.
+
+        DAQ_trigger (optional, default=DAQ_trigger.INTERNAL_TIMER):
+            TODO: write description
+
+        DEBUG (bool, optional, default=False):
+            Show debug info in terminal? Warning: Slow! Do not leave on
+            unintentionally.
+            
+    Methods:
+        pause():
+            Only useful with DAQ_trigger.CONTINUOUS
+
+        unpause():
+            Only useful with DAQ_trigger.CONTINUOUS
+
+        wake_up():
+            Only useful with DAQ_trigger.SINGLE_SHOT_WAKE_UP
+    """
+
+    def __init__(
+        self,
+        *,
+        qdev=None,
+        DAQ_trigger=DAQ_trigger.INTERNAL_TIMER,
+        DAQ_function=None,
+        DAQ_interval_ms=1000,
+        DAQ_timer_type=QtCore.Qt.CoarseTimer,
+        critical_not_alive_count=1,
+        calc_DAQ_rate_every_N_iter=25,  # TODO: set default value to 'auto' and implement further down. When integer, take over that value.
+        DEBUG=False,
+    ):
+        super().__init__()
+        self.DEBUG = DEBUG
+        self.DEBUG_color = ANSI.CYAN
+
+        self.qdev = qdev
+        self.dev = None if qdev is None else qdev.dev
+
+        self.DAQ_function = DAQ_function
+        self.critical_not_alive_count = critical_not_alive_count
+        self._DAQ_trigger = DAQ_trigger
+        self._started_okay = None
+
+        # Members specifically for INTERNAL_TIMER
+        if self._DAQ_trigger == DAQ_trigger.INTERNAL_TIMER:
+            self._DAQ_interval_ms = DAQ_interval_ms
+            self._timer_type = DAQ_timer_type
+            self._timer = None
+            self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
+            # TODO: create a special value, like string 'auto_1_Hz' to
+            # trigger below calculation
+            # self.calc_DAQ_rate_every_N_iter = max(
+            #        round(1e3/self._DAQ_interval_ms), 1)
+
+        # Members specifically for SINGLE_SHOT_WAKE_UP
+        elif self._DAQ_trigger == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
             self._running = True
             self._qwc = QtCore.QWaitCondition()
             self._mutex_wait = QtCore.QMutex()
+            self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
 
-            # Use a 'sentinel' value to signal the start and end of the queue
-            # to ensure proper multithreaded operation.
-            self._sentinel = None
-            self._queue = queue.Queue()
-            self._queue.put(self._sentinel)
+        # Members specifically for CONTINUOUS
+        # Note: At start-up, the worker will directly go into a paused state
+        # and trigger a 'signal_DAQ_paused' PyQt signal
+        elif self._DAQ_trigger == DAQ_trigger.CONTINUOUS:
+            self._running = True
+            self._pause = None  # Will be set at init of '_do_work()' when 'start_worker_DAQ()' is called
+            self._paused = None  # Will be set at init of '_do_work()' when 'start_worker_DAQ()' is called
+            self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
+
+        # QElapsedTimer (QET) to keep track of DAQ interval and DAQ rate
+        self._QET_DAQ = QtCore.QElapsedTimer()
+        self._QET_DAQ.start()
+        self._prev_tick_DAQ_update = 0
+        self._prev_tick_DAQ_rate = 0
+
+        if self.DEBUG:
+            tprint(
+                "Worker_DAQ  %s: init @ thread %s"
+                % (self.dev.name, cur_thread_name()),
+                self.DEBUG_color,
+            )
+
+    @coverage_resolve_trace
+    @QtCore.pyqtSlot()
+    def _do_work(self):
+        init = True
+
+        def confirm_started(self):
+            # Wait a tiny amount of extra time for QDeviceIO to have entered
+            # 'self._qwc_worker_###_started.wait(self._mutex_wait_worker_###)'
+            # of method 'start_worker_###()'.
+            time.sleep(0.05)
 
             if self.DEBUG:
                 tprint(
-                    "Worker_send %s: init @ thread %s"
-                    % (self.dev.name, cur_thread_name()),
+                    "Worker_DAQ  %s: start confirmed" % self.dev.name,
                     self.DEBUG_color,
                 )
 
-        @coverage_resolve_trace
-        @QtCore.pyqtSlot()
-        def _do_work(self):
-            init = True
+            # Send confirmation
+            self.qdev._qwc_worker_DAQ_started.wakeAll()
 
-            def confirm_started(self):
-                # Wait a tiny amount of extra time for QDeviceIO to have entered
-                # 'self._qwc_worker_###_started.wait(self._mutex_wait_worker_###)'
-                # of method 'start_worker_###()'.
-                time.sleep(0.05)
+        if self.DEBUG:
+            tprint(
+                "Worker_DAQ  %s: starting @ thread %s"
+                % (self.dev.name, cur_thread_name()),
+                self.DEBUG_color,
+            )
 
-                if self.DEBUG:
-                    tprint(
-                        "Worker_send %s: start confirmed" % self.dev.name,
-                        self.DEBUG_color,
-                    )
+        # INTERNAL_TIMER
+        if self._DAQ_trigger == DAQ_trigger.INTERNAL_TIMER:
+            self._timer = QtCore.QTimer()
+            self._timer.setInterval(self._DAQ_interval_ms)
+            self._timer.timeout.connect(self._perform_DAQ)
+            self._timer.setTimerType(self._timer_type)
+            self._timer.start()
+            confirm_started(self)
 
-                # Send confirmation
-                self.outer._qwc_worker_send_started.wakeAll()
-
-            if self.DEBUG:
-                tprint(
-                    "Worker_send %s: starting @ thread %s"
-                    % (self.dev.name, cur_thread_name()),
-                    self.DEBUG_color,
-                )
-
+        # SINGLE_SHOT_WAKE_UP
+        elif self._DAQ_trigger == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
             locker_wait = QtCore.QMutexLocker(self._mutex_wait)
             locker_wait.unlock()
 
@@ -1291,7 +1140,7 @@ class QDeviceIO(QtCore.QObject):
 
                 if self.DEBUG:
                     tprint(
-                        "Worker_send %s: waiting for wake trigger"
+                        "Worker_DAQ  %s: waiting for wake trigger"
                         % self.dev.name,
                         self.DEBUG_color,
                     )
@@ -1304,164 +1153,245 @@ class QDeviceIO(QtCore.QObject):
 
                 if self.DEBUG:
                     tprint(
-                        "Worker_send %s: wake confirmed" % self.dev.name,
+                        "Worker_DAQ  %s: wake confirmed" % self.dev.name,
                         self.DEBUG_color,
                     )
 
-                # Needed check to prevent _perform_send() at final wake up
+                # Needed check to prevent _perform_DAQ() at final wake up
                 # when _stop() has been called
                 if self._running:
-                    self._perform_send()
+                    self._perform_DAQ()
 
                 locker_wait.unlock()
 
             if self.DEBUG:
                 tprint(
-                    "Worker_send %s: stop confirmed" % self.dev.name,
+                    "Worker_DAQ  %s: stop confirmed" % self.dev.name,
                     self.DEBUG_color,
                 )
 
             # Wait a tiny amount for the other thread to have entered the
             # QWaitCondition lock, before giving a wakingAll().
             QtCore.QTimer.singleShot(
-                100, lambda: self.outer._qwc_worker_send_stopped.wakeAll()
+                100, lambda: self.qdev._qwc_worker_DAQ_stopped.wakeAll()
             )
 
-        @coverage_resolve_trace
-        @QtCore.pyqtSlot()
-        def _perform_send(self):
-            if not self._started_okay:
-                return
-
-            locker = QtCore.QMutexLocker(self.dev.mutex)
-            self.outer.update_counter_send += 1
-
-            if self.DEBUG:
-                tprint(
-                    "Worker_send %s: lock   # %i"
-                    % (self.dev.name, self.outer.update_counter_send),
-                    self.DEBUG_color,
-                )
-
-            """Process all jobs until the queue is empty. We must iterate 2
-            times because we use a sentinel in a FIFO queue. First iter
-            removes the old sentinel. Second iter processes the remaining
-            queue items and will put back a new sentinel again.
-            """
-            for i in range(2):
-                for job in iter(self._queue.get_nowait, self._sentinel):
-                    func = job[0]
-                    args = job[1:]
+        # CONTINUOUS
+        elif self._DAQ_trigger == DAQ_trigger.CONTINUOUS:
+            while self._running:
+                if init:
+                    self._pause = True
+                    self._paused = True
 
                     if self.DEBUG:
-                        if type(func) == str:
+                        tprint(
+                            "Worker_DAQ  %s: starting up paused"
+                            % self.dev.name,
+                            self.DEBUG_color,
+                        )
+
+                    self.qdev.signal_DAQ_paused.emit()
+
+                    confirm_started(self)
+                    init = False
+
+                if self._pause:  # == True
+                    if self._pause != self._paused:
+                        if self.DEBUG and not init:
                             tprint(
-                                "Worker_send %s: %s %s"
-                                % (self.dev.name, func, args),
+                                "Worker_DAQ  %s: pause confirmed"
+                                % self.dev.name,
                                 self.DEBUG_color,
                             )
-                        else:
+                        self.qdev.signal_DAQ_paused.emit()
+                        self._paused = True
+
+                    time.sleep(0.01)  # Do not hog the CPU while paused
+
+                else:  # == False
+                    if self._pause != self._paused:
+                        if self.DEBUG:
                             tprint(
-                                "Worker_send %s: %s %s"
-                                % (self.dev.name, func.__name__, args),
+                                "Worker_DAQ  %s: unpause confirmed"
+                                % self.dev.name,
                                 self.DEBUG_color,
                             )
+                        self._paused = False
 
-                    if self.jobs_function is None:
-                        # Default job processing:
-                        # Send I/O operation to the device
-                        try:
-                            func(*args)
-                        except Exception as err:
-                            pft(err)
-                    else:
-                        # User-supplied job processing
-                        self.jobs_function(func, args)
-
-                # Put sentinel back in
-                self._queue.put(self._sentinel)
+                    self._perform_DAQ()
 
             if self.DEBUG:
                 tprint(
-                    "Worker_send %s: unlock # %i"
-                    % (self.dev.name, self.outer.update_counter_send),
+                    "Worker_DAQ  %s: stop confirmed" % self.dev.name,
                     self.DEBUG_color,
                 )
+
+            # Wait a tiny amount for 'create_worker_DAQ()', which is running
+            # in a different thread than this one, to have entered the
+            # QWaitCondition lock, before giving a wakingAll().
+            QtCore.QTimer.singleShot(
+                100, lambda: self.qdev._qwc_worker_DAQ_stopped.wakeAll()
+            )
+
+    @coverage_resolve_trace
+    @QtCore.pyqtSlot()
+    def _perform_DAQ(self):
+        if not self._started_okay:
+            return
+
+        locker = QtCore.QMutexLocker(self.dev.mutex)
+        self.qdev.update_counter_DAQ += 1
+
+        if self.DEBUG:
+            tprint(
+                "Worker_DAQ  %s: lock   # %i"
+                % (self.dev.name, self.qdev.update_counter_DAQ),
+                self.DEBUG_color,
+            )
+
+        # Keep track of the obtained DAQ update interval
+        now = self._QET_DAQ.elapsed()
+        if self.qdev.update_counter_DAQ > 1:
+            self.qdev.obtained_DAQ_interval_ms = (
+                now - self._prev_tick_DAQ_update
+            )
+        self._prev_tick_DAQ_update = now
+
+        # Keep track of the obtained DAQ rate
+        if self.qdev.update_counter_DAQ % self.calc_DAQ_rate_every_N_iter == 0:
+            try:
+                self.qdev.obtained_DAQ_rate_Hz = (
+                    self.calc_DAQ_rate_every_N_iter
+                    / (now - self._prev_tick_DAQ_rate)
+                    * 1e3
+                )
+            except ZeroDivisionError:  # pragma: no cover
+                self.qdev.obtained_DAQ_rate_Hz = np.nan  # pragma: no cover
+            self._prev_tick_DAQ_rate = now
+
+        # Check the not alive counter
+        if self.qdev.not_alive_counter_DAQ >= self.critical_not_alive_count:
+            dprint(
+                "\nWorker_DAQ %s: Lost connection to device.\n" % self.dev.name,
+                ANSI.RED,
+            )
+            self.dev.is_alive = False
 
             locker.unlock()
-            self.outer.signal_send_updated.emit()
+            self._stop()
+            self.qdev.signal_DAQ_updated.emit()
+            self.qdev.signal_connection_lost.emit()
+            return
 
-        @QtCore.pyqtSlot()
-        def _stop(self):
-            """Stop the worker to prepare for quitting the worker thread
-            """
+        # ----------------------------------
+        #   User-supplied DAQ function
+        # ----------------------------------
+
+        if not self.DAQ_function is None:
+            if self.DAQ_function():
+                # Did return True, hence was succesfull
+                # --> Reset the 'not alive' counter
+                self.qdev.not_alive_counter_DAQ = 0
+            else:
+                # Did return False, hence was unsuccesfull
+                self.qdev.not_alive_counter_DAQ += 1
+
+        # ----------------------------------
+        #   End user-supplied DAQ function
+        # ----------------------------------
+
+        if self.DEBUG:
+            tprint(
+                "Worker_DAQ  %s: unlock # %i"
+                % (self.dev.name, self.qdev.update_counter_DAQ),
+                self.DEBUG_color,
+            )
+
+        locker.unlock()
+        self.qdev.signal_DAQ_updated.emit()
+
+    @QtCore.pyqtSlot()
+    def _stop(self):
+        """Stop the worker to prepare for quitting the worker thread.
+        """
+        if self.DEBUG:
+            tprint("Worker_DAQ  %s: stopping" % self.dev.name, self.DEBUG_color)
+
+        if self._DAQ_trigger == DAQ_trigger.INTERNAL_TIMER:
+            # NOTE: The timer /must/ be stopped from the worker_DAQ thread!
+            self._timer.stop()
+
             if self.DEBUG:
                 tprint(
-                    "Worker_send %s: stopping" % self.dev.name,
+                    "Worker_DAQ  %s: stop confirmed" % self.dev.name,
                     self.DEBUG_color,
                 )
 
+            # Wait a tiny amount for the other thread to have entered the
+            # QWaitCondition lock, before giving a wakingAll().
+            QtCore.QTimer.singleShot(
+                100, lambda: self.qdev._qwc_worker_DAQ_stopped.wakeAll()
+            )
+
+        elif self._DAQ_trigger == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
             self._running = False
             self._qwc.wakeAll()  # Wake up for the final time
 
-        # ----------------------------------------------------------------------
-        #   add_to_queue
-        # ----------------------------------------------------------------------
+        elif self._DAQ_trigger == DAQ_trigger.CONTINUOUS:
+            self._running = False
 
-        def add_to_queue(self, instruction, pass_args=()):
-            """Put an instruction on the worker_send queue.
-            E.g. add_to_queue(dev.write, "toggle LED")
+    # ----------------------------------------------------------------------
+    #   pause / unpause
+    # ----------------------------------------------------------------------
 
-            Args:
-                instruction:
-                    Intended to be a reference to a device I/O function such as
-                    'self.dev.write'. However, you have the freedom to be
-                    creative and put e.g. strings decoding special instructions
-                    on the queue as well. Handling such special cases must be
-                    programmed by the user by supplying the argument
-                    'jobs_function', when instantiating
-                    'Worker_send', with your own job-processing-routines
-                    function. See 'Worker_send' for more details.
-
-                pass_args (optional, default=()):
-                    Argument(s) to be passed to the instruction. Must be a
-                    tuple, but for convenience any other type will also be
-                    accepted if it concerns just a single argument that needs to
-                    be passed.
-                    
-            NOTE: This method can be called from the MAIN/GUI thread all right.
-            """
-            if type(pass_args) is not tuple:
-                pass_args = (pass_args,)
-            self._queue.put((instruction, *pass_args))
-
-        # ----------------------------------------------------------------------
-        #   process_queue
-        # ----------------------------------------------------------------------
-
-        def process_queue(self):
-            """Trigger processing the worker_send queue and send until empty.
-            
-            NOTE: This method can be called from the MAIN/GUI thread all right.
-            """
+    @QtCore.pyqtSlot()
+    def pause(self):
+        """Only useful with DAQ_trigger.CONTINUOUS
+        NOTE: This method can be called from the MAIN/GUI thread all right.
+        """
+        if self._DAQ_trigger == DAQ_trigger.CONTINUOUS:
             if self.DEBUG:
                 tprint(
-                    "Worker_send %s: wake requested..." % self.dev.name,
+                    "Worker_DAQ  %s: pause requested..." % self.dev.name,
+                    ANSI.WHITE,
+                )
+
+            # The possible undefined behavior of changing variable '_pause'
+            # from out of another thread gets handled acceptably correct in
+            # '_do_work()' as per my design.
+            self._pause = True
+
+    @QtCore.pyqtSlot()
+    def unpause(self):
+        """Only useful with DAQ_trigger.CONTINUOUS
+        NOTE: This method can be called from the MAIN/GUI thread all right.
+        """
+        if self._DAQ_trigger == DAQ_trigger.CONTINUOUS:
+            if self.DEBUG:
+                tprint(
+                    "Worker_DAQ  %s: unpause requested..." % self.dev.name,
+                    ANSI.WHITE,
+                )
+
+            # The possible undefined behavior of changing variable '_pause'
+            # from out of another thread gets handled acceptably correct in
+            # '_do_work()' as per my design.
+            self._pause = False
+
+    # ----------------------------------------------------------------------
+    #   wake_up
+    # ----------------------------------------------------------------------
+
+    @QtCore.pyqtSlot()
+    def wake_up(self):
+        """Only useful with DAQ_trigger.SINGLE_SHOT_WAKE_UP
+        NOTE: This method can be called from the MAIN/GUI thread all right.
+        """
+        if self._DAQ_trigger == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
+            if self.DEBUG:
+                tprint(
+                    "Worker_DAQ  %s: wake requested..." % self.dev.name,
                     ANSI.WHITE,
                 )
 
             self._qwc.wakeAll()
-
-        # ----------------------------------------------------------------------
-        #   queued_instruction
-        # ----------------------------------------------------------------------
-
-        def queued_instruction(self, instruction, pass_args=()):
-            """Put an instruction on the worker_send queue and process the
-            queue until empty. See 'add_to_queue()' for more details.
-            E.g. queued_instruction(dev.write, "toggle LED")
-            
-            NOTE: This method can be called from the MAIN/GUI thread all right.
-            """
-            self.add_to_queue(instruction, pass_args)
-            self.process_queue()
