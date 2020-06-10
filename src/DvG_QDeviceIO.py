@@ -71,17 +71,17 @@ class QDeviceIO(QtCore.QObject):
     All device I/O operations will be offloaded to 'workers', each running in
     a newly created and dedicated thread.
 
-    * Worker_DAQ:
+    * :obj:`Worker_DAQ`:
         Periodically acquires data from the device.
 
-    * Worker_send:
+    * :obj:`Worker_send`:
         Maintains a thread-safe queue where desired device I/O operations
         can be put onto, and sends the queued operations first in first out
         (FIFO) to the device.
         
     Example:
-        This class can be mixed into your own specific QDeviceIO class. E.g.,
-        for a QDeviceIO class adapted for a specific Arduino project::
+        This class can be mixed into your own specific ``QDeviceIO`` class,
+        e.g., for a specific Arduino project::
         
             class QDeviceIO_Arduino(DvG_QDeviceIO.QDeviceIO, QtCore.QObject):
                 def __init__(
