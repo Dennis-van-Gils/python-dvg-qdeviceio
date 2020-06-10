@@ -142,37 +142,50 @@ class QDeviceIO(QtCore.QObject):
         
         obtained_DAQ_rate_Hz:
             Obtained acquisition rate of ``worker_DAQ`` in Hertz.
-    
-    .. _`signals`:
-    
+
     :Signals:
         Type: :obj:`PyQt5.QtCore.pyqtSignal`
-            ..
-            
-        **signal_DAQ_updated()**:
-            Emitted by ``worker_DAQ`` when the ``DAQ_function`` has run and
-            finished succesfully.
-
-        **signal_send_updated()**:
-            Emitted by ``worker_send`` when all pending jobs in the queue have
-            been sent out to the device. It is a response to ``send()`` or
-            ``process_send_queue()``.
         
-        **signal_DAQ_paused()**:
-            Emitted by ``worker_DAQ`` to confirm the worker has entered the
-            `pause` state. It is a response to ``pause_DAQ()``.
+        :obj:`signal_DAQ_updated()`            
         
-        **signal_connection_lost()**:
-            Emitted by ``worker_DAQ`` to indicate that we lost connection to the
-            device. This happens when `N` consecutive device I/O operations have
-            failed, where `N` equals the argument ``critical_not_alive_count`` 
-            as passed to method ``create_worker_DAQ()``.
+        :obj:`signal_send_updated()`            
+        
+        :obj:`signal_DAQ_paused()`        
+        
+        :obj:`signal_connection_lost()`
     """
 
     signal_DAQ_updated = QtCore.pyqtSignal()
+    """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by ``worker_DAQ`` when the
+    :obj:`DAQ_function` has run and has finished succesfully.
+    
+    Tip:
+        It can be useful to connect this signal to your own slot containing
+        your GUI redraw routine, as such::
+            
+            qdeviceio.signal_DAQ_updated.connect(my_GUI_redraw_routine)
+            
+        where ``qdeviceio`` is your instance of :obj:`QDeviceIO`.
+    """
+
     signal_DAQ_paused = QtCore.pyqtSignal()
+    """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by ``worker_DAQ`` to confirm the
+    worker has entered the `paused` state as a response to :obj:`pause_DAQ()`.
+    """
+
     signal_connection_lost = QtCore.pyqtSignal()
+    """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by ``worker_DAQ`` to indicate
+    that we lost connection to the device. This happens when `N` consecutive
+    device I/O operations have failed, where `N` equals the argument
+    :obj:`critical_not_alive_count` as passed to method
+    :obj:`create_worker_DAQ()`.
+    """
+
     signal_send_updated = QtCore.pyqtSignal()
+    """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by ``worker_send`` when all
+    pending jobs in the queue have been sent out to the device as a response to
+    :obj:`send()` or :obj:`process_send_queue()`.
+    """
 
     # Necessary for INTERNAL_TIMER
     _signal_stop_worker_DAQ = QtCore.pyqtSignal()
@@ -243,13 +256,13 @@ class QDeviceIO(QtCore.QObject):
     # --------------------------------------------------------------------------
 
     def create_worker_DAQ(self, **kwargs):
-        """Creates and configures an instance of ``Worker_DAQ()`` and transfers
-        it to a newly created ``PyQt5.QtCore.QThread()`` thread.
+        """Creates and configures an instance of :obj:`Worker_DAQ` and transfers
+        it to a newly created :obj:`PyQt5.QtCore.QThread`.
 
         Args:
             **kwargs
-                Will be passed directly to ``Worker_DAQ()`` as initialization
-                parameters, see `Worker_DAQ parameters`_.
+                Will be passed directly to :obj:`Worker_DAQ` as initialization
+                parameters.
         """
         if type(self.dev) == self._NoDevice:
             pft(
@@ -267,13 +280,13 @@ class QDeviceIO(QtCore.QObject):
         self.worker_DAQ.moveToThread(self._thread_DAQ)
 
     def create_worker_send(self, **kwargs):
-        """Creates and configures an instance of ``Worker_send`` and transfers
-        it to a newly created ``PyQt5.QtCore.QThread()`` thread.
+        """Creates and configures an instance of :obj:`Worker_send` and
+        transfers it to a newly created :obj:`PyQt5.QtCore.QThread`.
 
         Args:
             **kwargs
-                Will be passed directly to ``Worker_send()`` as initialization
-                parameters, see `Worker_send parameters`_.
+                Will be passed directly to :obj:`Worker_send` as initialization
+                parameters.
         """
         if type(self.dev) == self._NoDevice:
             pft(
@@ -430,11 +443,11 @@ class QDeviceIO(QtCore.QObject):
                 By default, the 'worker' thread runs in the operating system
                 at the same thread priority as the main/GUI thread. You can
                 change to higher priority by setting 'priority' to, e.g.,
-                'QtCore.QThread.TimeCriticalPriority'. Be aware that this is
-                resource heavy, so use sparingly.
+                :obj:`QtCore.QThread.TimeCriticalPriority`. Be aware that this
+                is resource heavy, so use sparingly.
             
             send_priority (:obj:`PyQt5.QtCore.QThread.Priority`, optional):
-                See parameter ``DAQ_priority``.
+                See parameter :obj:`DAQ_priority`.
         
         Returns:
             True if successful, False otherwise.
@@ -587,10 +600,10 @@ class QDeviceIO(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def pause_DAQ(self):
-        """Only useful in mode ``DAQ_trigger.CONTINUOUS``. Requests
+        """Only useful in mode :obj:`DAQ_trigger.CONTINUOUS`. Requests
         ``worker_DAQ`` to pause and stop listening for data. After
-        ``worker_DAQ`` has achieved the `pause` state, it will emit
-        ``signal_DAQ_paused``, see `signals`_.
+        ``worker_DAQ`` has achieved the `paused` state, it will emit
+        :obj:`signal_DAQ_paused`.
         
         This method can be called from another thread.
         """
@@ -599,10 +612,9 @@ class QDeviceIO(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def unpause_DAQ(self):
-        """Only useful in mode ``DAQ_trigger.CONTINUOUS``. Requests
+        """Only useful in mode :obj:`DAQ_trigger.CONTINUOUS`. Requests
         ``worker_DAQ`` to resume listening for data. After ``worker_DAQ`` has
-        succesfully resumed, it will start emitting ``signal_DAQ_updated``, see
-        `signals`_.
+        succesfully resumed, it will start emitting :obj:`signal_DAQ_updated`.
         
         This method can be called from another thread.
         """
@@ -611,7 +623,7 @@ class QDeviceIO(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def wake_up_DAQ(self):
-        """Only useful in mode ``DAQ_trigger.SINGLE_SHOT_WAKE_UP``.
+        """Only useful in mode :obj:`DAQ_trigger.SINGLE_SHOT_WAKE_UP`.
         
         This method can be called from another thread.
         """
@@ -673,8 +685,6 @@ class Worker_send(QtCore.QObject):
     No direct changes to the GUI should be performed inside this class.
     Instead, connect to the 'signal_send_updated' signal to instigate GUI
     changes when needed.
-    
-    .. _`Worker_send parameters`:
 
     Args:
         jobs_function (optional, default=None):
@@ -992,8 +1002,6 @@ class Worker_DAQ(QtCore.QObject):
     struggle on. E.g., when your Arduino is out in the field and picks up
     occasional unwanted interference/ground noise that messes with your data
     transmission.
-
-    .. _`Worker_DAQ parameters`:
 
     Args:
         DAQ_interval_ms:
