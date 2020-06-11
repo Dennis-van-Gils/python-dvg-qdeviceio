@@ -158,7 +158,7 @@ class QDeviceIO(QtCore.QObject):
 
     signal_DAQ_updated = QtCore.pyqtSignal()
     """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by :class:`Worker_DAQ` when its
-    :attr:`~Worker_DAQ.DAQ_function` has run and has finished succesfully.
+    :attr:`~Worker_DAQ.DAQ_function` has run and has finished successfully.
     
     Tip:
         It can be useful to connect this signal to your own slot containing
@@ -380,7 +380,7 @@ class QDeviceIO(QtCore.QObject):
 
         Args:
             priority (:obj:`PyQt5.QtCore.QThread.Priority`, optional):
-                See `start()`_.
+                See :meth:`start`.
 
         Returns:
             True if successful, False otherwise.
@@ -437,9 +437,7 @@ class QDeviceIO(QtCore.QObject):
         send_priority=QtCore.QThread.InheritPriority,
     ):
         """Starts the event loop of all of any created workers.
-        
-        .. _`start()`:
-        
+
         Args:
             DAQ_priority (:obj:`PyQt5.QtCore.QThread.Priority`, optional):
                 By default, the *worker* thread runs in the operating system
@@ -616,7 +614,7 @@ class QDeviceIO(QtCore.QObject):
     def unpause_DAQ(self):
         """Only useful in mode :const:`DAQ_trigger.CONTINUOUS`. Requests
         :attr:`worker_DAQ` to resume listening for data. After
-        :attr:`worker_DAQ` has succesfully resumed, it will start emitting
+        :attr:`worker_DAQ` has successfully resumed, it will start emitting
         :obj:`signal_DAQ_updated`.
         
         This method can be called from another thread.
@@ -627,6 +625,10 @@ class QDeviceIO(QtCore.QObject):
     @QtCore.pyqtSlot()
     def wake_up_DAQ(self):
         """Only useful in mode :const:`DAQ_trigger.SINGLE_SHOT_WAKE_UP`.
+        Requests :attr:`worker_DAQ` to wake up and perform a single update,
+        i.e. run :attr:`~Worker_DAQ.DAQ_function` once. It will emit
+        :obj:`signal_DAQ_updated` after :attr:`~Worker_DAQ.DAQ_function` has
+        run successfully.
         
         This method can be called from another thread.
         """
@@ -673,7 +675,7 @@ class QDeviceIO(QtCore.QObject):
 
 class Worker_send(QtCore.QObject):
     """This worker maintains a thread-safe queue where desired device I/O
-    operations, a.k.a. jobs, can be put onto. The worker will send out the
+    operations, a.k.a. *jobs*, can be put onto. The worker will send out the
     operations to the device, first in first out (FIFO), until the queue is
     empty again.
 
@@ -693,9 +695,9 @@ class Worker_send(QtCore.QObject):
         jobs_function (optional, default=None):
             Reference to an user-supplied function performing an alternative
             job handling when processing the worker_send queue. The default
-            job handling effectuates calling 'func(*args)', where 'func' and
-            'args' are retrieved from the worker_send queue, and nothing
-            more. The default is sufficient when 'func' corresponds to an
+            job handling effectuates calling ``func(*args)``, where ``func``
+            and ``args`` are retrieved from the worker_send queue, and nothing
+            more. The default is sufficient when ``func`` corresponds to an
             I/O operation that is an one-way send, i.e. a write operation
             without a reply.
 
@@ -704,13 +706,13 @@ class Worker_send(QtCore.QObject):
             of the device accordingly. This is the purpose of this argument:
             To provide your own 'job processing routines' function. The
             function you supply must take two arguments, where the first
-            argument will be 'func' and the second argument will be
-            'args', which is a tuple. Both 'func' and 'args' will be
+            argument will be ``func`` and the second argument will be
+            ``args``, which is a tuple. Both ``func`` and ``args`` will be
             retrieved from the worker_send queue and passed onto your
             own function.
 
             Example of a query operation by sending and checking for a
-            special string value of 'func':
+            special string value of 'func'::
 
                 def jobs_function(func, args):
                     if func == "query_id?":
@@ -727,17 +729,6 @@ class Worker_send(QtCore.QObject):
         DEBUG (bool, optional, default=False):
             Show debug info in terminal? Warning: Slow! Do not leave on
             unintentionally.
-
-    Methods:
-        add_to_queue(...):
-            Put an instruction on the worker_send queue.
-
-        process_queue():
-            Trigger processing the worker_send queue until empty.
-
-        queued_instruction(...):
-            Put an instruction on the worker_send queue and process the
-            queue until empty.
     """
 
     def __init__(
@@ -941,7 +932,7 @@ class Worker_send(QtCore.QObject):
                 accepted if it concerns just a single argument that needs to
                 be passed.
                 
-        NOTE: This method can be called from the MAIN/GUI thread all right.
+        NOTE: This method can be called from another thread.
         """
         if type(pass_args) is not tuple:
             pass_args = (pass_args,)
@@ -954,7 +945,7 @@ class Worker_send(QtCore.QObject):
     def process_queue(self):
         """Trigger processing the worker_send queue and send until empty.
         
-        NOTE: This method can be called from the MAIN/GUI thread all right.
+        NOTE: This method can be called from another thread.
         """
         if self.DEBUG:
             tprint(
@@ -972,7 +963,7 @@ class Worker_send(QtCore.QObject):
         queue until empty. See 'add_to_queue()' for more details.
         E.g. queued_instruction(dev.write, "toggle LED")
         
-        NOTE: This method can be called from the MAIN/GUI thread all right.
+        NOTE: This method can be called from another thread.
         """
         self.add_to_queue(instruction, pass_args)
         self.process_queue()
@@ -985,17 +976,17 @@ class Worker_send(QtCore.QObject):
 
 class Worker_DAQ(QtCore.QObject):
     """This worker acquires data from the I/O device. It does so by calling
-    a user-supplied function, passed as argument 'DAQ_function_to_run_each_
-    update', containing your device I/O operations (and/or data parsing,
-    processing or more), every iteration of the worker's event loop. 
+    a user-supplied function, passed as initialization argument
+    :attr:`DAQ_function`, containing your device I/O operations and/or
+    subsequent data processing, every time the worker 'updates'.
     No direct changes to the GUI should be performed inside this function.
-    Instead, connect to the 'signal_DAQ_updated' signal to instigate GUI
-    changes when needed.
+    Instead, connect to the :obj:`~QDeviceIO.signal_DAQ_updated` signal to
+    instigate GUI changes when needed.
 
-    The worker will be placed inside a separate thread by its parent class
-    QDeviceIO. 
+    An instance of this worker will be created and placed inside a separate
+    thread by a call to :func:`QDeviceIO.create_worker_DAQ`.
 
-    The Worker_DAQ routine is robust in the following sense. It can be set
+    The ``Worker_DAQ`` routine is robust in the following sense. It can be set
     to quit as soon as a communication error appears, or it could be set to
     allow a certain number of communication errors before it quits. The
     latter can be useful in non-critical implementations where continuity of
@@ -1007,77 +998,73 @@ class Worker_DAQ(QtCore.QObject):
     transmission.
 
     Args:
-        DAQ_interval_ms:
-            TODO: Rewrite and explain different DAQ_trigger methods
-            Desired data acquisition update interval in milliseconds.
-
-        DAQ_function (optional, default=None):
+        DAQ_trigger (:obj:`int`, optional, default= ``DAQ_trigger.INTERNAL_TIMER``):
+            Mode of operation. TODO: write description.
+            
+        DAQ_function (:obj:`function`, optional):
             Reference to a user-supplied function containing the device
             query operations and subsequent data processing, to be invoked
-            every DAQ update. It must return True when everything went
-            successful, and False otherwise.
+            every DAQ update. 
+            
+            Note:
+                It must return True when everything went successful, and False
+                otherwise.
 
-            NOTE: No direct changes to the GUI should run inside this
-            function! If you do anyhow, expect a penalty in the timing
-            stability of this worker.
+            Note:
+                No direct changes to the GUI should run inside this function!
+                If you do anyhow, expect a penalty in the timing stability of
+                this worker.
 
-            Example pseudo-code, where 'time' and 'temperature' are
-            variables that live at a higher scope, presumably at main/GUI
-            scope level:
+            Example:
+                Pseudo-code, where ``time`` and ``temperature`` are variables
+                that live at a higher scope, presumably at the *main* scope
+                level::
 
-            def my_update_function():
-                # Query the device for its state. In this example we assume
-                # the device replies with a time stamp and a temperature
-                # reading. The function 'dev.query_temperature()' is also
-                # supplied by the user and handles the direct communication
-                # with the I/O device, returning..
-                # BLABLABLA. TODO: rewrite and provide more clear example
-                [success, reply] = dev.query_temperature()
-                if not(success):
-                    print("Device IOerror")
-                    return False
+                    def my_update_function():
+                        # Query the device for its state. In this example we assume
+                        # the device replies with a time stamp and a temperature
+                        # reading. The function 'dev.query_temperature()' is also
+                        # supplied by the user and handles the direct communication
+                        # with the I/O device, returning..
+                        # BLAHBLAH. TODO: rewrite and provide more clear example
+                        [success, reply] = dev.query_temperature()
+                        if not(success):
+                            print("Device IOerror")
+                            return False    # Return failure
+        
+                        # Parse readings into separate variables and store them
+                        try:
+                            [time, temperature] = parse(reply)
+                        except Exception as err:
+                            print(err)
+                            return False    # Return failure
+        
+                        return True         # Return success
 
-                # Parse readings into separate variables and store them
-                try:
-                    [time, temperature] = parse(reply)
-                except Exception as err:
-                    print(err)
-                    return False
+        DAQ_interval_ms (:obj:`int`):
+            Only useful in mode :const:`DAQ_trigger.INTERNAL_TIMER`. Desired
+            data acquisition update interval in milliseconds.
 
-                return True
-
-        critical_not_alive_count (optional, default=1):
+        critical_not_alive_count (:obj:`int`, optional, default=1):
             The worker will allow for up to a certain number of consecutive
-            communication failures with the device before hope is given up
-            and a 'signal_connection_lost' signal is emitted. Use at your
-            own discretion.
+            communication failures with the device, before hope is given up
+            and a :obj:`~QDeviceIO.signal_connection_lost` is emitted. Use at
+            your own discretion.
 
-        DAQ_timer_type (PyQt5.QtCore.Qt.TimerType, optional, default=
-                        PyQt5.QtCore.Qt.CoarseTimer):
+        DAQ_timer_type (:obj:`PyQt5.QtCore.Qt.TimerType`, optional, \
+                        default= :const:`PyQt5.QtCore.Qt.CoarseTimer`):
+            Only useful in mode :const:`DAQ_trigger.INTERNAL_TIMER`.
             The update interval is timed to a QTimer running inside
             Worker_DAQ. The accuracy of the timer can be improved by setting
             it to PyQt5.QtCore.Qt.PreciseTimer with ~1 ms granularity, but
             it is resource heavy. Use sparingly.
 
-        DAQ_trigger (optional, default=DAQ_trigger.INTERNAL_TIMER):
-            TODO: write description
-
-        DEBUG (bool, optional, default=False):
-            Show debug info in terminal? Warning: Slow! Do not leave on
+        DEBUG (:obj:`bool`, optional, default= ``False``):
+            Print debug info to the terminal? Warning: Slow! Do not leave on
             unintentionally.
     
     Attributes:
         DAQ_function (:obj:`function|None`) : Blah
-    
-    Methods:
-        pause():
-            Only useful with DAQ_trigger.CONTINUOUS
-
-        unpause():
-            Only useful with DAQ_trigger.CONTINUOUS
-
-        wake_up():
-            Only useful with DAQ_trigger.SINGLE_SHOT_WAKE_UP
     """
 
     def __init__(
@@ -1339,11 +1326,11 @@ class Worker_DAQ(QtCore.QObject):
 
         if not self.DAQ_function is None:
             if self.DAQ_function():
-                # Did return True, hence was succesfull
+                # Did return True, hence was successfull
                 # --> Reset the 'not alive' counter
                 self.qdev.not_alive_counter_DAQ = 0
             else:
-                # Did return False, hence was unsuccesfull
+                # Did return False, hence was unsuccessfull
                 self.qdev.not_alive_counter_DAQ += 1
 
         # ----------------------------------
@@ -1396,8 +1383,9 @@ class Worker_DAQ(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def pause(self):
-        """Only useful with DAQ_trigger.CONTINUOUS
-        NOTE: This method can be called from the MAIN/GUI thread all right.
+        """Only useful in mode :const:`DAQ_trigger.CONTINUOUS`.
+        
+        This method can be called from another thread.
         """
         if self._DAQ_trigger == DAQ_trigger.CONTINUOUS:
             if self.DEBUG:
@@ -1413,8 +1401,9 @@ class Worker_DAQ(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def unpause(self):
-        """Only useful with DAQ_trigger.CONTINUOUS
-        NOTE: This method can be called from the MAIN/GUI thread all right.
+        """Only useful in mode :const:`DAQ_trigger.CONTINUOUS`.
+        
+        This method can be called from another thread.
         """
         if self._DAQ_trigger == DAQ_trigger.CONTINUOUS:
             if self.DEBUG:
@@ -1434,8 +1423,9 @@ class Worker_DAQ(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def wake_up(self):
-        """Only useful with DAQ_trigger.SINGLE_SHOT_WAKE_UP
-        NOTE: This method can be called from the MAIN/GUI thread all right.
+        """Only useful in mode :const:`DAQ_trigger.SINGLE_SHOT_WAKE_UP`.
+        
+        This method can be called from another thread.
         """
         if self._DAQ_trigger == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
             if self.DEBUG:
