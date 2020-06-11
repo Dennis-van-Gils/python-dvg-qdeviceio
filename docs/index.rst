@@ -1,14 +1,36 @@
-.. QDeviceIO documentation master file, created by
-   sphinx-quickstart on Wed Jun 10 13:36:18 2020.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
-Welcome to QDeviceIO's documentation!
-=====================================
+Welcome
+===================
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
+ 
+A very welcome indeed.
+
+
+QDeviceIO
+===================
+.. autoclass:: DvG_QDeviceIO.QDeviceIO
+   :members:
+
+   
+Worker_DAQ
+===================
+.. autoclass:: DvG_QDeviceIO.Worker_DAQ
+   :members:
+
+
+Worker_send
+===================
+.. autoclass:: DvG_QDeviceIO.Worker_send
+   :members:
+   
+
+DAQ_trigger
+===================
+.. autoclass:: DvG_QDeviceIO.DAQ_trigger
+   :members:
+   :undoc-members:
 
 
 
@@ -16,5 +38,4 @@ Indices and tables
 ==================
 
 * :ref:`genindex`
-* :ref:`modindex`
 * :ref:`search`
