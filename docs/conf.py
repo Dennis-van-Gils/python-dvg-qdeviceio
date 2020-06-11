@@ -31,6 +31,7 @@ release = '0.0.9'
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = [
+    'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
     'sphinx.ext.autosectionlabel'
 ]
@@ -51,8 +52,9 @@ master_doc = 'index'
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-# 'bizstyle', 'classic'
-html_theme = 'sphinx_rtd_theme'
+# 'bizstyle', 'classic', 'sphinx_rtd_theme'
+html_theme = 'bizstyle'
+
 html_theme_path = ["_themes", ]
 html_theme_options = {
     'canonical_url': '',

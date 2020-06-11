@@ -68,13 +68,13 @@ class QDeviceIO(QtCore.QObject):
     """This class provides the base framework for multithreaded communication
     and periodical data acquisition for an I/O device.
 
-    All device I/O operations will be offloaded to 'workers', each running in
+    All device I/O operations will be offloaded to *workers*, each running in
     a newly created and dedicated thread.
 
-    * :obj:`Worker_DAQ`:
+    * :class:`Worker_DAQ`:
         Periodically acquires data from the device.
 
-    * :obj:`Worker_send`:
+    * :class:`Worker_send`:
         Maintains a thread-safe queue where desired device I/O operations
         can be put onto, and sends the queued operations first in first out
         (FIFO) to the device.
@@ -104,44 +104,45 @@ class QDeviceIO(QtCore.QObject):
 
     Args:
         dev (:obj:`object`):
-            Reference to a user-supplied *device* class instance containing I/O
-            methods. In addition, ``dev`` should also have the following
-            members:
+            Reference to a user-supplied *device* class instance containing 
+            your I/O methods. In addition, ``dev`` should also have the
+            following members:
             
                 ``dev.name`` (:obj:`str`):
                     Short display name for the device.            
-                ``dev.mutex`` (:obj:`PyQt5.QtCore.QMutex`):
+                ``dev.mutex`` (:class:`PyQt5.QtCore.QMutex`):
                     To allow for properly multithreaded device I/O operations.
-                    It will be used by ``Worker_DAQ`` and ``Worker_send``.
+                    It will be used by :class:`Worker_DAQ` and
+                    :class:`Worker_send`.
                 ``dev.is_alive`` (:obj:`bool`):
                     Device is up and communicatable?
 
     Attributes:
-        dev (:obj:`object`):
-            Reference to a user-supplied *device* class instance containing your
-            I/O methods.
+        dev (:obj:`object` or None):
+            Reference to a user-supplied *device* class instance containing
+            your I/O methods.
         
-        worker_DAQ (:obj:`Worker_DAQ`):
+        worker_DAQ (:class:`Worker_DAQ` | :obj:`None`):
             Periodically acquires data from the device. Runs in a dedicated
             thread.
         
-        worker_send (:obj:`Worker_send`):
+        worker_send (:class:`Worker_send` | :obj:`None`):
              Maintains a thread-safe queue where desired device I/O operations
              can be put onto, and sends the queued operations first in first out
              (FIFO) to the device. Runs in a dedicated thread.
         
         update_counter_DAQ (:obj:`int`):
-            Increments every time ``worker_DAQ`` tries to update.
+            Increments every time :attr:`worker_DAQ` tries to update.
         
         update_counter_send (:obj:`int`):
-            Increments every time ``worker_send`` tries to update.
+            Increments every time :attr:`worker_send` tries to update.
         
-        obtained_DAQ_interval_ms:
+        obtained_DAQ_interval_ms (:obj:`int` | :obj:`numpy.nan`):
             Obtained time interval in milliseconds since the previous
-            ``worker_DAQ`` update.
+            :attr:`worker_DAQ` update.
         
-        obtained_DAQ_rate_Hz:
-            Obtained acquisition rate of ``worker_DAQ`` in Hertz.
+        obtained_DAQ_rate_Hz (:obj:`float` | :obj:`numpy.nan`):
+            Obtained acquisition rate of :attr:`worker_DAQ` in Hertz.
 
     :Signals:
         Type: :obj:`PyQt5.QtCore.pyqtSignal`
@@ -156,8 +157,8 @@ class QDeviceIO(QtCore.QObject):
     """
 
     signal_DAQ_updated = QtCore.pyqtSignal()
-    """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by ``worker_DAQ`` when the
-    :obj:`DAQ_function` has run and has finished succesfully.
+    """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by :class:`Worker_DAQ` when its
+    :attr:`~Worker_DAQ.DAQ_function` has run and has finished succesfully.
     
     Tip:
         It can be useful to connect this signal to your own slot containing
@@ -165,26 +166,27 @@ class QDeviceIO(QtCore.QObject):
             
             qdeviceio.signal_DAQ_updated.connect(my_GUI_redraw_routine)
             
-        where ``qdeviceio`` is your instance of :obj:`QDeviceIO`.
+        where ``qdeviceio`` is your instance of :class:`QDeviceIO`.
     """
 
     signal_DAQ_paused = QtCore.pyqtSignal()
-    """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by ``worker_DAQ`` to confirm the
-    worker has entered the `paused` state as a response to :obj:`pause_DAQ()`.
+    """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by :class:`Worker_DAQ` to confirm
+    the worker has entered the `paused` state as a response to
+    :func:`pause_DAQ`.
     """
 
     signal_connection_lost = QtCore.pyqtSignal()
-    """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by ``worker_DAQ`` to indicate
-    that we lost connection to the device. This happens when `N` consecutive
-    device I/O operations have failed, where `N` equals the argument
+    """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by :class:`Worker_DAQ` to
+    indicate that we lost connection to the device. This happens when `N`
+    consecutive device I/O operations have failed, where `N` equals the argument
     :obj:`critical_not_alive_count` as passed to method
-    :obj:`create_worker_DAQ()`.
+    :func:`create_worker_DAQ`.
     """
 
     signal_send_updated = QtCore.pyqtSignal()
-    """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by ``worker_send`` when all
+    """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by :class:`Worker_send` when all
     pending jobs in the queue have been sent out to the device as a response to
-    :obj:`send()` or :obj:`process_send_queue()`.
+    :func:`send` or :func:`process_send_queue`.
     """
 
     # Necessary for INTERNAL_TIMER
@@ -256,12 +258,12 @@ class QDeviceIO(QtCore.QObject):
     # --------------------------------------------------------------------------
 
     def create_worker_DAQ(self, **kwargs):
-        """Creates and configures an instance of :obj:`Worker_DAQ` and transfers
-        it to a newly created :obj:`PyQt5.QtCore.QThread`.
+        """Creates and configures an instance of :class:`Worker_DAQ` and
+        transfers it to a newly created :obj:`PyQt5.QtCore.QThread`.
 
         Args:
             **kwargs
-                Will be passed directly to :obj:`Worker_DAQ` as initialization
+                Will be passed directly to :class:`Worker_DAQ` as initialization
                 parameters.
         """
         if type(self.dev) == self._NoDevice:
@@ -280,13 +282,13 @@ class QDeviceIO(QtCore.QObject):
         self.worker_DAQ.moveToThread(self._thread_DAQ)
 
     def create_worker_send(self, **kwargs):
-        """Creates and configures an instance of :obj:`Worker_send` and
+        """Creates and configures an instance of :class:`Worker_send` and
         transfers it to a newly created :obj:`PyQt5.QtCore.QThread`.
 
         Args:
             **kwargs
-                Will be passed directly to :obj:`Worker_send` as initialization
-                parameters.
+                Will be passed directly to :class:`Worker_send` as
+                initialization parameters.
         """
         if type(self.dev) == self._NoDevice:
             pft(
@@ -308,11 +310,11 @@ class QDeviceIO(QtCore.QObject):
 
     def start_worker_DAQ(self, priority=QtCore.QThread.InheritPriority):
         """Starts the periodical data acquisition with the device by starting
-        the event loop of the ``worker_DAQ`` thread.
+        the event loop of the :attr:`worker_DAQ` thread.
 
         Args:
-            priority (:obj:`PyQt5.QtCore.QThread.Priority`, optional):
-                See `start()`_.
+            priority (:const:`PyQt5.QtCore.QThread.Priority`, optional):
+                See :meth:`start`.
 
         Returns:
             True if successful, False otherwise.
@@ -374,7 +376,7 @@ class QDeviceIO(QtCore.QObject):
 
     def start_worker_send(self, priority=QtCore.QThread.InheritPriority):
         """Starts maintaining the desired device I/O operations queue by
-        starting the event loop of the ``worker_send`` thread.
+        starting the event loop of the :attr:`worker_send` thread.
 
         Args:
             priority (:obj:`PyQt5.QtCore.QThread.Priority`, optional):
@@ -440,10 +442,10 @@ class QDeviceIO(QtCore.QObject):
         
         Args:
             DAQ_priority (:obj:`PyQt5.QtCore.QThread.Priority`, optional):
-                By default, the 'worker' thread runs in the operating system
-                at the same thread priority as the main/GUI thread. You can
-                change to higher priority by setting 'priority' to, e.g.,
-                :obj:`QtCore.QThread.TimeCriticalPriority`. Be aware that this
+                By default, the *worker* thread runs in the operating system
+                at the same thread priority as the *main/GUI* thread. You can
+                change to higher priority by setting ``priority`` to, e.g.,
+                :const:`QtCore.QThread.TimeCriticalPriority`. Be aware that this
                 is resource heavy, so use sparingly.
             
             send_priority (:obj:`PyQt5.QtCore.QThread.Priority`, optional):
@@ -467,7 +469,7 @@ class QDeviceIO(QtCore.QObject):
     # --------------------------------------------------------------------------
 
     def quit_worker_DAQ(self):
-        """Stops ``worker_DAQ`` and closes its thread.
+        """Stops :attr:`worker_DAQ` and closes its thread.
         
         Returns:
             True if successful, False otherwise.
@@ -533,7 +535,7 @@ class QDeviceIO(QtCore.QObject):
             return False  # pragma: no cover
 
     def quit_worker_send(self):
-        """Stops ``worker_send`` and closes its thread.
+        """Stops :attr:`worker_send` and closes its thread.
         
         Returns:
             True if successful, False otherwise.
@@ -600,9 +602,9 @@ class QDeviceIO(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def pause_DAQ(self):
-        """Only useful in mode :obj:`DAQ_trigger.CONTINUOUS`. Requests
-        ``worker_DAQ`` to pause and stop listening for data. After
-        ``worker_DAQ`` has achieved the `paused` state, it will emit
+        """Only useful in mode :const:`DAQ_trigger.CONTINUOUS`. Requests
+        :attr:`worker_DAQ` to pause and stop listening for data. After
+        :attr:`worker_DAQ` has achieved the `paused` state, it will emit
         :obj:`signal_DAQ_paused`.
         
         This method can be called from another thread.
@@ -612,9 +614,10 @@ class QDeviceIO(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def unpause_DAQ(self):
-        """Only useful in mode :obj:`DAQ_trigger.CONTINUOUS`. Requests
-        ``worker_DAQ`` to resume listening for data. After ``worker_DAQ`` has
-        succesfully resumed, it will start emitting :obj:`signal_DAQ_updated`.
+        """Only useful in mode :const:`DAQ_trigger.CONTINUOUS`. Requests
+        :attr:`worker_DAQ` to resume listening for data. After
+        :attr:`worker_DAQ` has succesfully resumed, it will start emitting
+        :obj:`signal_DAQ_updated`.
         
         This method can be called from another thread.
         """
@@ -623,7 +626,7 @@ class QDeviceIO(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def wake_up_DAQ(self):
-        """Only useful in mode :obj:`DAQ_trigger.SINGLE_SHOT_WAKE_UP`.
+        """Only useful in mode :const:`DAQ_trigger.SINGLE_SHOT_WAKE_UP`.
         
         This method can be called from another thread.
         """
@@ -1062,7 +1065,10 @@ class Worker_DAQ(QtCore.QObject):
         DEBUG (bool, optional, default=False):
             Show debug info in terminal? Warning: Slow! Do not leave on
             unintentionally.
-            
+    
+    Attributes:
+        DAQ_function (:obj:`function|None`) : Blah
+    
     Methods:
         pause():
             Only useful with DAQ_trigger.CONTINUOUS
