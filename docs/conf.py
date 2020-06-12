@@ -89,6 +89,6 @@ napoleon_include_special_with_doc = True
 napoleon_use_admonition_for_examples = False
 napoleon_use_admonition_for_notes = False
 napoleon_use_admonition_for_references = False
-napoleon_use_ivar = False    # True to create block. Downside is that we lose hyperlinks to class variables
+napoleon_use_ivar = True    # True to create block. Downside is that we lose hyperlinks to class variables
 napoleon_use_param = False  # False
 napoleon_use_rtype = True
