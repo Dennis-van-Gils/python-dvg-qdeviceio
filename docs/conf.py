@@ -34,7 +34,8 @@ html_last_updated_fmt = '%d-%m-%Y'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
-    'sphinx.ext.autosectionlabel'
+    'sphinx.ext.autosectionlabel',
+    'sphinx.ext.viewcode'
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -49,7 +50,6 @@ exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store']
 master_doc = 'index'
 
 # -- Options for HTML output -------------------------------------------------
-
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
@@ -73,6 +73,8 @@ html_theme_path = ["_themes", ]
 #    'titles_only': False
 #}
 
+html4_writer = True
+
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
@@ -87,6 +89,6 @@ napoleon_include_special_with_doc = True
 napoleon_use_admonition_for_examples = False
 napoleon_use_admonition_for_notes = False
 napoleon_use_admonition_for_references = False
-napoleon_use_ivar = True
-napoleon_use_param = False
+napoleon_use_ivar = False    # True to create block. Downside is that we lose hyperlinks to class variables
+napoleon_use_param = False  # False
 napoleon_use_rtype = True

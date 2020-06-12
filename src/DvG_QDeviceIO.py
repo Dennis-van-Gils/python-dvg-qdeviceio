@@ -6,7 +6,7 @@ communication with an I/O device.
 __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
-__date__ = "10-06-2020"
+__date__ = "12-06-2020"
 __version__ = "0.0.9"  # v0.0.1 on PyPI is based on prototype DvG_dev_Base__pyqt_lib.py v1.3.3
 
 from enum import IntEnum, unique
@@ -69,19 +69,23 @@ class QDeviceIO(QtCore.QObject):
     and periodical data acquisition for an I/O device.
 
     All device I/O operations will be offloaded to *workers*, each running in
-    a newly created and dedicated thread.
+    their dedicated thread. The following workers can be created:
 
-    * :class:`Worker_DAQ`:
+    * :class:`Worker_DAQ` :
+        
         Periodically acquires data from the device.
 
-    * :class:`Worker_send`:
+    * :class:`Worker_send` :
+        
         Maintains a thread-safe queue where desired device I/O operations
         can be put onto, and sends the queued operations first in first out
         (FIFO) to the device.
         
-    Example:
-        This class can be mixed into your own specific ``QDeviceIO`` class,
-        e.g., for a specific Arduino project::
+    Tip:
+        This class can be mixed into your own specific `QDeviceIO` class. E.g.,
+        you could make a derived class, named :class:`QDeviceIO_Arduino`, that
+        hides the specifics of creating :class:`Worker_DAQ` and
+        :class:`Worker_send` from the user::
         
             class QDeviceIO_Arduino(DvG_QDeviceIO.QDeviceIO, QtCore.QObject):
                 def __init__(
@@ -89,47 +93,58 @@ class QDeviceIO(QtCore.QObject):
                 ):
                     super(QDeviceIO_Arduino, self).__init__(parent=parent)
     
+                    # In this case, we have to attach the device ourselves
                     self.attach_device(dev)
                     
+                    # Fix the DAQ to a `precise` 10 Hz internal timer
                     self.create_worker_DAQ(
                         DAQ_trigger                = DAQ_trigger.INTERNAL_TIMER,
                         DAQ_function               = DAQ_function,
-                        DAQ_interval_ms            = 100,
+                        DAQ_interval_ms            = 100,  # 100 ms -> 10 Hz
                         DAQ_timer_type             = QtCore.Qt.PreciseTimer,
-                        critical_not_alive_count   = 10,
-                        calc_DAQ_rate_every_N_iter = 5,
+                        critical_not_alive_count   = 3,
+                        calc_DAQ_rate_every_N_iter = 10,
                         DEBUG                      = DEBUG,
-                    )            
+                    )
+                    # Standard message queue handling
                     self.create_worker_send(DEBUG=DEBUG)
+        
+        Now, the user only has to call the following to get up and running::
+            
+            qdev_ard = QDeviceIO_Arduino(
+                dev=my_Arduino_device,
+                DAQ_function=my_DAQ_function
+            )
+            qdev_ard.start()
 
     Args:
         dev (:obj:`object`):
             Reference to a user-supplied *device* class instance containing 
-            your I/O methods. In addition, ``dev`` should also have the
+            your I/O methods. In addition, `dev` should also have the
             following members:
             
-                ``dev.name`` (:obj:`str`):
-                    Short display name for the device.            
-                ``dev.mutex`` (:class:`PyQt5.QtCore.QMutex`):
-                    To allow for properly multithreaded device I/O operations.
-                    It will be used by :class:`Worker_DAQ` and
-                    :class:`Worker_send`.
-                ``dev.is_alive`` (:obj:`bool`):
-                    Device is up and communicatable?
+                * **dev.name** (:obj:`str`) -- Short display name for the \
+                    device.            
+                
+                * **dev.mutex** (:class:`PyQt5.QtCore.QMutex`) -- To allow \
+                    for properly multithreaded device I/O operations. It will \
+                    be used by :class:`Worker_DAQ` and :class:`Worker_send`.
+                
+                * **dev.is_alive** (:obj:`bool`) -- Device is up and \
+                    communicatable?
 
     Attributes:
-        dev (:obj:`object` or None):
+        dev (:obj:`object` | :obj:`None`):
             Reference to a user-supplied *device* class instance containing
             your I/O methods.
         
         worker_DAQ (:class:`Worker_DAQ` | :obj:`None`):
-            Periodically acquires data from the device. Runs in a dedicated
-            thread.
+            Instance of :class:`Worker_DAQ` as created by
+            :func:`create_worker_DAQ`. This worker runs in a dedicated thread.
         
         worker_send (:class:`Worker_send` | :obj:`None`):
-             Maintains a thread-safe queue where desired device I/O operations
-             can be put onto, and sends the queued operations first in first out
-             (FIFO) to the device. Runs in a dedicated thread.
+            Instance of :class:`Worker_send` as created by 
+            :func:`create_worker_send`. This worker runs in a dedicated thread.
         
         update_counter_DAQ (:obj:`int`):
             Increments every time :attr:`worker_DAQ` tries to update.
@@ -143,17 +158,23 @@ class QDeviceIO(QtCore.QObject):
         
         obtained_DAQ_rate_Hz (:obj:`float` | :obj:`numpy.nan`):
             Obtained acquisition rate of :attr:`worker_DAQ` in Hertz.
+            
+        not_alive_counter_DAQ (:obj:`int`):
+            Number of consecutive failed attempts to update :attr:`worker_DAQ`,
+            presumably due to device I/O errors. Will be reset to 0 once a 
+            successful DAQ update occurs. See the
+            :obj:`signal_connection_lost()` mechanism.
 
     :Signals:
         Type: :obj:`PyQt5.QtCore.pyqtSignal`
         
-        :obj:`signal_DAQ_updated()`            
+        * :obj:`signal_DAQ_updated()`
         
-        :obj:`signal_send_updated()`            
+        * :obj:`signal_send_updated()`
         
-        :obj:`signal_DAQ_paused()`        
+        * :obj:`signal_DAQ_paused()`
         
-        :obj:`signal_connection_lost()`
+        * :obj:`signal_connection_lost()`
     """
 
     signal_DAQ_updated = QtCore.pyqtSignal()
@@ -603,7 +624,7 @@ class QDeviceIO(QtCore.QObject):
         """Only useful in mode :const:`DAQ_trigger.CONTINUOUS`. Requests
         :attr:`worker_DAQ` to pause and stop listening for data. After
         :attr:`worker_DAQ` has achieved the `paused` state, it will emit
-        :obj:`signal_DAQ_paused`.
+        :obj:`signal_DAQ_paused()`.
         
         This method can be called from another thread.
         """
@@ -615,7 +636,7 @@ class QDeviceIO(QtCore.QObject):
         """Only useful in mode :const:`DAQ_trigger.CONTINUOUS`. Requests
         :attr:`worker_DAQ` to resume listening for data. After
         :attr:`worker_DAQ` has successfully resumed, it will start emitting
-        :obj:`signal_DAQ_updated`.
+        :obj:`signal_DAQ_updated()`.
         
         This method can be called from another thread.
         """
@@ -627,7 +648,7 @@ class QDeviceIO(QtCore.QObject):
         """Only useful in mode :const:`DAQ_trigger.SINGLE_SHOT_WAKE_UP`.
         Requests :attr:`worker_DAQ` to wake up and perform a single update,
         i.e. run :attr:`~Worker_DAQ.DAQ_function` once. It will emit
-        :obj:`signal_DAQ_updated` after :attr:`~Worker_DAQ.DAQ_function` has
+        :obj:`signal_DAQ_updated()` after :attr:`~Worker_DAQ.DAQ_function` has
         run successfully.
         
         This method can be called from another thread.
@@ -688,7 +709,7 @@ class Worker_send(QtCore.QObject):
     emptied the queue, the thread will go back to sleep again.
 
     No direct changes to the GUI should be performed inside this class.
-    Instead, connect to the 'signal_send_updated' signal to instigate GUI
+    Instead, connect to the 'signal_send_updated()' signal to instigate GUI
     changes when needed.
 
     Args:
@@ -980,7 +1001,7 @@ class Worker_DAQ(QtCore.QObject):
     :attr:`DAQ_function`, containing your device I/O operations and/or
     subsequent data processing, every time the worker 'updates'.
     No direct changes to the GUI should be performed inside this function.
-    Instead, connect to the :obj:`~QDeviceIO.signal_DAQ_updated` signal to
+    Instead, connect to the :obj:`~QDeviceIO.signal_DAQ_updated()` signal to
     instigate GUI changes when needed.
 
     An instance of this worker will be created and placed inside a separate
@@ -1048,7 +1069,7 @@ class Worker_DAQ(QtCore.QObject):
         critical_not_alive_count (:obj:`int`, optional, default=1):
             The worker will allow for up to a certain number of consecutive
             communication failures with the device, before hope is given up
-            and a :obj:`~QDeviceIO.signal_connection_lost` is emitted. Use at
+            and a :obj:`~QDeviceIO.signal_connection_lost()` is emitted. Use at
             your own discretion.
 
         DAQ_timer_type (:obj:`PyQt5.QtCore.Qt.TimerType`, optional, \
