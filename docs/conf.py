@@ -24,8 +24,6 @@ author = 'Dennis van Gils'
 # The full version, including alpha/beta/rc tags
 release = '0.0.9'
 
-html_last_updated_fmt = '%d-%m-%Y'
-
 # -- General configuration ---------------------------------------------------
 
 # Add any Sphinx extension module names here, as strings. They can be
@@ -73,6 +71,7 @@ html_theme_path = ["_themes", ]
 #    'titles_only': False
 #}
 
+html_last_updated_fmt = '%d-%m-%Y'
 html4_writer = True
 
 # Add any paths that contain custom static files (such as style sheets) here,
