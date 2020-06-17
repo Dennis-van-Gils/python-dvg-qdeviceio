@@ -376,6 +376,7 @@ def test_Worker_send__jobs_function():
     assert cnt_send_updated == 3
 
 
+
 def test_attach_device_twice():
     print_title("Attach device twice")
     import pytest
@@ -536,6 +537,12 @@ def test_Worker_DAQ___lose_connection():
 
     app = create_QApplication()
     dev = FakeDevice()
+    
+    # Forcefully remove members as extra test
+    del dev.name
+    del dev.mutex
+    del dev.is_alive
+    
     qdevio = QDeviceIO(dev)
     # fmt: off
     qdevio.create_worker_DAQ(
@@ -628,7 +635,7 @@ def test_Worker_DAQ___INTERNAL_TIMER__mixin_class():
 
 
 if __name__ == "__main__":
-    ALL = True
+    ALL = False
     if ALL:
         test_Worker_DAQ___INTERNAL_TIMER()
         test_Worker_DAQ___INTERNAL_TIMER__start_dead()
@@ -666,7 +673,7 @@ if __name__ == "__main__":
         # test_Worker_DAQ___CONTINUOUS()
         # test_Worker_DAQ___CONTINUOUS__start_dead()
 
-        test_Worker_DAQ___rate()
+        # test_Worker_DAQ___rate()
         # test_Worker_DAQ___lose_connection()
         # test_Worker_DAQ___no_device_attached()
         # test_Worker_DAQ___start_without_create()
@@ -683,3 +690,4 @@ if __name__ == "__main__":
         # test_attach_device_twice()
 
         # test_Worker_DAQ___INTERNAL_TIMER__mixin_class()
+        test_Worker_DAQ___lose_connection()

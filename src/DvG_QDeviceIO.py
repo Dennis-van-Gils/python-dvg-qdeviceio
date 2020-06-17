@@ -6,8 +6,8 @@ communication with an I/O device.
 __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
-__date__ = "12-06-2020"
-__version__ = "0.0.9"  # v0.0.1 on PyPI is based on prototype DvG_dev_Base__pyqt_lib.py v1.3.3
+__date__ = "17-06-2020"
+__version__ = "0.0.10"  # v0.0.1 on PyPI is based on prototype DvG_dev_Base__pyqt_lib.py v1.3.3
 
 from enum import IntEnum, unique
 import queue
@@ -121,17 +121,18 @@ class QDeviceIO(QtCore.QObject):
         dev (:obj:`object`):
             Reference to a user-supplied *device* class instance containing 
             your I/O methods. In addition, `dev` should also have the
-            following members:
+            following members. If not, they will be injected into the `dev`
+            instance for you:
             
                 * **dev.name** (:obj:`str`) -- Short display name for the \
-                    device.            
+                    device. Default: "myDevice".
                 
                 * **dev.mutex** (:class:`PyQt5.QtCore.QMutex`) -- To allow \
                     for properly multithreaded device I/O operations. It will \
                     be used by :class:`Worker_DAQ` and :class:`Worker_send`.
                 
                 * **dev.is_alive** (:obj:`bool`) -- Device is up and \
-                    communicatable?
+                    communicatable? Default: :const:`True`.
 
     Attributes:
         dev (:obj:`object` | :obj:`None`):
@@ -243,17 +244,27 @@ class QDeviceIO(QtCore.QObject):
 
     class _NoDevice:
         name = "NoDevice"
-        mutex = QtCore.QMutex()
-        is_alive = False
 
     # --------------------------------------------------------------------------
     #   attach_device
     # --------------------------------------------------------------------------
 
     def attach_device(self, dev):
-        """Attaches a reference to a *device* instance containing your I/O
-        methods.
-        
+        """Attach a reference to a user-supplied *device* class instance
+        containing your I/O methods. In addition, `dev` should also have the
+        following members. If not, they will be injected into the `dev`
+        instance for you:
+            
+            * **dev.name** (:obj:`str`) -- Short display name for the \
+                device. Default: "myDevice".
+            
+            * **dev.mutex** (:class:`PyQt5.QtCore.QMutex`) -- To allow \
+                for properly multithreaded device I/O operations. It will \
+                be used by :class:`Worker_DAQ` and :class:`Worker_send`.
+            
+            * **dev.is_alive** (:obj:`bool`) -- Device is up and \
+                communicatable? Default: :const:`True`.
+    
         Args:
             dev (:obj:`object`):
                 Reference to a user-supplied *device* class instance containing
@@ -262,10 +273,17 @@ class QDeviceIO(QtCore.QObject):
         Returns:
             True if successful, False otherwise.
         """
+        if not hasattr(dev, "name"):
+            dev.name = "myDevice"
+
+        if not hasattr(dev, "mutex"):
+            dev.mutex = QtCore.QMutex()
+
+        if not hasattr(dev, "is_alive"):
+            dev.is_alive = True  # Assume the device is alive from the start
+
         if type(self.dev) == self._NoDevice:
             self.dev = dev
-            # TODO: Test for existence required members
-            # dev.name, dev.mutex, dev.is_alive
             return True
         else:
             pft(
@@ -279,8 +297,8 @@ class QDeviceIO(QtCore.QObject):
     # --------------------------------------------------------------------------
 
     def create_worker_DAQ(self, **kwargs):
-        """Creates and configures an instance of :class:`Worker_DAQ` and
-        transfers it to a newly created :obj:`PyQt5.QtCore.QThread`.
+        """Create and configure an instance of :class:`Worker_DAQ` and transfer
+        it to a newly created :obj:`PyQt5.QtCore.QThread`.
 
         Args:
             **kwargs
@@ -303,8 +321,8 @@ class QDeviceIO(QtCore.QObject):
         self.worker_DAQ.moveToThread(self._thread_DAQ)
 
     def create_worker_send(self, **kwargs):
-        """Creates and configures an instance of :class:`Worker_send` and
-        transfers it to a newly created :obj:`PyQt5.QtCore.QThread`.
+        """Create and configure an instance of :class:`Worker_send` and transfer
+        it to a newly created :obj:`PyQt5.QtCore.QThread`.
 
         Args:
             **kwargs
@@ -330,7 +348,7 @@ class QDeviceIO(QtCore.QObject):
     # --------------------------------------------------------------------------
 
     def start_worker_DAQ(self, priority=QtCore.QThread.InheritPriority):
-        """Starts the periodical data acquisition with the device by starting
+        """Start the periodical data acquisition with the device by starting
         the event loop of the :attr:`worker_DAQ` thread.
 
         Args:
@@ -396,7 +414,7 @@ class QDeviceIO(QtCore.QObject):
         return self.worker_DAQ._started_okay
 
     def start_worker_send(self, priority=QtCore.QThread.InheritPriority):
-        """Starts maintaining the desired device I/O operations queue by
+        """Start maintaining the desired device I/O operations queue by
         starting the event loop of the :attr:`worker_send` thread.
 
         Args:
@@ -457,7 +475,7 @@ class QDeviceIO(QtCore.QObject):
         DAQ_priority=QtCore.QThread.InheritPriority,
         send_priority=QtCore.QThread.InheritPriority,
     ):
-        """Starts the event loop of all of any created workers.
+        """Start the event loop of all of any created workers.
 
         Args:
             DAQ_priority (:obj:`PyQt5.QtCore.QThread.Priority`, optional):
@@ -488,7 +506,7 @@ class QDeviceIO(QtCore.QObject):
     # --------------------------------------------------------------------------
 
     def quit_worker_DAQ(self):
-        """Stops :attr:`worker_DAQ` and closes its thread.
+        """Stop :attr:`worker_DAQ` and close its thread.
         
         Returns:
             True if successful, False otherwise.
@@ -554,7 +572,7 @@ class QDeviceIO(QtCore.QObject):
             return False  # pragma: no cover
 
     def quit_worker_send(self):
-        """Stops :attr:`worker_send` and closes its thread.
+        """Stop :attr:`worker_send` and close its thread.
         
         Returns:
             True if successful, False otherwise.
@@ -608,7 +626,7 @@ class QDeviceIO(QtCore.QObject):
             return False  # pragma: no cover
 
     def quit(self):
-        """Stops all of any running workers and closes their respective threads.
+        """Stop all of any running workers and close their respective threads.
         
         Returns:
             True if successful, False otherwise.
@@ -621,7 +639,7 @@ class QDeviceIO(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def pause_DAQ(self):
-        """Only useful in mode :const:`DAQ_trigger.CONTINUOUS`. Requests
+        """Only useful in mode :const:`DAQ_trigger.CONTINUOUS`. Request
         :attr:`worker_DAQ` to pause and stop listening for data. After
         :attr:`worker_DAQ` has achieved the `paused` state, it will emit
         :obj:`signal_DAQ_paused()`.
@@ -633,7 +651,7 @@ class QDeviceIO(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def unpause_DAQ(self):
-        """Only useful in mode :const:`DAQ_trigger.CONTINUOUS`. Requests
+        """Only useful in mode :const:`DAQ_trigger.CONTINUOUS`. Request
         :attr:`worker_DAQ` to resume listening for data. After
         :attr:`worker_DAQ` has successfully resumed, it will start emitting
         :obj:`signal_DAQ_updated()`.
@@ -646,7 +664,7 @@ class QDeviceIO(QtCore.QObject):
     @QtCore.pyqtSlot()
     def wake_up_DAQ(self):
         """Only useful in mode :const:`DAQ_trigger.SINGLE_SHOT_WAKE_UP`.
-        Requests :attr:`worker_DAQ` to wake up and perform a single update,
+        Request :attr:`worker_DAQ` to wake up and perform a single update,
         i.e. run :attr:`~Worker_DAQ.DAQ_function` once. It will emit
         :obj:`signal_DAQ_updated()` after :attr:`~Worker_DAQ.DAQ_function` has
         run successfully.
@@ -662,14 +680,14 @@ class QDeviceIO(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def send(self, instruction, pass_args=()):
-        """Put an instruction on the worker_send queue and process the
-         queue until empty.
-         E.g. send(dev.write, "toggle LED")
+        """Put an instruction on the worker_send queue and send out the full
+        queue first-in, first-out until empty.
+        E.g. send(dev.write, "toggle LED")
          
-         See 'Worker_send.add_to_queue()' for more details.
+        See 'Worker_send.add_to_queue()' for more details.
         """
         if self.worker_send is not None:
-            self.worker_send.queued_instruction(instruction, pass_args)
+            self.worker_send.send(instruction, pass_args)
 
     @QtCore.pyqtSlot()
     def add_to_send_queue(self, instruction, pass_args=()):
@@ -683,7 +701,7 @@ class QDeviceIO(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def process_send_queue(self):
-        """Trigger processing the worker_send queue and send until empty.
+        """Send out the full queue first-in, first-out until empty.
         """
         if self.worker_send is not None:
             self.worker_send.process_queue()
@@ -929,6 +947,20 @@ class Worker_send(QtCore.QObject):
         self._qwc.wakeAll()  # Wake up for the final time
 
     # ----------------------------------------------------------------------
+    #   send
+    # ----------------------------------------------------------------------
+
+    def send(self, instruction, pass_args=()):
+        """Put an instruction on the worker_send queue and process the
+        queue until empty. See 'add_to_queue()' for more details.
+        E.g. send(dev.write, "toggle LED")
+        
+        NOTE: This method can be called from another thread.
+        """
+        self.add_to_queue(instruction, pass_args)
+        self.process_queue()
+
+    # ----------------------------------------------------------------------
     #   add_to_queue
     # ----------------------------------------------------------------------
 
@@ -974,20 +1006,6 @@ class Worker_send(QtCore.QObject):
             )
 
         self._qwc.wakeAll()
-
-    # ----------------------------------------------------------------------
-    #   queued_instruction
-    # ----------------------------------------------------------------------
-
-    def queued_instruction(self, instruction, pass_args=()):
-        """Put an instruction on the worker_send queue and process the
-        queue until empty. See 'add_to_queue()' for more details.
-        E.g. queued_instruction(dev.write, "toggle LED")
-        
-        NOTE: This method can be called from another thread.
-        """
-        self.add_to_queue(instruction, pass_args)
-        self.process_queue()
 
 
 # --------------------------------------------------------------------------
