@@ -65,9 +65,7 @@ def process_send_updated():
 
 class FakeDevice:
     def __init__(self, start_alive=True):
-        # Required members
         self.name = "FakeDev"
-        self.mutex = QtCore.QMutex()
         self.is_alive = start_alive
 
         # Member for testing
@@ -540,7 +538,6 @@ def test_Worker_DAQ___lose_connection():
     
     # Forcefully remove members as extra test
     del dev.name
-    del dev.mutex
     del dev.is_alive
     
     qdevio = QDeviceIO(dev)
@@ -635,7 +632,7 @@ def test_Worker_DAQ___INTERNAL_TIMER__mixin_class():
 
 
 if __name__ == "__main__":
-    ALL = False
+    ALL = True
     if ALL:
         test_Worker_DAQ___INTERNAL_TIMER()
         test_Worker_DAQ___INTERNAL_TIMER__start_dead()
