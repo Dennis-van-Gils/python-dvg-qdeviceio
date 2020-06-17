@@ -8,6 +8,7 @@ DvG_QDeviceIO
     :caption: Introduction
 
     intro
+    example
 
    
 .. toctree::
