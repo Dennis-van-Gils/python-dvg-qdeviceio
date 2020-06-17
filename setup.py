@@ -26,15 +26,15 @@ setup(
     name="dvg-qdeviceio",
     version="0.0.9",
     license="MIT",
-    description="PyQt5 framework for multithreaded communication and periodical data acquisition for an I/O device.",
+    description="PyQt5 interface for multithreaded periodical data acquisition and communication with an I/O device.",
     long_description="%s\n%s"
     % (
         re.compile("^.. start-badges.*^.. end-badges", re.M | re.S).sub(
-            "", read("README.md")
+            "", read("README.rst")
         ),
-        re.sub(":[a-z]+:`~?(.*?)`", r"``\1``", read("CHANGELOG.md")),
+        re.sub(":[a-z]+:`~?(.*?)`", r"``\1``", read("CHANGELOG.rst")),
     ),
-    long_description_content_type="text/markdown",
+    long_description_content_type="text/x-rst",
     author="Dennis van Gils",
     author_email="vangils.dennis@gmail.com",
     url="https://github.com/Dennis-van-Gils/python-dvg-qdeviceio",
