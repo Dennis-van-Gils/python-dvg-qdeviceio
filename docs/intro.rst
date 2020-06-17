@@ -1,8 +1,8 @@
-DvG_QdeviceIO
+DvG_QDeviceIO
 ===================
 
-Is a PyQt5 framework for multithreaded periodical data acquisition and communication with an I/O device.
+PyQt5 interface for multithreaded periodical data acquisition and communication with an I/O device.
 
-It provides an interface that will handle managing the threads and signalling setup for you, reducing it to a few simple method calls of an QDeviceIO instance.
+It will manage the creation and handling of the threads, workers and signals for you, reducing it to just a few simple method calls of an QDeviceIO class instance to get set up and going.
 
 Stable beta. Documentation will be added next. Within a month (at July 2020) I expect a proper release.

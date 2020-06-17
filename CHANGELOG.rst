@@ -19,3 +19,9 @@ Changelog
 * Added pause_DAQ, unpause_DAQ(), wake_up_DAQ()
 * Changed many attribute and method names
 * Code style: black
+
+0.0.9 (2020-06-17)
+------------------
+* Moved the Worker_### classes outside of QDeviceIO and into module root
+* Added documentation using Sphinx and Read the docs
+* Changed from MarkDown to ReStructuredText

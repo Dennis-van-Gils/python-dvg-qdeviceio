@@ -13,7 +13,4 @@ python setup.py bdist_wheel sdist
 check-manifest --create
 twine upload dist/*
 
-
-
-sphinx-apidoc -f -o docs/source src
 docs\make html

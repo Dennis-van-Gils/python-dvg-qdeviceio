@@ -2,8 +2,7 @@
 Contributing
 ============
 
-Contributions are welcome, and they are greatly appreciated! Every
-little bit helps, and credit will always be given.
+Contributions are welcome, and they are greatly appreciated! Every little bit helps, and credit will always be given.
 
 Bug reports
 ===========
@@ -17,9 +16,7 @@ When `reporting a bug <https://github.com/Dennis-van-Gils/python-dvg-qdeviceio/i
 Documentation improvements
 ==========================
 
-DvG-QDeviceIO could always use more documentation, whether as part of the
-official DvG-QDeviceIO docs, in docstrings, or even on the web in blog posts,
-articles, and such.
+DvG-QDeviceIO could always use more documentation, whether as part of the official DvG-QDeviceIO docs, in docstrings, or even on the web in blog posts, articles, and such.
 
 Feature requests and feedback
 =============================
@@ -49,9 +46,9 @@ To set up `python-dvg-qdeviceio` for local development:
 
    Now you can make your changes locally.
 
-4. When you're done making changes run all the checks and docs builder with `tox <https://tox.readthedocs.io/en/latest/install.html>`_ one command::
+4. When you're done making changes run a check::
 
-    tox
+    pytest --cov-report term-missing --cov=src -vv
 
 5. Commit your changes and push your branch to GitHub::
 
@@ -68,23 +65,10 @@ If you need some code review or feedback while you're developing the code just m
 
 For merging, you should:
 
-1. Include passing tests (run ``tox``) [1]_.
+1. Include passing tests [1]_.
 2. Update documentation when there's new API, functionality etc.
-3. Add a note to ``CHANGELOG.md`` about the changes.
-4. Add yourself to ``AUTHORS.md``.
+3. Add a note to ``CHANGELOG.rst`` about the changes.
+4. Add yourself to ``AUTHORS.rst``.
 
-.. [1] If you don't have all the necessary python versions available locally you can rely on Travis - it will
-       `run the tests <https://travis-ci.org/Dennis-van-Gils/python-dvg-qdeviceio/pull_requests>`_ for each change you add in the pull request.
-
-       It will be slower though ...
-
-Tips
-----
-
-To run a subset of tests::
-
-    tox -e envname -- pytest -k test_myfeature
-
-To run all the test environments in *parallel* (you need to ``pip install detox``)::
-
-    detox
+.. [1] You can rely on Travis - it will
+       `run the tests <https://travis-ci.org/github/Dennis-van-Gils/python-dvg-qdeviceio/pull_requests>`_ for each change you add in the pull request.
