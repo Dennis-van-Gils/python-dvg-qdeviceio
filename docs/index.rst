@@ -1,20 +1,26 @@
-Welcome
+DvG_QDeviceIO
 ===================
 
+*PyQt5 interface for multithreaded periodical data acquisition and communication with an I/O device.*
+
+
 .. toctree::
-   :caption: Introduction
-   
-   intro
+    :caption: Introduction
+
+    intro
+
    
 .. toctree::
-   :caption: API
- 
-   api-qdeviceio
+    :caption: API
+
+    api-qdeviceio
 
 
+.. toctree::
+    :maxdepth: 1
+    :caption: Other
 
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`search`
+    authors
+    changelog
+    contributing
+    genindex
