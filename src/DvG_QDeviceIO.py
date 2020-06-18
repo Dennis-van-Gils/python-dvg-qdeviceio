@@ -123,7 +123,7 @@ class QDeviceIO(QtCore.QObject):
             qdev_ard.start()
             
     .. _`QDeviceIO_args`:
-
+        
     Args:
         dev (:obj:`object`):
             Reference to a user-supplied *device* class instance containing 
@@ -142,6 +142,7 @@ class QDeviceIO(QtCore.QObject):
                     communicatable? Default: :const:`True`.
 
     .. _`QDeviceIO_attributes`:
+        
     .. list-table:: 
        :width: 100%
        
@@ -178,23 +179,6 @@ class QDeviceIO(QtCore.QObject):
             presumably due to device I/O errors. Will be reset to 0 once a 
             successful DAQ update occurs. See the
             :obj:`signal_connection_lost()` mechanism.
-
-    .. _`QDeviceIO_signals`:
-    .. list-table:: 
-       :width: 100%
-       
-       * - **SIGNALS** | *QDeviceIO*
-       
-    .. autoattribute:: signal_DAQ_updated
-    .. autoattribute:: signal_send_updated
-    .. autoattribute:: signal_DAQ_paused
-    .. autoattribute:: signal_connection_lost
-    
-    .. _`QDeviceIO_methods`:
-    .. list-table:: 
-       :width: 100%
-       
-       * - **METHODS** | *QDeviceIO*
     """
 
     signal_DAQ_updated = QtCore.pyqtSignal()
@@ -747,7 +731,7 @@ class Worker_send(QtCore.QObject):
     changes when needed.
 
     .. _`Worker_send_args`:
-
+        
     Args:
         jobs_function (optional, default=None):
             Reference to an user-supplied function performing an alternative
@@ -788,19 +772,14 @@ class Worker_send(QtCore.QObject):
             unintentionally.
             
     .. _`Worker_send_attributes`:
+        
     .. list-table:: 
        :width: 100%
        
        * - **INSTANCE VARIABLES** | *Worker_send*
-    
+       
     Attributes:
         jobs_function (:obj:`function|None`) : Blah
-        
-    .. _`Worker_send_methods`:
-    .. list-table:: 
-       :width: 100%
-       
-       * - **METHODS** | *Worker_send*
     """
 
     def __init__(
@@ -1070,7 +1049,7 @@ class Worker_DAQ(QtCore.QObject):
     transmission.
 
     .. _`Worker_DAQ_args`:
-   
+        
     Args:
         DAQ_trigger (:obj:`int`, optional, default= ``DAQ_trigger.INTERNAL_TIMER``):
             Mode of operation. TODO: write description.
@@ -1138,6 +1117,7 @@ class Worker_DAQ(QtCore.QObject):
             unintentionally.
     
     .. _`Worker_DAQ_attributes`:
+        
     .. list-table:: 
        :width: 100%
        
@@ -1145,12 +1125,8 @@ class Worker_DAQ(QtCore.QObject):
     
     Attributes:
         DAQ_function (:obj:`function|None`) : Blah
-        
-    .. _`Worker_DAQ_methods`:
-    .. list-table:: 
-       :width: 100%
-       
-       * - **METHODS** | *Worker_DAQ*
+        critical_not_alive_count (:obj:`int`) : Blah
+        calc_DAQ_rate_every_N_iter (:obj:`int`) : Blah
     """
 
     def __init__(

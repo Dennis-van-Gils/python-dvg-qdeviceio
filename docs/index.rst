@@ -15,6 +15,9 @@ DvG_QDeviceIO
    :caption: API
 
    api-qdeviceio
+   api-workerdaq
+   api-workersend
+   api-daqtrigger
 
 
 .. toctree::
