@@ -33,7 +33,7 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
     'sphinx.ext.autosectionlabel',
-    'sphinx.ext.viewcode'
+    'sphinx.ext.viewcode',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -63,7 +63,7 @@ html_theme_path = ["_themes", ]
 #    'prev_next_buttons_location': 'bottom',
 #    'style_external_links': False,
 #    'style_nav_header_background': '#2980B9',
-    # Toc options
+# Toc options
 #    'collapse_navigation': True,
 #    'sticky_navigation': True,
 #    'navigation_depth': 4,
@@ -88,6 +88,6 @@ napoleon_include_special_with_doc = True
 napoleon_use_admonition_for_examples = False
 napoleon_use_admonition_for_notes = False
 napoleon_use_admonition_for_references = False
-napoleon_use_ivar = True    # True to create block. Downside is that we lose hyperlinks to class variables
+napoleon_use_ivar = False    # True to create block. Downside is that we lose hyperlinks to class variables
 napoleon_use_param = False  # False
 napoleon_use_rtype = True

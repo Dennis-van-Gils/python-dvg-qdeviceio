@@ -3,6 +3,7 @@ QDeviceIO
 .. autoclass:: DvG_QDeviceIO.QDeviceIO
    :members:
    :member-order: bysource
+   :exclude-members: signal_DAQ_updated, signal_send_updated, signal_DAQ_paused, signal_connection_lost
    
 Worker_DAQ
 ===================

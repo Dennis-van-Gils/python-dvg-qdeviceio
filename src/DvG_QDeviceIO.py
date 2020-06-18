@@ -121,6 +121,8 @@ class QDeviceIO(QtCore.QObject):
                 DAQ_function=my_DAQ_function
             )
             qdev_ard.start()
+            
+    .. _`QDeviceIO_args`:
 
     Args:
         dev (:obj:`object`):
@@ -139,6 +141,12 @@ class QDeviceIO(QtCore.QObject):
                 * **dev.is_alive** (:obj:`bool`) -- Device is up and \
                     communicatable? Default: :const:`True`.
 
+    .. _`QDeviceIO_attributes`:
+    .. list-table:: 
+       :width: 100%
+       
+       * - **INSTANCE VARIABLES** | *QDeviceIO*
+    
     Attributes:
         dev (:obj:`object` | :obj:`None`):
             Reference to a user-supplied *device* class instance containing
@@ -171,16 +179,22 @@ class QDeviceIO(QtCore.QObject):
             successful DAQ update occurs. See the
             :obj:`signal_connection_lost()` mechanism.
 
-    :Signals:
-        Type: :obj:`PyQt5.QtCore.pyqtSignal`
-        
-        * :obj:`signal_DAQ_updated()`
-        
-        * :obj:`signal_send_updated()`
-        
-        * :obj:`signal_DAQ_paused()`
-        
-        * :obj:`signal_connection_lost()`
+    .. _`QDeviceIO_signals`:
+    .. list-table:: 
+       :width: 100%
+       
+       * - **SIGNALS** | *QDeviceIO*
+       
+    .. autoattribute:: signal_DAQ_updated
+    .. autoattribute:: signal_send_updated
+    .. autoattribute:: signal_DAQ_paused
+    .. autoattribute:: signal_connection_lost
+    
+    .. _`QDeviceIO_methods`:
+    .. list-table:: 
+       :width: 100%
+       
+       * - **METHODS** | *QDeviceIO*
     """
 
     signal_DAQ_updated = QtCore.pyqtSignal()
@@ -196,6 +210,12 @@ class QDeviceIO(QtCore.QObject):
         where ``qdeviceio`` is your instance of :class:`QDeviceIO`.
     """
 
+    signal_send_updated = QtCore.pyqtSignal()
+    """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by :class:`Worker_send` when all
+    pending jobs in the queue have been sent out to the device as a response to
+    :func:`send` or :func:`process_send_queue`.
+    """
+
     signal_DAQ_paused = QtCore.pyqtSignal()
     """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by :class:`Worker_DAQ` to confirm
     the worker has entered the `paused` state as a response to
@@ -208,12 +228,6 @@ class QDeviceIO(QtCore.QObject):
     consecutive device I/O operations have failed, where `N` equals the argument
     :obj:`critical_not_alive_count` as passed to method
     :func:`create_worker_DAQ`.
-    """
-
-    signal_send_updated = QtCore.pyqtSignal()
-    """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by :class:`Worker_send` when all
-    pending jobs in the queue have been sent out to the device as a response to
-    :func:`send` or :func:`process_send_queue`.
     """
 
     # Necessary for INTERNAL_TIMER
@@ -249,6 +263,7 @@ class QDeviceIO(QtCore.QObject):
 
     class _NoDevice:
         name = "NoDevice"
+
 
     # --------------------------------------------------------------------------
     #   attach_device
@@ -308,7 +323,7 @@ class QDeviceIO(QtCore.QObject):
         Args:
             **kwargs
                 Will be passed directly to :class:`Worker_DAQ` as initialization
-                parameters, :ref:`see here <Worker_DAQ_parameters>`.
+                parameters, :ref:`see here <Worker_DAQ_args>`.
         """
         if type(self.dev) == self._NoDevice:
             pft(
@@ -332,7 +347,7 @@ class QDeviceIO(QtCore.QObject):
         Args:
             **kwargs
                 Will be passed directly to :class:`Worker_send` as initialization
-                parameters, :ref:`see here <Worker_send_parameters>`.
+                parameters, :ref:`see here <Worker_send_args>`.
         """
         if type(self.dev) == self._NoDevice:
             pft(
@@ -731,7 +746,7 @@ class Worker_send(QtCore.QObject):
     Instead, connect to the 'signal_send_updated()' signal to instigate GUI
     changes when needed.
 
-    .. _`Worker_send_parameters`:
+    .. _`Worker_send_args`:
 
     Args:
         jobs_function (optional, default=None):
@@ -771,6 +786,21 @@ class Worker_send(QtCore.QObject):
         DEBUG (bool, optional, default=False):
             Show debug info in terminal? Warning: Slow! Do not leave on
             unintentionally.
+            
+    .. _`Worker_send_attributes`:
+    .. list-table:: 
+       :width: 100%
+       
+       * - **INSTANCE VARIABLES** | *Worker_send*
+    
+    Attributes:
+        jobs_function (:obj:`function|None`) : Blah
+        
+    .. _`Worker_send_methods`:
+    .. list-table:: 
+       :width: 100%
+       
+       * - **METHODS** | *Worker_send*
     """
 
     def __init__(
@@ -1039,8 +1069,8 @@ class Worker_DAQ(QtCore.QObject):
     occasional unwanted interference/ground noise that messes with your data
     transmission.
 
-    .. _`Worker_DAQ_parameters`:
-
+    .. _`Worker_DAQ_args`:
+   
     Args:
         DAQ_trigger (:obj:`int`, optional, default= ``DAQ_trigger.INTERNAL_TIMER``):
             Mode of operation. TODO: write description.
@@ -1107,8 +1137,20 @@ class Worker_DAQ(QtCore.QObject):
             Print debug info to the terminal? Warning: Slow! Do not leave on
             unintentionally.
     
+    .. _`Worker_DAQ_attributes`:
+    .. list-table:: 
+       :width: 100%
+       
+       * - **INSTANCE VARIABLES** | *Worker_DAQ*
+    
     Attributes:
         DAQ_function (:obj:`function|None`) : Blah
+        
+    .. _`Worker_DAQ_methods`:
+    .. list-table:: 
+       :width: 100%
+       
+       * - **METHODS** | *Worker_DAQ*
     """
 
     def __init__(

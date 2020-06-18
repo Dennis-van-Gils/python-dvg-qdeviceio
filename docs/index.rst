@@ -5,23 +5,23 @@ DvG_QDeviceIO
 
 
 .. toctree::
-    :caption: Introduction
+   :caption: Introduction
 
-    intro
-    example
+   intro
+   example
 
    
 .. toctree::
-    :caption: API
+   :caption: API
 
-    api-qdeviceio
+   api-qdeviceio
 
 
 .. toctree::
-    :maxdepth: 1
-    :caption: Other
+   :maxdepth: 1
+   :caption: Other
 
-    authors
-    changelog
-    contributing
-    genindex
+   authors
+   changelog
+   contributing
+   genindex
