@@ -125,7 +125,7 @@ class QDeviceIO(QtCore.QObject):
     .. _`QDeviceIO_args`:
         
     Args:
-        dev (:obj:`object`):
+        dev (:obj:`object` | :obj:`None`, optional):
             Reference to a user-supplied *device* class instance containing 
             your I/O methods. In addition, `dev` should also have the
             following members. If not, they will be injected into the `dev`
@@ -140,6 +140,8 @@ class QDeviceIO(QtCore.QObject):
                 
                 * **dev.is_alive** (:obj:`bool`) -- Device is up and \
                     communicatable? Default: :const:`True`.
+                    
+            Default: :obj:`None`
 
     .. _`QDeviceIO_attributes`:
     
@@ -357,9 +359,9 @@ class QDeviceIO(QtCore.QObject):
                 By default, the *worker* threads run in the operating system
                 at the same thread priority as the *main/GUI* thread. You can
                 change to higher priority by setting `priority` to, e.g.,
-                :const:`QtCore.QThread.TimeCriticalPriority`. Be aware that this
+                :const:`PyQt5.QtCore.QThread.TimeCriticalPriority`. Be aware that this
                 is resource heavy, so use sparingly. Default: 
-                :const:`QtCore.QThread.InheritPriority`.
+                :const:`PyQt5.QtCore.QThread.InheritPriority`.
             
             send_priority (:obj:`PyQt5.QtCore.QThread.Priority`, optional):
                 Like `DAQ_priority`.
@@ -708,12 +710,9 @@ class QDeviceIO(QtCore.QObject):
 
 class Worker_DAQ(QtCore.QObject):
     """This worker acquires data from the I/O device. It does so by calling
-    a user-supplied function, passed as initialization argument
-    :attr:`DAQ_function`, containing your device I/O operations and/or
-    subsequent data processing, every time the worker 'updates'.
-    No direct changes to the GUI should be performed inside this function.
-    Instead, connect to the :obj:`~QDeviceIO.signal_DAQ_updated()` signal to
-    instigate GUI changes when needed.
+    a user-supplied function, passed as initialization parameter
+    :obj:`DAQ_function`, containing your device I/O operations and/or
+    subsequent data processing, every time the worker *updates*.
 
     An instance of this worker will be created and placed inside a separate
     thread by a call to :func:`QDeviceIO.create_worker_DAQ`.
@@ -727,24 +726,33 @@ class Worker_DAQ(QtCore.QObject):
     the source of the communication error, but sometimes you just need to
     struggle on. E.g., when your Arduino is out in the field and picks up
     occasional unwanted interference/ground noise that messes with your data
-    transmission.
+    transmission. See initialization parameter :obj:`critical_not_alive_count`.
+
+    Warning:
+        No direct changes to the GUI should be performed inside this class.
+        Instead, connect to the :meth:`QDeviceIO.signal_DAQ_updated` signal to
+        instigate GUI changes when needed.
 
     .. _`Worker_DAQ_args`:
         
     Args:
-        DAQ_trigger (:obj:`int`, optional, default= ``DAQ_trigger.INTERNAL_TIMER``):
+        DAQ_trigger (:obj:`int`, optional):
             Mode of operation. TODO: write description.
             
-        DAQ_function (:obj:`function`, optional):
+            Default: :const:`DAQ_trigger.INTERNAL_TIMER`.
+            
+        DAQ_function (:obj:`function` | :obj:`None`, optional):
             Reference to a user-supplied function containing the device
             query operations and subsequent data processing, to be invoked
             every DAQ update. 
             
+            Default: :obj:`None`.
+            
             Note:
-                It must return True when everything went successful, and False
-                otherwise.
+                The function must return :const:`True` when everything went
+                successful, and :const:`False` otherwise.
 
-            Note:
+            Warning:
                 No direct changes to the GUI should run inside this function!
                 If you do anyhow, expect a penalty in the timing stability of
                 this worker.
@@ -775,27 +783,40 @@ class Worker_DAQ(QtCore.QObject):
         
                         return True         # Return success
 
-        DAQ_interval_ms (:obj:`int`):
+        DAQ_interval_ms (:obj:`int`, optional):
             Only useful in mode :const:`DAQ_trigger.INTERNAL_TIMER`. Desired
             data acquisition update interval in milliseconds.
+            
+            Default: :const:`100`.
 
-        critical_not_alive_count (:obj:`int`, optional, default=1):
+        DAQ_timer_type (:obj:`PyQt5.QtCore.Qt.TimerType`, optional):
+            Only useful in mode :const:`DAQ_trigger.INTERNAL_TIMER`.
+            The update interval is timed to a :class:`PyQt5.QtCore.QTimer` running inside
+            :class:`Worker_DAQ`. The accuracy of the timer can be improved by setting
+            it to :const:`PyQt5.QtCore.Qt.PreciseTimer` with ~1 ms granularity, but
+            it is resource heavy. Use sparingly.
+            
+            Default: :const:`PyQt5.QtCore.Qt.CoarseTimer`.
+
+        critical_not_alive_count (:obj:`int`, optional):
             The worker will allow for up to a certain number of consecutive
             communication failures with the device, before hope is given up
-            and a :obj:`~QDeviceIO.signal_connection_lost()` is emitted. Use at
+            and a :meth:`QDeviceIO.signal_connection_lost` is emitted. Use at
             your own discretion.
+            
+            Default: :const:`1`.
+            
+        calc_DAQ_rate_every_N_iter (:obj:`int`, optional):
+            Blah.
+            
+            Default: :const:`10`.
 
-        DAQ_timer_type (:obj:`PyQt5.QtCore.Qt.TimerType`, optional, \
-                        default= :const:`PyQt5.QtCore.Qt.CoarseTimer`):
-            Only useful in mode :const:`DAQ_trigger.INTERNAL_TIMER`.
-            The update interval is timed to a QTimer running inside
-            Worker_DAQ. The accuracy of the timer can be improved by setting
-            it to PyQt5.QtCore.Qt.PreciseTimer with ~1 ms granularity, but
-            it is resource heavy. Use sparingly.
 
-        DEBUG (:obj:`bool`, optional, default= ``False``):
+        DEBUG (:obj:`bool`, optional):
             Print debug info to the terminal? Warning: Slow! Do not leave on
             unintentionally.
+            
+            Default: :const:`False`.
     
     .. _`Worker_DAQ_attributes`:
     
@@ -811,10 +832,10 @@ class Worker_DAQ(QtCore.QObject):
         qdev=None,
         DAQ_trigger=DAQ_trigger.INTERNAL_TIMER,
         DAQ_function=None,
-        DAQ_interval_ms=1000,
+        DAQ_interval_ms=100,
         DAQ_timer_type=QtCore.Qt.CoarseTimer,
         critical_not_alive_count=1,
-        calc_DAQ_rate_every_N_iter=25,  # TODO: set default value to 'auto' and implement further down. When integer, take over that value.
+        calc_DAQ_rate_every_N_iter=10,  # TODO: set default value to 'auto' and implement further down. When integer, take over that value.
         DEBUG=False,
     ):
         super().__init__()
@@ -1186,43 +1207,53 @@ class Worker_send(QtCore.QObject):
     operations to the device, first-in, first-out (FIFO), until the queue is
     empty again.
 
-    The worker will be placed inside a separate thread by its parent class
-    QDeviceIO. 
+    An instance of this worker will be created and placed inside a separate
+    thread by a call to :func:`QDeviceIO.create_worker_send`.
 
-    This worker uses the QWaitCondition mechanism. Hence, it will only send
-    out all operations collected in the queue, whenever the thread it lives
-    in is woken up by calling 'Worker_send.process_queue()'. When it has
-    emptied the queue, the thread will go back to sleep again.
+    This worker uses the :class:`PyQt5.QtCore.QWaitCondition` mechanism. Hence,
+    it will only send out all operations collected in the queue, whenever the
+    thread it lives in is woken up by calling 
+    :meth:`Worker_send.process_queue()`. When it has emptied the queue, the
+    thread will go back to sleep again.
 
-    No direct changes to the GUI should be performed inside this class.
-    Instead, connect to the 'signal_send_updated()' signal to instigate GUI
-    changes when needed.
+    Warning:
+        No direct changes to the GUI should be performed inside this class.
+        Instead, connect to the :meth:`QDeviceIO.signal_send_updated` signal to
+        instigate GUI changes when needed.
 
     .. _`Worker_send_args`:
         
     Args:
-        jobs_function (optional, default=None):
+        jobs_function (:obj:`function` | :obj:`None`, optional):
             Reference to an user-supplied function performing an alternative
-            job handling when processing the worker_send queue. The default
-            job handling effectuates calling ``func(*args)``, where ``func``
-            and ``args`` are retrieved from the worker_send queue, and nothing
-            more. The default is sufficient when ``func`` corresponds to an
+            job handling when processing the worker_send queue.
+            
+            Default: :obj:`None`.
+            
+            When set to :obj:`None`, it will perform the default job handling
+            routine, which goes as follows:
+                
+                ``func`` and ``args`` will be retrieved from the worker_send
+                queue and their combination ``func(*args)`` will get called.
+                
+            The default is sufficient when ``func`` corresponds to an
             I/O operation that is an one-way send, i.e. a write operation
-            without a reply.
+            with optionally passed arguments, but without a reply from the
+            device.
+                        
 
             Instead of just write operations, you can also put a single or
             multiple query operation(s) in the queue and process each reply
             of the device accordingly. This is the purpose of this argument:
-            To provide your own 'job processing routines' function. The
+            To provide your own *job processing routines* function. The
             function you supply must take two arguments, where the first
             argument will be ``func`` and the second argument will be
             ``args``, which is a tuple. Both ``func`` and ``args`` will be
             retrieved from the worker_send queue and passed onto your
             own function.
-
-            Example of a query operation by sending and checking for a
-            special string value of 'func'::
-
+            
+            Example::
+                
                 def jobs_function(func, args):
                     if func == "query_id?":
                         # Query the device for its identity string
@@ -1235,9 +1266,11 @@ class Worker_send(QtCore.QObject):
                         # args = ("toggle LED",)
                         func(*args)
 
-        DEBUG (bool, optional, default=False):
-            Show debug info in terminal? Warning: Slow! Do not leave on
+        DEBUG (:obj:`bool`, optional):
+            Print debug info to the terminal? Warning: Slow! Do not leave on
             unintentionally.
+            
+            Default: :const:`False`.
             
     .. _`Worker_send_attributes`:
        
