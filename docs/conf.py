@@ -32,7 +32,6 @@ release = '0.0.9'
 extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
-    'sphinx.ext.autosectionlabel',
     'sphinx.ext.viewcode',
 ]
 

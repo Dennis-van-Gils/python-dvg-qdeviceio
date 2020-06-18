@@ -142,11 +142,6 @@ class QDeviceIO(QtCore.QObject):
                     communicatable? Default: :const:`True`.
 
     .. _`QDeviceIO_attributes`:
-        
-    .. list-table:: 
-       :width: 100%
-       
-       * - **INSTANCE VARIABLES** | *QDeviceIO*
     
     Attributes:
         dev (:obj:`object` | :obj:`None`):
@@ -247,7 +242,6 @@ class QDeviceIO(QtCore.QObject):
 
     class _NoDevice:
         name = "NoDevice"
-
 
     # --------------------------------------------------------------------------
     #   attach_device
@@ -772,11 +766,6 @@ class Worker_send(QtCore.QObject):
             unintentionally.
             
     .. _`Worker_send_attributes`:
-        
-    .. list-table:: 
-       :width: 100%
-       
-       * - **INSTANCE VARIABLES** | *Worker_send*
        
     Attributes:
         jobs_function (:obj:`function|None`) : Blah
@@ -1037,7 +1026,7 @@ class Worker_DAQ(QtCore.QObject):
     An instance of this worker will be created and placed inside a separate
     thread by a call to :func:`QDeviceIO.create_worker_DAQ`.
 
-    The ``Worker_DAQ`` routine is robust in the following sense. It can be set
+    The *Worker_DAQ* routine is robust in the following sense. It can be set
     to quit as soon as a communication error appears, or it could be set to
     allow a certain number of communication errors before it quits. The
     latter can be useful in non-critical implementations where continuity of
@@ -1117,11 +1106,6 @@ class Worker_DAQ(QtCore.QObject):
             unintentionally.
     
     .. _`Worker_DAQ_attributes`:
-        
-    .. list-table:: 
-       :width: 100%
-       
-       * - **INSTANCE VARIABLES** | *Worker_DAQ*
     
     Attributes:
         DAQ_function (:obj:`function|None`) : Blah
