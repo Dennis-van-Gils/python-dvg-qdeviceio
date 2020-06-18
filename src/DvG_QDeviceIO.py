@@ -702,314 +702,6 @@ class QDeviceIO(QtCore.QObject):
 
 
 # --------------------------------------------------------------------------
-#   Worker_send
-# --------------------------------------------------------------------------
-
-
-class Worker_send(QtCore.QObject):
-    """This worker maintains a thread-safe queue where desired device I/O
-    operations, a.k.a. *jobs*, can be put onto. The worker will send out the
-    operations to the device, first-in, first-out (FIFO), until the queue is
-    empty again.
-
-    The worker will be placed inside a separate thread by its parent class
-    QDeviceIO. 
-
-    This worker uses the QWaitCondition mechanism. Hence, it will only send
-    out all operations collected in the queue, whenever the thread it lives
-    in is woken up by calling 'Worker_send.process_queue()'. When it has
-    emptied the queue, the thread will go back to sleep again.
-
-    No direct changes to the GUI should be performed inside this class.
-    Instead, connect to the 'signal_send_updated()' signal to instigate GUI
-    changes when needed.
-
-    .. _`Worker_send_args`:
-        
-    Args:
-        jobs_function (optional, default=None):
-            Reference to an user-supplied function performing an alternative
-            job handling when processing the worker_send queue. The default
-            job handling effectuates calling ``func(*args)``, where ``func``
-            and ``args`` are retrieved from the worker_send queue, and nothing
-            more. The default is sufficient when ``func`` corresponds to an
-            I/O operation that is an one-way send, i.e. a write operation
-            without a reply.
-
-            Instead of just write operations, you can also put a single or
-            multiple query operation(s) in the queue and process each reply
-            of the device accordingly. This is the purpose of this argument:
-            To provide your own 'job processing routines' function. The
-            function you supply must take two arguments, where the first
-            argument will be ``func`` and the second argument will be
-            ``args``, which is a tuple. Both ``func`` and ``args`` will be
-            retrieved from the worker_send queue and passed onto your
-            own function.
-
-            Example of a query operation by sending and checking for a
-            special string value of 'func'::
-
-                def jobs_function(func, args):
-                    if func == "query_id?":
-                        # Query the device for its identity string
-                        [success, ans_str] = self.dev.query("id?")
-                        # And store the reply 'ans_str' in another variable
-                        # at a higher scope or do stuff with it here.
-                    else:
-                        # Default job handling where, e.g.
-                        # func = self.dev.write
-                        # args = ("toggle LED",)
-                        func(*args)
-
-        DEBUG (bool, optional, default=False):
-            Show debug info in terminal? Warning: Slow! Do not leave on
-            unintentionally.
-            
-    .. _`Worker_send_attributes`:
-       
-    Attributes:
-        jobs_function (:obj:`function|None`) : Blah
-    """
-
-    def __init__(
-        self, *, qdev=None, jobs_function=None, DEBUG=False,
-    ):
-        super().__init__(None)
-        self.DEBUG = DEBUG
-        self.DEBUG_color = ANSI.YELLOW
-
-        self.qdev = qdev
-        self.dev = None if qdev is None else qdev.dev
-
-        self.jobs_function = jobs_function
-        self._started_okay = None
-
-        self._running = True
-        self._qwc = QtCore.QWaitCondition()
-        self._mutex_wait = QtCore.QMutex()
-
-        # Use a 'sentinel' value to signal the start and end of the queue
-        # to ensure proper multithreaded operation.
-        self._sentinel = None
-        self._queue = queue.Queue()
-        self._queue.put(self._sentinel)
-
-        if self.DEBUG:
-            tprint(
-                "Worker_send %s: init @ thread %s"
-                % (self.dev.name, _cur_thread_name()),
-                self.DEBUG_color,
-            )
-
-    @_coverage_resolve_trace
-    @QtCore.pyqtSlot()
-    def _do_work(self):
-        init = True
-
-        def confirm_started(self):
-            # Wait a tiny amount of extra time for QDeviceIO to have entered
-            # 'self._qwc_worker_###_started.wait(self._mutex_wait_worker_###)'
-            # of method 'start_worker_###()'.
-            time.sleep(0.05)
-
-            if self.DEBUG:
-                tprint(
-                    "Worker_send %s: start confirmed" % self.dev.name,
-                    self.DEBUG_color,
-                )
-
-            # Send confirmation
-            self.qdev._qwc_worker_send_started.wakeAll()
-
-        if self.DEBUG:
-            tprint(
-                "Worker_send %s: starting @ thread %s"
-                % (self.dev.name, _cur_thread_name()),
-                self.DEBUG_color,
-            )
-
-        locker_wait = QtCore.QMutexLocker(self._mutex_wait)
-        locker_wait.unlock()
-
-        while self._running:
-            locker_wait.relock()
-
-            if self.DEBUG:
-                tprint(
-                    "Worker_send %s: waiting for wake trigger" % self.dev.name,
-                    self.DEBUG_color,
-                )
-
-            if init:
-                confirm_started(self)
-                init = False
-
-            self._qwc.wait(self._mutex_wait)
-
-            if self.DEBUG:
-                tprint(
-                    "Worker_send %s: wake confirmed" % self.dev.name,
-                    self.DEBUG_color,
-                )
-
-            # Needed check to prevent _perform_send() at final wake up
-            # when _stop() has been called
-            if self._running:
-                self._perform_send()
-
-            locker_wait.unlock()
-
-        if self.DEBUG:
-            tprint(
-                "Worker_send %s: stop confirmed" % self.dev.name,
-                self.DEBUG_color,
-            )
-
-        # Wait a tiny amount for the other thread to have entered the
-        # QWaitCondition lock, before giving a wakingAll().
-        QtCore.QTimer.singleShot(
-            100, lambda: self.qdev._qwc_worker_send_stopped.wakeAll()
-        )
-
-    @_coverage_resolve_trace
-    @QtCore.pyqtSlot()
-    def _perform_send(self):
-        if not self._started_okay:
-            return
-
-        locker = QtCore.QMutexLocker(self.dev.mutex)
-        self.qdev.update_counter_send += 1
-
-        if self.DEBUG:
-            tprint(
-                "Worker_send %s: lock   # %i"
-                % (self.dev.name, self.qdev.update_counter_send),
-                self.DEBUG_color,
-            )
-
-        """Process all jobs until the queue is empty. We must iterate 2
-        times because we use a sentinel in a FIFO queue. First iter
-        removes the old sentinel. Second iter processes the remaining
-        queue items and will put back a new sentinel again.
-        """
-        for i in range(2):
-            for job in iter(self._queue.get_nowait, self._sentinel):
-                func = job[0]
-                args = job[1:]
-
-                if self.DEBUG:
-                    if type(func) == str:
-                        tprint(
-                            "Worker_send %s: %s %s"
-                            % (self.dev.name, func, args),
-                            self.DEBUG_color,
-                        )
-                    else:
-                        tprint(
-                            "Worker_send %s: %s %s"
-                            % (self.dev.name, func.__name__, args),
-                            self.DEBUG_color,
-                        )
-
-                if self.jobs_function is None:
-                    # Default job processing:
-                    # Send I/O operation to the device
-                    try:
-                        func(*args)
-                    except Exception as err:
-                        pft(err)
-                else:
-                    # User-supplied job processing
-                    self.jobs_function(func, args)
-
-            # Put sentinel back in
-            self._queue.put(self._sentinel)
-
-        if self.DEBUG:
-            tprint(
-                "Worker_send %s: unlock # %i"
-                % (self.dev.name, self.qdev.update_counter_send),
-                self.DEBUG_color,
-            )
-
-        locker.unlock()
-        self.qdev.signal_send_updated.emit()
-
-    @QtCore.pyqtSlot()
-    def _stop(self):
-        """Stop the worker to prepare for quitting the worker thread
-        """
-        if self.DEBUG:
-            tprint(
-                "Worker_send %s: stopping" % self.dev.name, self.DEBUG_color,
-            )
-
-        self._running = False
-        self._qwc.wakeAll()  # Wake up for the final time
-
-    # ----------------------------------------------------------------------
-    #   send
-    # ----------------------------------------------------------------------
-
-    def send(self, instruction, pass_args=()):
-        """Put an instruction on the worker_send queue and process the
-        queue until empty. See 'add_to_queue()' for more details.
-        E.g. send(dev.write, "toggle LED")
-        
-        NOTE: This method can be called from another thread.
-        """
-        self.add_to_queue(instruction, pass_args)
-        self.process_queue()
-
-    # ----------------------------------------------------------------------
-    #   add_to_queue
-    # ----------------------------------------------------------------------
-
-    def add_to_queue(self, instruction, pass_args=()):
-        """Put an instruction on the worker_send queue.
-        E.g. add_to_queue(dev.write, "toggle LED")
-
-        Args:
-            instruction:
-                Intended to be a reference to a device I/O function such as
-                'self.dev.write'. However, you have the freedom to be
-                creative and put e.g. strings decoding special instructions
-                on the queue as well. Handling such special cases must be
-                programmed by the user by supplying the argument
-                'jobs_function', when instantiating
-                'Worker_send', with your own job-processing-routines
-                function. See 'Worker_send' for more details.
-
-            pass_args (optional, default=()):
-                Argument(s) to be passed to the instruction. Must be a
-                tuple, but for convenience any other type will also be
-                accepted if it concerns just a single argument that needs to
-                be passed.
-                
-        NOTE: This method can be called from another thread.
-        """
-        if type(pass_args) is not tuple:
-            pass_args = (pass_args,)
-        self._queue.put((instruction, *pass_args))
-
-    # ----------------------------------------------------------------------
-    #   process_queue
-    # ----------------------------------------------------------------------
-
-    def process_queue(self):
-        """Trigger processing the worker_send queue and send until empty.
-        
-        NOTE: This method can be called from another thread.
-        """
-        if self.DEBUG:
-            tprint(
-                "Worker_send %s: wake requested..." % self.dev.name, ANSI.WHITE,
-            )
-
-        self._qwc.wakeAll()
-
-
-# --------------------------------------------------------------------------
 #   Worker_DAQ
 # --------------------------------------------------------------------------
 
@@ -1481,3 +1173,311 @@ class Worker_DAQ(QtCore.QObject):
                 )
 
             self._qwc.wakeAll()
+
+
+# --------------------------------------------------------------------------
+#   Worker_send
+# --------------------------------------------------------------------------
+
+
+class Worker_send(QtCore.QObject):
+    """This worker maintains a thread-safe queue where desired device I/O
+    operations, a.k.a. *jobs*, can be put onto. The worker will send out the
+    operations to the device, first-in, first-out (FIFO), until the queue is
+    empty again.
+
+    The worker will be placed inside a separate thread by its parent class
+    QDeviceIO. 
+
+    This worker uses the QWaitCondition mechanism. Hence, it will only send
+    out all operations collected in the queue, whenever the thread it lives
+    in is woken up by calling 'Worker_send.process_queue()'. When it has
+    emptied the queue, the thread will go back to sleep again.
+
+    No direct changes to the GUI should be performed inside this class.
+    Instead, connect to the 'signal_send_updated()' signal to instigate GUI
+    changes when needed.
+
+    .. _`Worker_send_args`:
+        
+    Args:
+        jobs_function (optional, default=None):
+            Reference to an user-supplied function performing an alternative
+            job handling when processing the worker_send queue. The default
+            job handling effectuates calling ``func(*args)``, where ``func``
+            and ``args`` are retrieved from the worker_send queue, and nothing
+            more. The default is sufficient when ``func`` corresponds to an
+            I/O operation that is an one-way send, i.e. a write operation
+            without a reply.
+
+            Instead of just write operations, you can also put a single or
+            multiple query operation(s) in the queue and process each reply
+            of the device accordingly. This is the purpose of this argument:
+            To provide your own 'job processing routines' function. The
+            function you supply must take two arguments, where the first
+            argument will be ``func`` and the second argument will be
+            ``args``, which is a tuple. Both ``func`` and ``args`` will be
+            retrieved from the worker_send queue and passed onto your
+            own function.
+
+            Example of a query operation by sending and checking for a
+            special string value of 'func'::
+
+                def jobs_function(func, args):
+                    if func == "query_id?":
+                        # Query the device for its identity string
+                        [success, ans_str] = self.dev.query("id?")
+                        # And store the reply 'ans_str' in another variable
+                        # at a higher scope or do stuff with it here.
+                    else:
+                        # Default job handling where, e.g.
+                        # func = self.dev.write
+                        # args = ("toggle LED",)
+                        func(*args)
+
+        DEBUG (bool, optional, default=False):
+            Show debug info in terminal? Warning: Slow! Do not leave on
+            unintentionally.
+            
+    .. _`Worker_send_attributes`:
+       
+    Attributes:
+        jobs_function (:obj:`function|None`) : Blah
+    """
+
+    def __init__(
+        self, *, qdev=None, jobs_function=None, DEBUG=False,
+    ):
+        super().__init__(None)
+        self.DEBUG = DEBUG
+        self.DEBUG_color = ANSI.YELLOW
+
+        self.qdev = qdev
+        self.dev = None if qdev is None else qdev.dev
+
+        self.jobs_function = jobs_function
+        self._started_okay = None
+
+        self._running = True
+        self._qwc = QtCore.QWaitCondition()
+        self._mutex_wait = QtCore.QMutex()
+
+        # Use a 'sentinel' value to signal the start and end of the queue
+        # to ensure proper multithreaded operation.
+        self._sentinel = None
+        self._queue = queue.Queue()
+        self._queue.put(self._sentinel)
+
+        if self.DEBUG:
+            tprint(
+                "Worker_send %s: init @ thread %s"
+                % (self.dev.name, _cur_thread_name()),
+                self.DEBUG_color,
+            )
+
+    @_coverage_resolve_trace
+    @QtCore.pyqtSlot()
+    def _do_work(self):
+        init = True
+
+        def confirm_started(self):
+            # Wait a tiny amount of extra time for QDeviceIO to have entered
+            # 'self._qwc_worker_###_started.wait(self._mutex_wait_worker_###)'
+            # of method 'start_worker_###()'.
+            time.sleep(0.05)
+
+            if self.DEBUG:
+                tprint(
+                    "Worker_send %s: start confirmed" % self.dev.name,
+                    self.DEBUG_color,
+                )
+
+            # Send confirmation
+            self.qdev._qwc_worker_send_started.wakeAll()
+
+        if self.DEBUG:
+            tprint(
+                "Worker_send %s: starting @ thread %s"
+                % (self.dev.name, _cur_thread_name()),
+                self.DEBUG_color,
+            )
+
+        locker_wait = QtCore.QMutexLocker(self._mutex_wait)
+        locker_wait.unlock()
+
+        while self._running:
+            locker_wait.relock()
+
+            if self.DEBUG:
+                tprint(
+                    "Worker_send %s: waiting for wake trigger" % self.dev.name,
+                    self.DEBUG_color,
+                )
+
+            if init:
+                confirm_started(self)
+                init = False
+
+            self._qwc.wait(self._mutex_wait)
+
+            if self.DEBUG:
+                tprint(
+                    "Worker_send %s: wake confirmed" % self.dev.name,
+                    self.DEBUG_color,
+                )
+
+            # Needed check to prevent _perform_send() at final wake up
+            # when _stop() has been called
+            if self._running:
+                self._perform_send()
+
+            locker_wait.unlock()
+
+        if self.DEBUG:
+            tprint(
+                "Worker_send %s: stop confirmed" % self.dev.name,
+                self.DEBUG_color,
+            )
+
+        # Wait a tiny amount for the other thread to have entered the
+        # QWaitCondition lock, before giving a wakingAll().
+        QtCore.QTimer.singleShot(
+            100, lambda: self.qdev._qwc_worker_send_stopped.wakeAll()
+        )
+
+    @_coverage_resolve_trace
+    @QtCore.pyqtSlot()
+    def _perform_send(self):
+        if not self._started_okay:
+            return
+
+        locker = QtCore.QMutexLocker(self.dev.mutex)
+        self.qdev.update_counter_send += 1
+
+        if self.DEBUG:
+            tprint(
+                "Worker_send %s: lock   # %i"
+                % (self.dev.name, self.qdev.update_counter_send),
+                self.DEBUG_color,
+            )
+
+        """Process all jobs until the queue is empty. We must iterate 2
+        times because we use a sentinel in a FIFO queue. First iter
+        removes the old sentinel. Second iter processes the remaining
+        queue items and will put back a new sentinel again.
+        """
+        for i in range(2):
+            for job in iter(self._queue.get_nowait, self._sentinel):
+                func = job[0]
+                args = job[1:]
+
+                if self.DEBUG:
+                    if type(func) == str:
+                        tprint(
+                            "Worker_send %s: %s %s"
+                            % (self.dev.name, func, args),
+                            self.DEBUG_color,
+                        )
+                    else:
+                        tprint(
+                            "Worker_send %s: %s %s"
+                            % (self.dev.name, func.__name__, args),
+                            self.DEBUG_color,
+                        )
+
+                if self.jobs_function is None:
+                    # Default job processing:
+                    # Send I/O operation to the device
+                    try:
+                        func(*args)
+                    except Exception as err:
+                        pft(err)
+                else:
+                    # User-supplied job processing
+                    self.jobs_function(func, args)
+
+            # Put sentinel back in
+            self._queue.put(self._sentinel)
+
+        if self.DEBUG:
+            tprint(
+                "Worker_send %s: unlock # %i"
+                % (self.dev.name, self.qdev.update_counter_send),
+                self.DEBUG_color,
+            )
+
+        locker.unlock()
+        self.qdev.signal_send_updated.emit()
+
+    @QtCore.pyqtSlot()
+    def _stop(self):
+        """Stop the worker to prepare for quitting the worker thread
+        """
+        if self.DEBUG:
+            tprint(
+                "Worker_send %s: stopping" % self.dev.name, self.DEBUG_color,
+            )
+
+        self._running = False
+        self._qwc.wakeAll()  # Wake up for the final time
+
+    # ----------------------------------------------------------------------
+    #   send
+    # ----------------------------------------------------------------------
+
+    def send(self, instruction, pass_args=()):
+        """Put an instruction on the worker_send queue and process the
+        queue until empty. See 'add_to_queue()' for more details.
+        E.g. send(dev.write, "toggle LED")
+        
+        NOTE: This method can be called from another thread.
+        """
+        self.add_to_queue(instruction, pass_args)
+        self.process_queue()
+
+    # ----------------------------------------------------------------------
+    #   add_to_queue
+    # ----------------------------------------------------------------------
+
+    def add_to_queue(self, instruction, pass_args=()):
+        """Put an instruction on the worker_send queue.
+        E.g. add_to_queue(dev.write, "toggle LED")
+
+        Args:
+            instruction:
+                Intended to be a reference to a device I/O function such as
+                'self.dev.write'. However, you have the freedom to be
+                creative and put e.g. strings decoding special instructions
+                on the queue as well. Handling such special cases must be
+                programmed by the user by supplying the argument
+                'jobs_function', when instantiating
+                'Worker_send', with your own job-processing-routines
+                function. See 'Worker_send' for more details.
+
+            pass_args (optional, default=()):
+                Argument(s) to be passed to the instruction. Must be a
+                tuple, but for convenience any other type will also be
+                accepted if it concerns just a single argument that needs to
+                be passed.
+                
+        NOTE: This method can be called from another thread.
+        """
+        if type(pass_args) is not tuple:
+            pass_args = (pass_args,)
+        self._queue.put((instruction, *pass_args))
+
+    # ----------------------------------------------------------------------
+    #   process_queue
+    # ----------------------------------------------------------------------
+
+    def process_queue(self):
+        """Trigger processing the worker_send queue and send until empty.
+        
+        NOTE: This method can be called from another thread.
+        """
+        if self.DEBUG:
+            tprint(
+                "Worker_send %s: wake requested..." % self.dev.name, ANSI.WHITE,
+            )
+
+        self._qwc.wakeAll()
