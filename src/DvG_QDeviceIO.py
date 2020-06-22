@@ -79,9 +79,9 @@ class QDeviceIO(QtCore.QObject):
 
     * :class:`Worker_send` :
         
-        Maintains a thread-safe queue where desired device I/O operations
-        can be put onto, and sends the queued operations first-in, first-out
-        (FIFO) to the device.
+        Maintains a thread-safe queue where desired device I/O operations,
+        called *jobs*, can be put onto. It will send out the queued jobs
+        first-in, first-out (FIFO) to the device.
         
         Created by calling :meth:`create_worker_send`.
         
@@ -675,29 +675,51 @@ class QDeviceIO(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def send(self, instruction, pass_args=()):
-        """Put an instruction on the :attr:`worker_send` queue and send out the
-        full queue first-in, first-out until empty.
-        E.g. send(dev.write, "toggle LED")
+        """Put a job on the :attr:`worker_send` queue and send out the full
+        queue first-in, first-out to the device until empty. Once finished, it
+        will emit :obj:`signal_send_updated()`.
         
-        See :meth:`Worker_send.add_to_queue` for details on the parameters.
+        See :meth:`add_to_send_queue` for details on the parameters.
         """
         if self.worker_send is not None:
             self.worker_send.send(instruction, pass_args)
 
     @QtCore.pyqtSlot()
     def add_to_send_queue(self, instruction, pass_args=()):
-        """Put an instruction on the :attr:`worker_send` queue.
-        E.g. add_to_send_queue(dev.write, "toggle LED")
-        
-        See :meth:`Worker_send.add_to_queue` for details on the parameters.
+        """Put a job on the :attr:`worker_send` queue.
+
+        Args:
+            instruction (:obj:`function` | *other*):
+                Intended to be a reference to a device I/O method such as
+                ``dev.write()``. Any arguments to be passed to the I/O method
+                need to be set in the :attr:`pass_args` parameter.
+                
+                You have the freedom to be creative and put e.g. strings
+                decoding special instructions on the queue as well. Handling
+                such special cases must be programmed by supplying the argument
+                :obj:`jobs_function` with your own alternative
+                job-processing-routine function during the initialization of
+                :class:`Worker_send`. :ref:`See here <Worker_send_args>`.
+
+            pass_args (:obj:`tuple` | *other*, optional):
+                Arguments to be passed to the instruction. Must be given as a
+                :obj:`tuple`, but for convenience any other type will also be
+                accepted if it just concerns a single argument.
+                
+                Default: :obj:`()`.
+                
+        Example::
+            
+            add_to_send_queue(dev.write, "toggle LED")
         """
         if self.worker_send is not None:
             self.worker_send.add_to_queue(instruction, pass_args)
 
     @QtCore.pyqtSlot()
     def process_send_queue(self):
-        """Send out the full :attr:`worker_send` queue first-in, first-out until
-        empty.
+        """Send out the full :attr:`worker_send` queue first-in, first-out to
+        the device until empty. Once finished, it will emit
+        :obj:`signal_send_updated()`.
         """
         if self.worker_send is not None:
             self.worker_send.process_queue()
@@ -1142,7 +1164,8 @@ class Worker_DAQ(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def pause(self):
-        """Only useful in mode :const:`DAQ_trigger.CONTINUOUS`.
+        """Only useful in mode :const:`DAQ_trigger.CONTINUOUS`. See the
+        description at :meth:`QDeviceIO.pause_DAQ`.
         
         This method can be called from another thread.
         """
@@ -1160,7 +1183,8 @@ class Worker_DAQ(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def unpause(self):
-        """Only useful in mode :const:`DAQ_trigger.CONTINUOUS`.
+        """Only useful in mode :const:`DAQ_trigger.CONTINUOUS`. See the
+        description at :meth:`QDeviceIO.unpause_DAQ`.
         
         This method can be called from another thread.
         """
@@ -1182,7 +1206,8 @@ class Worker_DAQ(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def wake_up(self):
-        """Only useful in mode :const:`DAQ_trigger.SINGLE_SHOT_WAKE_UP`.
+        """Only useful in mode :const:`DAQ_trigger.SINGLE_SHOT_WAKE_UP`. See the
+        description at :meth:`QDeviceIO.wake_up_DAQ`.
         
         This method can be called from another thread.
         """
@@ -1203,7 +1228,7 @@ class Worker_DAQ(QtCore.QObject):
 
 class Worker_send(QtCore.QObject):
     """This worker maintains a thread-safe queue where desired device I/O
-    operations, a.k.a. *jobs*, can be put onto. The worker will send out the
+    operations, called *jobs*, can be put onto. The worker will send out the
     operations to the device, first-in, first-out (FIFO), until the queue is
     empty again.
 
@@ -1212,7 +1237,7 @@ class Worker_send(QtCore.QObject):
 
     This worker uses the :class:`PyQt5.QtCore.QWaitCondition` mechanism. Hence,
     it will only send out all operations collected in the queue, whenever the
-    thread it lives in is woken up by calling 
+    thread is woken up by calling 
     :meth:`Worker_send.process_queue()`. When it has emptied the queue, the
     thread will go back to sleep again.
 
@@ -1459,11 +1484,9 @@ class Worker_send(QtCore.QObject):
     # ----------------------------------------------------------------------
 
     def send(self, instruction, pass_args=()):
-        """Put an instruction on the worker_send queue and process the
-        queue until empty. See 'add_to_queue()' for more details.
-        E.g. send(dev.write, "toggle LED")
+        """See the description at :meth:`QDeviceIO.send`.
         
-        NOTE: This method can be called from another thread.
+        This method can be called from another thread.
         """
         self.add_to_queue(instruction, pass_args)
         self.process_queue()
@@ -1473,27 +1496,9 @@ class Worker_send(QtCore.QObject):
     # ----------------------------------------------------------------------
 
     def add_to_queue(self, instruction, pass_args=()):
-        """Put an instruction on the worker_send queue.
-        E.g. add_to_queue(dev.write, "toggle LED")
-
-        Args:
-            instruction:
-                Intended to be a reference to a device I/O function such as
-                'self.dev.write'. However, you have the freedom to be
-                creative and put e.g. strings decoding special instructions
-                on the queue as well. Handling such special cases must be
-                programmed by the user by supplying the argument
-                'jobs_function', when instantiating
-                'Worker_send', with your own job-processing-routines
-                function. See 'Worker_send' for more details.
-
-            pass_args (optional, default=()):
-                Argument(s) to be passed to the instruction. Must be a
-                tuple, but for convenience any other type will also be
-                accepted if it concerns just a single argument that needs to
-                be passed.
+        """See the description at :meth:`QDeviceIO.add_to_send_queue`.
                 
-        NOTE: This method can be called from another thread.
+        This method can be called from another thread.
         """
         if type(pass_args) is not tuple:
             pass_args = (pass_args,)
@@ -1504,9 +1509,9 @@ class Worker_send(QtCore.QObject):
     # ----------------------------------------------------------------------
 
     def process_queue(self):
-        """Trigger processing the worker_send queue and send until empty.
+        """See the description at :meth:`QDeviceIO.process_send_queue`.
         
-        NOTE: This method can be called from another thread.
+        This method can be called from another thread.
         """
         if self.DEBUG:
             tprint(
