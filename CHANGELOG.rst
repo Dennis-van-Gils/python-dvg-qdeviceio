@@ -25,3 +25,8 @@ Changelog
 * Moved the Worker_### classes outside of QDeviceIO and into module root
 * Added documentation using Sphinx and Read the docs
 * Changed from MarkDown to ReStructuredText
+
+0.0.10 (2020-06-22)
+------------------
+* Major: Changed name 'Worker_send' to 'Worker_jobs' and similar
+* Added more Sphinx documentation
