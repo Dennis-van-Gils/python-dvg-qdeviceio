@@ -29,14 +29,14 @@ DAQ_trigger.CONTINUOUS
     Typical use case: I/O device acting as a master and outputting a continuous
     stream of data. The worker_DAQ will start up in suspended mode (idling).
     This allows for a start command to be send to the I/O device, for instance,
-    over a Worker_Send instance. Once the start command has been received and
+    over a Worker_jobs instance. Once the start command has been received and
     processed by the device, such that it will output a continuous stream of
     data, worker_DAQ can be taken out of suspended mode and have it listen and
     receive this data stream.
     
 """
 
-global cnt_DAQ_updated, cnt_send_updated, cnt_DAQ_paused
+global cnt_DAQ_updated, cnt_jobs_updated, cnt_DAQ_paused
 
 
 @QtCore.pyqtSlot()
@@ -56,11 +56,11 @@ def process_DAQ_paused():
 
 
 @QtCore.pyqtSlot()
-def process_send_updated():
+def process_jobs_updated():
     # In production code, your GUI update routine would go here
-    tprint("---> received: send_updated")
-    global cnt_send_updated
-    cnt_send_updated += 1
+    tprint("---> received: jobs_updated")
+    global cnt_jobs_updated
+    cnt_jobs_updated += 1
 
 
 class FakeDevice:
@@ -104,10 +104,10 @@ def create_QApplication():
     # app = QtWidgets.QApplication(sys.argv)
     app = QtCore.QCoreApplication(sys.argv)  # Use QCoreApplication instead
 
-    global cnt_DAQ_updated, cnt_DAQ_paused, cnt_send_updated
+    global cnt_DAQ_updated, cnt_DAQ_paused, cnt_jobs_updated
     cnt_DAQ_updated = 0
     cnt_DAQ_paused = 0
-    cnt_send_updated = 0
+    cnt_jobs_updated = 0
 
     return app
 
@@ -287,28 +287,28 @@ def test_Worker_DAQ___CONTINUOUS__start_dead():
     test_Worker_DAQ___CONTINUOUS(start_alive=False)
 
 
-def test_Worker_send(start_alive=True):
-    print_title("Worker_send" + ("" if start_alive else " - start dead"))
+def test_Worker_jobs(start_alive=True):
+    print_title("Worker_jobs" + ("" if start_alive else " - start dead"))
 
     app = create_QApplication()
     dev = FakeDevice(start_alive=start_alive)
     qdevio = QDeviceIO(dev)
-    qdevio.create_worker_send(DEBUG=DEBUG)
-    qdevio.signal_send_updated.connect(process_send_updated)
+    qdevio.create_worker_jobs(DEBUG=DEBUG)
+    qdevio.signal_jobs_updated.connect(process_jobs_updated)
     assert qdevio.start() == start_alive
 
     # Immediately fire a call to test if the worker is ready for it
-    qdevio.add_to_send_queue(dev.fake_query_2)
+    qdevio.add_to_jobs_queue(dev.fake_query_2)
 
     # fmt: off
     # Simulate device runtime
     start_time = time.perf_counter()
-    QtCore.QTimer.singleShot(100, lambda: qdevio.process_send_queue())
+    QtCore.QTimer.singleShot(100, lambda: qdevio.process_jobs_queue())
     QtCore.QTimer.singleShot(200, lambda: qdevio.send(dev.fake_query_2))
-    QtCore.QTimer.singleShot(300, lambda: qdevio.add_to_send_queue(dev.fake_command_with_argument, 0))
-    QtCore.QTimer.singleShot(400, lambda: qdevio.add_to_send_queue(dev.fake_command_with_argument, 0))
-    QtCore.QTimer.singleShot(500, lambda: qdevio.add_to_send_queue(dev.fake_command_with_argument, 0))
-    QtCore.QTimer.singleShot(600, lambda: qdevio.process_send_queue())
+    QtCore.QTimer.singleShot(300, lambda: qdevio.add_to_jobs_queue(dev.fake_command_with_argument, 0))
+    QtCore.QTimer.singleShot(400, lambda: qdevio.add_to_jobs_queue(dev.fake_command_with_argument, 0))
+    QtCore.QTimer.singleShot(500, lambda: qdevio.add_to_jobs_queue(dev.fake_command_with_argument, 0))
+    QtCore.QTimer.singleShot(600, lambda: qdevio.process_jobs_queue())
     QtCore.QTimer.singleShot(700, lambda: qdevio.send("trigger_illegal_function_call_error"))
     # fmt: on
     while time.perf_counter() - start_time < 1:
@@ -323,15 +323,15 @@ def test_Worker_send(start_alive=True):
     if start_alive:
         assert dev.count_commands == 5
         assert dev.count_replies == 2
-        assert cnt_send_updated == 4
+        assert cnt_jobs_updated == 4
 
 
-def test_Worker_send__start_dead():
-    test_Worker_send(start_alive=False)
+def test_Worker_jobs__start_dead():
+    test_Worker_jobs(start_alive=False)
 
 
-def test_Worker_send__jobs_function():
-    print_title("Worker_send - jobs_function")
+def test_Worker_jobs__jobs_function():
+    print_title("Worker_jobs - jobs_function")
 
     def jobs_function(func, args):
         if func == "special command":
@@ -345,10 +345,10 @@ def test_Worker_send__jobs_function():
     app = create_QApplication()
     dev = FakeDevice()
     qdevio = QDeviceIO(dev)
-    qdevio.create_worker_send(
+    qdevio.create_worker_jobs(
         jobs_function=jobs_function, DEBUG=DEBUG,
     )
-    qdevio.signal_send_updated.connect(process_send_updated)
+    qdevio.signal_jobs_updated.connect(process_jobs_updated)
     assert qdevio.start() == True
 
     # Immediately fire a call to test if the worker is ready for it
@@ -371,7 +371,7 @@ def test_Worker_send__jobs_function():
 
     assert dev.count_commands == 3
     assert dev.count_replies == 2
-    assert cnt_send_updated == 3
+    assert cnt_jobs_updated == 3
 
 
 
@@ -401,14 +401,14 @@ def test_Worker_DAQ___no_device_attached():
     assert pytest_wrapped_e.value.code == 99
 
 
-def test_Worker_send__no_device_attached():
-    print_title("Worker_send - no device attached")
+def test_Worker_jobs__no_device_attached():
+    print_title("Worker_jobs - no device attached")
     import pytest
 
     qdevio = QDeviceIO()
 
     with pytest.raises(SystemExit) as pytest_wrapped_e:
-        qdevio.create_worker_send()
+        qdevio.create_worker_jobs()
     assert pytest_wrapped_e.type == SystemExit
     dprint("Exit code: %i" % pytest_wrapped_e.value.code)
     assert pytest_wrapped_e.value.code == 99
@@ -427,14 +427,14 @@ def test_Worker_DAQ___start_without_create():
     assert pytest_wrapped_e.value.code == 404
 
 
-def test_Worker_send__start_without_create():
-    print_title("Worker_send - start without create")
+def test_Worker_jobs__start_without_create():
+    print_title("Worker_jobs - start without create")
     import pytest
 
     qdevio = QDeviceIO(FakeDevice())
 
     with pytest.raises(SystemExit) as pytest_wrapped_e:
-        qdevio.start_worker_send()
+        qdevio.start_worker_jobs()
     assert pytest_wrapped_e.type == SystemExit
     dprint("Exit code: %i" % pytest_wrapped_e.value.code)
     assert pytest_wrapped_e.value.code == 404
@@ -453,12 +453,12 @@ def test_Worker_DAQ___quit_without_start():
     app.quit()
 
 
-def test_Worker_send__quit_without_start():
-    print_title("Worker_send - quit without start")
+def test_Worker_jobs__quit_without_start():
+    print_title("Worker_jobs - quit without start")
 
     app = create_QApplication()
     qdevio = QDeviceIO(FakeDevice())
-    qdevio.create_worker_send()
+    qdevio.create_worker_jobs()
 
     tprint("About to quit")
     app.processEvents()
@@ -584,7 +584,7 @@ class QDeviceIO_subclassed(QDeviceIO, QtCore.QObject):
             DEBUG                      = DEBUG,
         )
         # fmt: on
-        self.create_worker_send(DEBUG=DEBUG)
+        self.create_worker_jobs(DEBUG=DEBUG)
 
 
 def test_Worker_DAQ___INTERNAL_TIMER__mixin_class():
@@ -601,7 +601,7 @@ def test_Worker_DAQ___INTERNAL_TIMER__mixin_class():
         dev=dev, DAQ_function=DAQ_function, DEBUG=DEBUG,
     )
     qdevio.signal_DAQ_updated.connect(process_DAQ_updated)
-    qdevio.signal_send_updated.connect(process_send_updated)
+    qdevio.signal_jobs_updated.connect(process_jobs_updated)
     qdevio.start()
 
     # fmt: off
@@ -624,7 +624,7 @@ def test_Worker_DAQ___INTERNAL_TIMER__mixin_class():
     assert (
         cnt_DAQ_updated >= 9
     )  # Last signal is not always received before thread is quit
-    assert cnt_send_updated == 2
+    assert cnt_jobs_updated == 2
 
 
 # ------------------------------------------------------------------------------
@@ -640,16 +640,16 @@ if __name__ == "__main__":
         test_Worker_DAQ___SINGLE_SHOT_WAKE_UP__start_dead()
         test_Worker_DAQ___CONTINUOUS()
         test_Worker_DAQ___CONTINUOUS__start_dead()
-        test_Worker_send()
-        test_Worker_send__start_dead()
-        test_Worker_send__jobs_function()
+        test_Worker_jobs()
+        test_Worker_jobs__start_dead()
+        test_Worker_jobs__jobs_function()
         test_attach_device_twice()
         test_Worker_DAQ___no_device_attached()
-        test_Worker_send__no_device_attached()
+        test_Worker_jobs__no_device_attached()
         test_Worker_DAQ___start_without_create()
-        test_Worker_send__start_without_create()
+        test_Worker_jobs__start_without_create()
         test_Worker_DAQ___quit_without_start()
-        test_Worker_send__quit_without_start()
+        test_Worker_jobs__quit_without_start()
         test_Worker_DAQ___rate()
         test_Worker_DAQ___lose_connection()
         test_Worker_DAQ___INTERNAL_TIMER__mixin_class()
@@ -675,14 +675,14 @@ if __name__ == "__main__":
         # test_Worker_DAQ___no_device_attached()
         # test_Worker_DAQ___start_without_create()
 
-        # test_Worker_send()
-        # test_Worker_send__start_dead()
-        # test_Worker_send__jobs_function()
-        # test_Worker_send__no_device_attached()
-        # test_Worker_send__start_without_create()
+        # test_Worker_jobs()
+        # test_Worker_jobs__start_dead()
+        # test_Worker_jobs__jobs_function()
+        # test_Worker_jobs__no_device_attached()
+        # test_Worker_jobs__start_without_create()
 
         # test_Worker_DAQ___quit_without_start()
-        # test_Worker_send__quit_without_start()
+        # test_Worker_jobs__quit_without_start()
 
         # test_attach_device_twice()
 

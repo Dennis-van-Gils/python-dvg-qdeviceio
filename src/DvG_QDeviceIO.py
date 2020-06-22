@@ -77,19 +77,19 @@ class QDeviceIO(QtCore.QObject):
         
         Created by calling :meth:`create_worker_DAQ`.
 
-    * :class:`Worker_send` :
+    * :class:`Worker_jobs` :
         
         Maintains a thread-safe queue where desired device I/O operations,
         called *jobs*, can be put onto. It will send out the queued jobs
         first-in, first-out (FIFO) to the device.
         
-        Created by calling :meth:`create_worker_send`.
+        Created by calling :meth:`create_worker_jobs`.
         
     Tip:
         This class can be mixed into your own specific `QDeviceIO` class. E.g.,
         you could make a derived class, named :class:`QDeviceIO_Arduino`, that
         hides the specifics of creating :class:`Worker_DAQ` and
-        :class:`Worker_send` from the user::
+        :class:`Worker_jobs` from the user::
         
             class QDeviceIO_Arduino(DvG_QDeviceIO.QDeviceIO, QtCore.QObject):
                 def __init__(
@@ -111,8 +111,8 @@ class QDeviceIO(QtCore.QObject):
                         DEBUG                      = DEBUG,
                     )
                     
-                    # Standard message queue handling
-                    self.create_worker_send(DEBUG=DEBUG)
+                    # Standard jobs handling
+                    self.create_worker_jobs(DEBUG=DEBUG)
         
         Now, the user only has to call the following to get up and running::
             
@@ -136,7 +136,7 @@ class QDeviceIO(QtCore.QObject):
                 
                 * **dev.mutex** (:class:`PyQt5.QtCore.QMutex`) -- To allow \
                     for properly multithreaded device I/O operations. It will \
-                    be used by :class:`Worker_DAQ` and :class:`Worker_send`.
+                    be used by :class:`Worker_DAQ` and :class:`Worker_jobs`.
                 
                 * **dev.is_alive** (:obj:`bool`) -- Device is up and \
                     communicatable? Default: :const:`True`.
@@ -152,24 +152,24 @@ class QDeviceIO(QtCore.QObject):
         
         worker_DAQ (:class:`Worker_DAQ` | :obj:`None`):
             Instance of :class:`Worker_DAQ` as created by
-            :func:`create_worker_DAQ`. This worker runs in a dedicated thread.
+            :meth:`create_worker_DAQ`. This worker runs in a dedicated thread.
         
-        worker_send (:class:`Worker_send` | :obj:`None`):
-            Instance of :class:`Worker_send` as created by 
-            :func:`create_worker_send`. This worker runs in a dedicated thread.
+        worker_jobs (:class:`Worker_jobs` | :obj:`None`):
+            Instance of :class:`Worker_jobs` as created by 
+            :meth:`create_worker_jobs`. This worker runs in a dedicated thread.
         
         update_counter_DAQ (:obj:`int`):
             Increments every time :attr:`worker_DAQ` tries to update.
         
-        update_counter_send (:obj:`int`):
-            Increments every time :attr:`worker_send` tries to update.
+        update_counter_jobs (:obj:`int`):
+            Increments every time :attr:`worker_jobs` tries to update.
         
         obtained_DAQ_interval_ms (:obj:`int` | :obj:`numpy.nan`):
             Obtained time interval in milliseconds since the previous
             :attr:`worker_DAQ` update.
         
         obtained_DAQ_rate_Hz (:obj:`float` | :obj:`numpy.nan`):
-            Obtained acquisition rate of :attr:`worker_DAQ` in Hertz.
+            Obtained acquisition rate of :attr:`worker_DAQ` in hertz.
             
         not_alive_counter_DAQ (:obj:`int`):
             Number of consecutive failed attempts to update :attr:`worker_DAQ`,
@@ -191,16 +191,16 @@ class QDeviceIO(QtCore.QObject):
         where ``qdeviceio`` is your instance of :class:`QDeviceIO`.
     """
 
-    signal_send_updated = QtCore.pyqtSignal()
-    """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by :class:`Worker_send` when all
+    signal_jobs_updated = QtCore.pyqtSignal()
+    """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by :class:`Worker_jobs` when all
     pending jobs in the queue have been sent out to the device as a response to
-    :func:`send` or :func:`process_send_queue`.
+    :meth:`send` or :meth:`process_jobs_queue`.
     """
 
     signal_DAQ_paused = QtCore.pyqtSignal()
     """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by :class:`Worker_DAQ` to confirm
     the worker has entered the `paused` state as a response to
-    :func:`pause_DAQ`.
+    :meth:`pause_DAQ`.
     """
 
     signal_connection_lost = QtCore.pyqtSignal()
@@ -208,7 +208,7 @@ class QDeviceIO(QtCore.QObject):
     indicate that we lost connection to the device. This happens when `N`
     consecutive device I/O operations have failed, where `N` equals the argument
     :obj:`critical_not_alive_count` as passed to method
-    :func:`create_worker_DAQ`.
+    :meth:`create_worker_DAQ`.
     """
 
     # Necessary for INTERNAL_TIMER
@@ -222,25 +222,25 @@ class QDeviceIO(QtCore.QObject):
             self.attach_device(dev)
 
         self._thread_DAQ = None
-        self._thread_send = None
+        self._thread_jobs = None
 
         self.worker_DAQ = None
-        self.worker_send = None
+        self.worker_jobs = None
 
         self.update_counter_DAQ = 0
-        self.update_counter_send = 0
+        self.update_counter_jobs = 0
         self.not_alive_counter_DAQ = 0
 
         self.obtained_DAQ_interval_ms = np.nan
         self.obtained_DAQ_rate_Hz = np.nan
 
         self._qwc_worker_DAQ_started = QtCore.QWaitCondition()
-        self._qwc_worker_send_started = QtCore.QWaitCondition()
+        self._qwc_worker_jobs_started = QtCore.QWaitCondition()
 
         self._qwc_worker_DAQ_stopped = QtCore.QWaitCondition()
-        self._qwc_worker_send_stopped = QtCore.QWaitCondition()
+        self._qwc_worker_jobs_stopped = QtCore.QWaitCondition()
         self._mutex_wait_worker_DAQ = QtCore.QMutex()
-        self._mutex_wait_worker_send = QtCore.QMutex()
+        self._mutex_wait_worker_jobs = QtCore.QMutex()
 
     class _NoDevice:
         name = "NoDevice"
@@ -260,7 +260,7 @@ class QDeviceIO(QtCore.QObject):
             
             * **dev.mutex** (:class:`PyQt5.QtCore.QMutex`) -- To allow \
                 for properly multithreaded device I/O operations. It will \
-                be used by :class:`Worker_DAQ` and :class:`Worker_send`.
+                be used by :class:`Worker_DAQ` and :class:`Worker_jobs`.
             
             * **dev.is_alive** (:obj:`bool`) -- Device is up and \
                 communicatable? Default: :const:`True`.
@@ -320,28 +320,28 @@ class QDeviceIO(QtCore.QObject):
         self._thread_DAQ.started.connect(self.worker_DAQ._do_work)
         self.worker_DAQ.moveToThread(self._thread_DAQ)
 
-    def create_worker_send(self, **kwargs):
-        """Create and configure an instance of :class:`Worker_send` and transfer
+    def create_worker_jobs(self, **kwargs):
+        """Create and configure an instance of :class:`Worker_jobs` and transfer
         it to a newly created :obj:`PyQt5.QtCore.QThread`.
 
         Args:
             **kwargs
-                Will be passed directly to :class:`Worker_send` as initialization
-                parameters, :ref:`see here <Worker_send_args>`.
+                Will be passed directly to :class:`Worker_jobs` as initialization
+                parameters, :ref:`see here <Worker_jobs_args>`.
         """
         if type(self.dev) == self._NoDevice:
             pft(
-                "Can't create worker_send, because there is no device attached."
+                "Can't create worker_jobs, because there is no device attached."
                 " Did you forget to call 'attach_device()' first?"
             )
             sys.exit(99)
 
-        self.worker_send = Worker_send(qdev=self, **kwargs)
+        self.worker_jobs = Worker_jobs(qdev=self, **kwargs)
 
-        self._thread_send = QtCore.QThread()
-        self._thread_send.setObjectName("%s_send" % self.dev.name)
-        self._thread_send.started.connect(self.worker_send._do_work)
-        self.worker_send.moveToThread(self._thread_send)
+        self._thread_jobs = QtCore.QThread()
+        self._thread_jobs.setObjectName("%s_jobs" % self.dev.name)
+        self._thread_jobs.started.connect(self.worker_jobs._do_work)
+        self.worker_jobs.moveToThread(self._thread_jobs)
 
     # --------------------------------------------------------------------------
     #   Start workers
@@ -350,7 +350,7 @@ class QDeviceIO(QtCore.QObject):
     def start(
         self,
         DAQ_priority=QtCore.QThread.InheritPriority,
-        send_priority=QtCore.QThread.InheritPriority,
+        jobs_priority=QtCore.QThread.InheritPriority,
     ):
         """Start the event loop of all of any created workers.
 
@@ -363,7 +363,7 @@ class QDeviceIO(QtCore.QObject):
                 is resource heavy, so use sparingly. Default: 
                 :const:`PyQt5.QtCore.QThread.InheritPriority`.
             
-            send_priority (:obj:`PyQt5.QtCore.QThread.Priority`, optional):
+            jobs_priority (:obj:`PyQt5.QtCore.QThread.Priority`, optional):
                 Like `DAQ_priority`.
         
         Returns:
@@ -371,8 +371,8 @@ class QDeviceIO(QtCore.QObject):
         """
         success = True
 
-        if self._thread_send is not None:
-            success &= self.start_worker_send(priority=send_priority)
+        if self._thread_jobs is not None:
+            success &= self.start_worker_jobs(priority=jobs_priority)
 
         if self._thread_DAQ is not None:
             success &= self.start_worker_DAQ(priority=DAQ_priority)
@@ -445,9 +445,9 @@ class QDeviceIO(QtCore.QObject):
 
         return self.worker_DAQ._started_okay
 
-    def start_worker_send(self, priority=QtCore.QThread.InheritPriority):
+    def start_worker_jobs(self, priority=QtCore.QThread.InheritPriority):
         """Start maintaining the desired device I/O operations queue by
-        starting the event loop of the :attr:`worker_send` thread.
+        starting the event loop of the :attr:`worker_jobs` thread.
 
         Args:
             priority (:obj:`PyQt5.QtCore.QThread.Priority`, optional):
@@ -456,36 +456,36 @@ class QDeviceIO(QtCore.QObject):
         Returns:
             True if successful, False otherwise.
         """
-        if self._thread_send is None:
+        if self._thread_jobs is None:
             pft(
-                "Worker_send %s: Can't start thread because it does not exist. "
-                "Did you forget to call 'create_worker_send()' first?"
+                "Worker_jobs %s: Can't start thread because it does not exist. "
+                "Did you forget to call 'create_worker_jobs()' first?"
                 % self.dev.name
             )
             sys.exit(404)
 
         elif not self.dev.is_alive:
             dprint(
-                "\nWorker_send %s: WARNING - Device is not alive.\n"
+                "\nWorker_jobs %s: WARNING - Device is not alive.\n"
                 % self.dev.name,
                 ANSI.RED,
             )
-            self.worker_send._started_okay = False
+            self.worker_jobs._started_okay = False
 
         else:
-            self.worker_send._started_okay = True
+            self.worker_jobs._started_okay = True
 
-        if self.worker_send.DEBUG:
+        if self.worker_jobs.DEBUG:
             tprint(
-                "Worker_send %s: start requested..." % self.dev.name,
+                "Worker_jobs %s: start requested..." % self.dev.name,
                 ANSI.WHITE,
             )
 
-        self._thread_send.start(priority)
+        self._thread_jobs.start(priority)
 
-        # Wait for worker_send to confirm having started
-        locker_wait = QtCore.QMutexLocker(self._mutex_wait_worker_send)
-        self._qwc_worker_send_started.wait(self._mutex_wait_worker_send)
+        # Wait for worker_jobs to confirm having started
+        locker_wait = QtCore.QMutexLocker(self._mutex_wait_worker_jobs)
+        self._qwc_worker_jobs_started.wait(self._mutex_wait_worker_jobs)
         locker_wait.unlock()
 
         # Wait a tiny amount of extra time for the worker to have entered
@@ -500,7 +500,7 @@ class QDeviceIO(QtCore.QObject):
         # signal event.
         time.sleep(0.05)
 
-        return self.worker_send._started_okay
+        return self.worker_jobs._started_okay
 
     # --------------------------------------------------------------------------
     #   Quit workers
@@ -512,7 +512,7 @@ class QDeviceIO(QtCore.QObject):
         Returns:
             True if successful, False otherwise.
         """
-        return self.quit_worker_DAQ() & self.quit_worker_send()
+        return self.quit_worker_DAQ() & self.quit_worker_jobs()
 
     def quit_worker_DAQ(self):
         """Stop :attr:`worker_DAQ` and close its thread.
@@ -580,13 +580,13 @@ class QDeviceIO(QtCore.QObject):
             print("FAILED.\n", end="")  # pragma: no cover
             return False  # pragma: no cover
 
-    def quit_worker_send(self):
-        """Stop :attr:`worker_send` and close its thread.
+    def quit_worker_jobs(self):
+        """Stop :attr:`worker_jobs` and close its thread.
         
         Returns:
             True if successful, False otherwise.
         """
-        if self._thread_send is None or self.worker_send._started_okay is None:
+        if self._thread_jobs is None or self.worker_jobs._started_okay is None:
             # CASE: quit() without create()
             #   _thread_DAQ == None
             #   _started_okay = None
@@ -603,9 +603,9 @@ class QDeviceIO(QtCore.QObject):
         #   _thread_DAQ == QThread()
         #   _started_okay = True
 
-        if self.worker_send.DEBUG:
+        if self.worker_jobs.DEBUG:
             tprint(
-                "Worker_send %s: stop requested..." % self.dev.name, ANSI.WHITE,
+                "Worker_jobs %s: stop requested..." % self.dev.name, ANSI.WHITE,
             )
 
         # The QWaitCondition inside the SINGLE_SHOT_WAKE_UP '_do_work()'-
@@ -614,20 +614,20 @@ class QDeviceIO(QtCore.QObject):
         # worker_DAQ when emitted from out of this thread. Instead,
         # we directly call '_stop()' from out of this different thread,
         # which is perfectly fine as per my design.
-        self.worker_send._stop()
+        self.worker_jobs._stop()
 
-        # Wait for worker_send to confirm having stopped
-        locker_wait = QtCore.QMutexLocker(self._mutex_wait_worker_send)
-        self._qwc_worker_send_stopped.wait(self._mutex_wait_worker_send)
+        # Wait for worker_jobs to confirm having stopped
+        locker_wait = QtCore.QMutexLocker(self._mutex_wait_worker_jobs)
+        self._qwc_worker_jobs_stopped.wait(self._mutex_wait_worker_jobs)
         locker_wait.unlock()
 
-        self._thread_send.quit()
+        self._thread_jobs.quit()
         print(
             "Closing thread %s "
-            % "{:.<16}".format(self._thread_send.objectName()),
+            % "{:.<16}".format(self._thread_jobs.objectName()),
             end="",
         )
-        if self._thread_send.wait(2000):
+        if self._thread_jobs.wait(2000):
             print("done.\n", end="")
             return True
         else:
@@ -670,23 +670,23 @@ class QDeviceIO(QtCore.QObject):
             self.worker_DAQ.wake_up()
 
     # --------------------------------------------------------------------------
-    #   worker_send related
+    #   worker_jobs related
     # --------------------------------------------------------------------------
 
     @QtCore.pyqtSlot()
     def send(self, instruction, pass_args=()):
-        """Put a job on the :attr:`worker_send` queue and send out the full
+        """Put a job on the :attr:`worker_jobs` queue and send out the full
         queue first-in, first-out to the device until empty. Once finished, it
-        will emit :obj:`signal_send_updated()`.
+        will emit :obj:`signal_jobs_updated()`.
         
-        See :meth:`add_to_send_queue` for details on the parameters.
+        See :meth:`add_to_jobs_queue` for details on the parameters.
         """
-        if self.worker_send is not None:
-            self.worker_send.send(instruction, pass_args)
+        if self.worker_jobs is not None:
+            self.worker_jobs.send(instruction, pass_args)
 
     @QtCore.pyqtSlot()
-    def add_to_send_queue(self, instruction, pass_args=()):
-        """Put a job on the :attr:`worker_send` queue.
+    def add_to_jobs_queue(self, instruction, pass_args=()):
+        """Put a job on the :attr:`worker_jobs` queue.
 
         Args:
             instruction (:obj:`function` | *other*):
@@ -699,7 +699,7 @@ class QDeviceIO(QtCore.QObject):
                 such special cases must be programmed by supplying the argument
                 :obj:`jobs_function` with your own alternative
                 job-processing-routine function during the initialization of
-                :class:`Worker_send`. :ref:`See here <Worker_send_args>`.
+                :class:`Worker_jobs`. :ref:`See here <Worker_jobs_args>`.
 
             pass_args (:obj:`tuple` | *other*, optional):
                 Arguments to be passed to the instruction. Must be given as a
@@ -710,19 +710,19 @@ class QDeviceIO(QtCore.QObject):
                 
         Example::
             
-            add_to_send_queue(dev.write, "toggle LED")
+            add_to_jobs_queue(dev.write, "toggle LED")
         """
-        if self.worker_send is not None:
-            self.worker_send.add_to_queue(instruction, pass_args)
+        if self.worker_jobs is not None:
+            self.worker_jobs.add_to_queue(instruction, pass_args)
 
     @QtCore.pyqtSlot()
-    def process_send_queue(self):
-        """Send out the full :attr:`worker_send` queue first-in, first-out to
+    def process_jobs_queue(self):
+        """Send out the full :attr:`worker_jobs` queue first-in, first-out to
         the device until empty. Once finished, it will emit
-        :obj:`signal_send_updated()`.
+        :obj:`signal_jobs_updated()`.
         """
-        if self.worker_send is not None:
-            self.worker_send.process_queue()
+        if self.worker_jobs is not None:
+            self.worker_jobs.process_queue()
 
 
 # --------------------------------------------------------------------------
@@ -737,7 +737,7 @@ class Worker_DAQ(QtCore.QObject):
     subsequent data processing, every time the worker *updates*.
 
     An instance of this worker will be created and placed inside a separate
-    thread by a call to :func:`QDeviceIO.create_worker_DAQ`.
+    thread by a call to :meth:`QDeviceIO.create_worker_DAQ`.
 
     The *Worker_DAQ* routine is robust in the following sense. It can be set
     to quit as soon as a communication error appears, or it could be set to
@@ -1222,43 +1222,43 @@ class Worker_DAQ(QtCore.QObject):
 
 
 # --------------------------------------------------------------------------
-#   Worker_send
+#   Worker_jobs
 # --------------------------------------------------------------------------
 
 
-class Worker_send(QtCore.QObject):
+class Worker_jobs(QtCore.QObject):
     """This worker maintains a thread-safe queue where desired device I/O
     operations, called *jobs*, can be put onto. The worker will send out the
     operations to the device, first-in, first-out (FIFO), until the queue is
     empty again.
 
     An instance of this worker will be created and placed inside a separate
-    thread by a call to :func:`QDeviceIO.create_worker_send`.
+    thread by a call to :meth:`QDeviceIO.create_worker_jobs`.
 
     This worker uses the :class:`PyQt5.QtCore.QWaitCondition` mechanism. Hence,
     it will only send out all operations collected in the queue, whenever the
     thread is woken up by calling 
-    :meth:`Worker_send.process_queue()`. When it has emptied the queue, the
+    :meth:`Worker_jobs.process_queue()`. When it has emptied the queue, the
     thread will go back to sleep again.
 
     Warning:
         No direct changes to the GUI should be performed inside this class.
-        Instead, connect to the :meth:`QDeviceIO.signal_send_updated` signal to
+        Instead, connect to the :meth:`QDeviceIO.signal_jobs_updated` signal to
         instigate GUI changes when needed.
 
-    .. _`Worker_send_args`:
+    .. _`Worker_jobs_args`:
         
     Args:
         jobs_function (:obj:`function` | :obj:`None`, optional):
             Reference to an user-supplied function performing an alternative
-            job handling when processing the worker_send queue.
+            job handling when processing the worker_jobs queue.
             
             Default: :obj:`None`.
             
             When set to :obj:`None`, it will perform the default job handling
             routine, which goes as follows:
                 
-                ``func`` and ``args`` will be retrieved from the worker_send
+                ``func`` and ``args`` will be retrieved from the worker_jobs
                 queue and their combination ``func(*args)`` will get called.
                 
             The default is sufficient when ``func`` corresponds to an
@@ -1274,7 +1274,7 @@ class Worker_send(QtCore.QObject):
             function you supply must take two arguments, where the first
             argument will be ``func`` and the second argument will be
             ``args``, which is a tuple. Both ``func`` and ``args`` will be
-            retrieved from the worker_send queue and passed onto your
+            retrieved from the worker_jobs queue and passed onto your
             own function.
             
             Example::
@@ -1297,7 +1297,7 @@ class Worker_send(QtCore.QObject):
             
             Default: :const:`False`.
             
-    .. _`Worker_send_attributes`:
+    .. _`Worker_jobs_attributes`:
        
     Attributes:
         jobs_function (:obj:`function|None`) : Blah
@@ -1328,7 +1328,7 @@ class Worker_send(QtCore.QObject):
 
         if self.DEBUG:
             tprint(
-                "Worker_send %s: init @ thread %s"
+                "Worker_jobs %s: init @ thread %s"
                 % (self.dev.name, _cur_thread_name()),
                 self.DEBUG_color,
             )
@@ -1346,16 +1346,16 @@ class Worker_send(QtCore.QObject):
 
             if self.DEBUG:
                 tprint(
-                    "Worker_send %s: start confirmed" % self.dev.name,
+                    "Worker_jobs %s: start confirmed" % self.dev.name,
                     self.DEBUG_color,
                 )
 
             # Send confirmation
-            self.qdev._qwc_worker_send_started.wakeAll()
+            self.qdev._qwc_worker_jobs_started.wakeAll()
 
         if self.DEBUG:
             tprint(
-                "Worker_send %s: starting @ thread %s"
+                "Worker_jobs %s: starting @ thread %s"
                 % (self.dev.name, _cur_thread_name()),
                 self.DEBUG_color,
             )
@@ -1368,7 +1368,7 @@ class Worker_send(QtCore.QObject):
 
             if self.DEBUG:
                 tprint(
-                    "Worker_send %s: waiting for wake trigger" % self.dev.name,
+                    "Worker_jobs %s: waiting for wake trigger" % self.dev.name,
                     self.DEBUG_color,
                 )
 
@@ -1380,42 +1380,42 @@ class Worker_send(QtCore.QObject):
 
             if self.DEBUG:
                 tprint(
-                    "Worker_send %s: wake confirmed" % self.dev.name,
+                    "Worker_jobs %s: wake confirmed" % self.dev.name,
                     self.DEBUG_color,
                 )
 
-            # Needed check to prevent _perform_send() at final wake up
+            # Needed check to prevent _perform_jobs() at final wake up
             # when _stop() has been called
             if self._running:
-                self._perform_send()
+                self._perform_jobs()
 
             locker_wait.unlock()
 
         if self.DEBUG:
             tprint(
-                "Worker_send %s: stop confirmed" % self.dev.name,
+                "Worker_jobs %s: stop confirmed" % self.dev.name,
                 self.DEBUG_color,
             )
 
         # Wait a tiny amount for the other thread to have entered the
         # QWaitCondition lock, before giving a wakingAll().
         QtCore.QTimer.singleShot(
-            100, lambda: self.qdev._qwc_worker_send_stopped.wakeAll()
+            100, lambda: self.qdev._qwc_worker_jobs_stopped.wakeAll()
         )
 
     @_coverage_resolve_trace
     @QtCore.pyqtSlot()
-    def _perform_send(self):
+    def _perform_jobs(self):
         if not self._started_okay:
             return
 
         locker = QtCore.QMutexLocker(self.dev.mutex)
-        self.qdev.update_counter_send += 1
+        self.qdev.update_counter_jobs += 1
 
         if self.DEBUG:
             tprint(
-                "Worker_send %s: lock   # %i"
-                % (self.dev.name, self.qdev.update_counter_send),
+                "Worker_jobs %s: lock   # %i"
+                % (self.dev.name, self.qdev.update_counter_jobs),
                 self.DEBUG_color,
             )
 
@@ -1432,13 +1432,13 @@ class Worker_send(QtCore.QObject):
                 if self.DEBUG:
                     if type(func) == str:
                         tprint(
-                            "Worker_send %s: %s %s"
+                            "Worker_jobs %s: %s %s"
                             % (self.dev.name, func, args),
                             self.DEBUG_color,
                         )
                     else:
                         tprint(
-                            "Worker_send %s: %s %s"
+                            "Worker_jobs %s: %s %s"
                             % (self.dev.name, func.__name__, args),
                             self.DEBUG_color,
                         )
@@ -1459,13 +1459,13 @@ class Worker_send(QtCore.QObject):
 
         if self.DEBUG:
             tprint(
-                "Worker_send %s: unlock # %i"
-                % (self.dev.name, self.qdev.update_counter_send),
+                "Worker_jobs %s: unlock # %i"
+                % (self.dev.name, self.qdev.update_counter_jobs),
                 self.DEBUG_color,
             )
 
         locker.unlock()
-        self.qdev.signal_send_updated.emit()
+        self.qdev.signal_jobs_updated.emit()
 
     @QtCore.pyqtSlot()
     def _stop(self):
@@ -1473,7 +1473,7 @@ class Worker_send(QtCore.QObject):
         """
         if self.DEBUG:
             tprint(
-                "Worker_send %s: stopping" % self.dev.name, self.DEBUG_color,
+                "Worker_jobs %s: stopping" % self.dev.name, self.DEBUG_color,
             )
 
         self._running = False
@@ -1496,7 +1496,7 @@ class Worker_send(QtCore.QObject):
     # ----------------------------------------------------------------------
 
     def add_to_queue(self, instruction, pass_args=()):
-        """See the description at :meth:`QDeviceIO.add_to_send_queue`.
+        """See the description at :meth:`QDeviceIO.add_to_jobs_queue`.
                 
         This method can be called from another thread.
         """
@@ -1509,13 +1509,13 @@ class Worker_send(QtCore.QObject):
     # ----------------------------------------------------------------------
 
     def process_queue(self):
-        """See the description at :meth:`QDeviceIO.process_send_queue`.
+        """See the description at :meth:`QDeviceIO.process_jobs_queue`.
         
         This method can be called from another thread.
         """
         if self.DEBUG:
             tprint(
-                "Worker_send %s: wake requested..." % self.dev.name, ANSI.WHITE,
+                "Worker_jobs %s: wake requested..." % self.dev.name, ANSI.WHITE,
             )
 
         self._qwc.wakeAll()

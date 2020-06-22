@@ -16,7 +16,7 @@ DvG_QDeviceIO
 
    api-qdeviceio
    api-workerdaq
-   api-workersend
+   api-workerjobs
    api-daqtrigger
 
 
