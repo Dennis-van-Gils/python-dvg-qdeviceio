@@ -17,13 +17,13 @@ Methods
 
 .. automethod:: DvG_QDeviceIO.QDeviceIO.attach_device
 .. automethod:: DvG_QDeviceIO.QDeviceIO.create_worker_DAQ
-.. automethod:: DvG_QDeviceIO.QDeviceIO.create_worker_send
+.. automethod:: DvG_QDeviceIO.QDeviceIO.create_worker_jobs
 .. automethod:: DvG_QDeviceIO.QDeviceIO.start
 .. automethod:: DvG_QDeviceIO.QDeviceIO.start_worker_DAQ
-.. automethod:: DvG_QDeviceIO.QDeviceIO.start_worker_send
+.. automethod:: DvG_QDeviceIO.QDeviceIO.start_worker_jobs
 .. automethod:: DvG_QDeviceIO.QDeviceIO.quit
 .. automethod:: DvG_QDeviceIO.QDeviceIO.quit_worker_DAQ
-.. automethod:: DvG_QDeviceIO.QDeviceIO.quit_worker_send
+.. automethod:: DvG_QDeviceIO.QDeviceIO.quit_worker_jobs
 .. automethod:: DvG_QDeviceIO.QDeviceIO.pause_DAQ
 .. automethod:: DvG_QDeviceIO.QDeviceIO.unpause_DAQ
 .. automethod:: DvG_QDeviceIO.QDeviceIO.wake_up_DAQ
