@@ -8,7 +8,7 @@ Signals
 --------------------
 
 .. autoattribute:: DvG_QDeviceIO.QDeviceIO.signal_DAQ_updated
-.. autoattribute:: DvG_QDeviceIO.QDeviceIO.signal_send_updated
+.. autoattribute:: DvG_QDeviceIO.QDeviceIO.signal_jobs_updated
 .. autoattribute:: DvG_QDeviceIO.QDeviceIO.signal_DAQ_paused
 .. autoattribute:: DvG_QDeviceIO.QDeviceIO.signal_connection_lost
 
@@ -28,5 +28,5 @@ Methods
 .. automethod:: DvG_QDeviceIO.QDeviceIO.unpause_DAQ
 .. automethod:: DvG_QDeviceIO.QDeviceIO.wake_up_DAQ
 .. automethod:: DvG_QDeviceIO.QDeviceIO.send
-.. automethod:: DvG_QDeviceIO.QDeviceIO.add_to_send_queue
-.. automethod:: DvG_QDeviceIO.QDeviceIO.process_send_queue
+.. automethod:: DvG_QDeviceIO.QDeviceIO.add_to_jobs_queue
+.. automethod:: DvG_QDeviceIO.QDeviceIO.process_jobs_queue
