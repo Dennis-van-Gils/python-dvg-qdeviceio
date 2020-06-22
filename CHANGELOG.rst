@@ -27,6 +27,6 @@ Changelog
 * Changed from MarkDown to ReStructuredText
 
 0.0.10 (2020-06-22)
-------------------
+-------------------
 * Major: Changed name 'Worker_send' to 'Worker_jobs' and similar
 * Added more Sphinx documentation
