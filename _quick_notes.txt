@@ -11,6 +11,7 @@ black -l 80 setup.py
 del /q dist\*.*
 python setup.py bdist_wheel sdist
 check-manifest --create
+twine check dist/*
 twine upload dist/*
 
 docs\make html
