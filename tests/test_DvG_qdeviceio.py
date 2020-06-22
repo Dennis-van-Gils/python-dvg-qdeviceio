@@ -374,7 +374,6 @@ def test_Worker_jobs__jobs_function():
     assert cnt_jobs_updated == 3
 
 
-
 def test_attach_device_twice():
     print_title("Attach device twice")
     import pytest
@@ -535,11 +534,11 @@ def test_Worker_DAQ___lose_connection():
 
     app = create_QApplication()
     dev = FakeDevice()
-    
+
     # Forcefully remove members as extra test
     del dev.name
     del dev.is_alive
-    
+
     qdevio = QDeviceIO(dev)
     # fmt: off
     qdevio.create_worker_DAQ(
