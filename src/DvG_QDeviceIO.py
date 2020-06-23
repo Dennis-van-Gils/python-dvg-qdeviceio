@@ -856,6 +856,12 @@ class Worker_DAQ(QtCore.QObject):
             Default: :const:`False`.
     
     Attributes:
+        qdev ():
+            TODO: description.
+        
+        dev ():
+            TODO: description. Shorthand for :obj:`qdev.dev`.
+    
         DAQ_function (:obj:`function|None`):
             See the similarly named initialization parameter, 
             :ref:`here <DAQ_function>`.
@@ -1307,7 +1313,7 @@ class Worker_jobs(QtCore.QObject):
             
             Example::
                 
-                def jobs_function(func, args):
+                def my_jobs_function(func, args):
                     if func == "query_id?":
                         # Query the device for its identity string
                         [success, ans_str] = self.dev.query("id?")
@@ -1326,6 +1332,12 @@ class Worker_jobs(QtCore.QObject):
             Default: :const:`False`.
        
     Attributes:
+        qdev ():
+            TODO: description.
+        
+        dev ():
+            TODO: description. Shorthand for :obj:`qdev.dev`.
+    
         jobs_function (:obj:`function|None`):
             See the similarly named initialization parameter, 
             :ref:`here <Worker_jobs_args>`.
