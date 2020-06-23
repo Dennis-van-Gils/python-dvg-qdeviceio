@@ -169,7 +169,9 @@ class QDeviceIO(QtCore.QObject):
             :attr:`worker_DAQ` update.
         
         obtained_DAQ_rate_Hz (:obj:`float` | :obj:`numpy.nan`):
-            Obtained acquisition rate of :attr:`worker_DAQ` in hertz.
+            Obtained acquisition rate of :attr:`worker_DAQ` in hertz. It will
+            take several DAQ updates for the value to be properly calculated,
+            and till that time it will be :obj:`numpy.nan`.
             
         not_alive_counter_DAQ (:obj:`int`):
             Number of consecutive failed attempts to update :attr:`worker_DAQ`,
@@ -765,6 +767,8 @@ class Worker_DAQ(QtCore.QObject):
             
             Default: :const:`DAQ_trigger.INTERNAL_TIMER`.
             
+            .. _`DAQ_function`:
+            
         DAQ_function (:obj:`function` | :obj:`None`, optional):
             Reference to a user-supplied function containing the device
             query operations and subsequent data processing, to be invoked
@@ -786,15 +790,15 @@ class Worker_DAQ(QtCore.QObject):
             Example:
                 Pseudo-code, where ``time`` and ``temperature`` are variables
                 that live at a higher scope, presumably at the *main* scope
-                level::
-
-                    def my_update_function():
-                        # Query the device for its state. In this example we assume
-                        # the device replies with a time stamp and a temperature
-                        # reading. The function 'dev.query_temperature()' is also
-                        # supplied by the user and handles the direct communication
-                        # with the I/O device, returning..
-                        # BLAHBLAH. TODO: rewrite and provide more clear example
+                level. The function ``dev.query_temperature()`` contains the
+                device I/O operations, e.g., sending out a query over RS232 and
+                collecting the device reply. In addition, the function notifies
+                if the communication was successful. Hence, the return values of
+                ``dev.query_temperature()`` are ``success`` as boolean and
+                ``reply`` as a tuple containing a time stamp and a temperature
+                reading. ::
+                                        
+                    def my_DAQ_function():
                         [success, reply] = dev.query_temperature()
                         if not(success):
                             print("Device IOerror")
@@ -825,6 +829,8 @@ class Worker_DAQ(QtCore.QObject):
             
             Default: :const:`PyQt5.QtCore.Qt.CoarseTimer`.
 
+            .. _`critical_not_alive_count`:
+
         critical_not_alive_count (:obj:`int`, optional):
             The worker will allow for up to a certain number of consecutive
             communication failures with the device, before hope is given up
@@ -833,11 +839,15 @@ class Worker_DAQ(QtCore.QObject):
             
             Default: :const:`1`.
             
+            .. _`calc_DAQ_rate_every_N_iter`:
+            
         calc_DAQ_rate_every_N_iter (:obj:`int`, optional):
-            Blah.
+            The increase the accuracy of calculating the DAQ rate, it is advised
+            to average over several iterations, i.e. DAQ updates. It will take
+            at least *N* updates before :attr:`QDeviceIO.obtained_DAQ_rate_Hz`
+            will contain the calculated rate.
             
             Default: :const:`10`.
-
 
         DEBUG (:obj:`bool`, optional):
             Print debug info to the terminal? Warning: Slow! Do not leave on
@@ -845,12 +855,18 @@ class Worker_DAQ(QtCore.QObject):
             
             Default: :const:`False`.
     
-    .. _`Worker_DAQ_attributes`:
-    
     Attributes:
-        DAQ_function (:obj:`function|None`) : Blah
-        critical_not_alive_count (:obj:`int`) : Blah
-        calc_DAQ_rate_every_N_iter (:obj:`int`) : Blah
+        DAQ_function (:obj:`function|None`):
+            See the similarly named initialization parameter, 
+            :ref:`here <DAQ_function>`.
+        
+        critical_not_alive_count (:obj:`int`):
+            See the similarly named initialization parameter, 
+            :ref:`here <critical_not_alive_count>`.
+        
+        calc_DAQ_rate_every_N_iter (:obj:`int`):
+            See the similarly named initialization parameter, 
+            :ref:`here <calc_DAQ_rate_every_N_iter>`.
     """
 
     def __init__(
@@ -1308,11 +1324,11 @@ class Worker_jobs(QtCore.QObject):
             unintentionally.
             
             Default: :const:`False`.
-            
-    .. _`Worker_jobs_attributes`:
        
     Attributes:
-        jobs_function (:obj:`function|None`) : Blah
+        jobs_function (:obj:`function|None`):
+            See the similarly named initialization parameter, 
+            :ref:`here <Worker_jobs_args>`.
     """
 
     def __init__(
