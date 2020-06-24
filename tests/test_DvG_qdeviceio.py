@@ -7,35 +7,6 @@ from DvG_debug_functions import dprint, tprint, ANSI
 # Show extra debug info in terminal?
 DEBUG = True
 
-"""
-DAQ_trigger.INTERNAL_TIMER
-    I/O device slaved to an external timer originating from Worker_DAQ
-
-DAQ_trigger.SINGLE_SHOT_WAKE_UP
-    Typical use case: Multiple I/O devices that are slaved to a common single
-    external timer originating from a higher scope Python module than 
-    this 'DvG_QdeviceIO' module.
-    See Keysight_N8700_PSU for an example.
-    
-    def simultaneously_trigger_update_multiple_devices():
-        for qdevio in qdevios:
-            qdevio.wake_up()
-            
-    timer_qdevios = QtCore.QTimer()
-    timer_qdevios.timeout.connect(simultaneously_trigger_update_multiple_devices)
-    timer_qdevios.start(UPDATE_INTERVAL_MS)
-
-DAQ_trigger.CONTINUOUS
-    Typical use case: I/O device acting as a master and outputting a continuous
-    stream of data. The worker_DAQ will start up in suspended mode (idling).
-    This allows for a start command to be send to the I/O device, for instance,
-    over a Worker_jobs instance. Once the start command has been received and
-    processed by the device, such that it will output a continuous stream of
-    data, worker_DAQ can be taken out of suspended mode and have it listen and
-    receive this data stream.
-    
-"""
-
 global cnt_DAQ_updated, cnt_jobs_updated, cnt_DAQ_paused
 
 
@@ -146,7 +117,7 @@ def test_Worker_DAQ___INTERNAL_TIMER(start_alive=True):
         DAQ_timer_type             = QtCore.Qt.PreciseTimer,
         critical_not_alive_count   = 10,
         calc_DAQ_rate_every_N_iter = 5,
-        DEBUG                      = DEBUG)
+        debug                      = DEBUG)
     # fmt: on
     qdevio.signal_DAQ_updated.connect(process_DAQ_updated)
     assert qdevio.start() == start_alive
@@ -196,7 +167,7 @@ def test_Worker_DAQ___SINGLE_SHOT_WAKE_UP(start_alive=True):
         DAQ_function               = DAQ_function,
         critical_not_alive_count   = 1,
         calc_DAQ_rate_every_N_iter = 5,
-        DEBUG                      = DEBUG)
+        debug                      = DEBUG)
     # fmt: on
     qdevio.signal_DAQ_updated.connect(process_DAQ_updated)
     assert qdevio.start() == start_alive
@@ -247,7 +218,7 @@ def test_Worker_DAQ___CONTINUOUS(start_alive=True):
         DAQ_function               = DAQ_function,
         critical_not_alive_count   = 1,
         calc_DAQ_rate_every_N_iter = 5,
-        DEBUG                      = DEBUG,
+        debug                      = DEBUG,
     )
     # fmt: on
     qdevio.signal_DAQ_updated.connect(process_DAQ_updated)
@@ -293,7 +264,7 @@ def test_Worker_jobs(start_alive=True):
     app = create_QApplication()
     dev = FakeDevice(start_alive=start_alive)
     qdevio = QDeviceIO(dev)
-    qdevio.create_worker_jobs(DEBUG=DEBUG)
+    qdevio.create_worker_jobs(debug=DEBUG)
     qdevio.signal_jobs_updated.connect(process_jobs_updated)
     assert qdevio.start() == start_alive
 
@@ -346,7 +317,7 @@ def test_Worker_jobs__jobs_function():
     dev = FakeDevice()
     qdevio = QDeviceIO(dev)
     qdevio.create_worker_jobs(
-        jobs_function=jobs_function, DEBUG=DEBUG,
+        jobs_function=jobs_function, debug=DEBUG,
     )
     qdevio.signal_jobs_updated.connect(process_jobs_updated)
     assert qdevio.start() == True
@@ -485,7 +456,7 @@ def test_Worker_DAQ___rate():
         DAQ_timer_type             = QtCore.Qt.PreciseTimer,
         critical_not_alive_count   = 1,
         calc_DAQ_rate_every_N_iter = 20,
-        DEBUG                      = DEBUG)
+        debug                      = DEBUG)
     # fmt: on
     assert qdevio.start() == True
 
@@ -548,7 +519,7 @@ def test_Worker_DAQ___lose_connection():
         DAQ_timer_type             = QtCore.Qt.PreciseTimer,
         critical_not_alive_count   = 3,
         calc_DAQ_rate_every_N_iter = 20,
-        DEBUG                      = DEBUG)
+        debug                      = DEBUG)
     # fmt: on
     qdevio.signal_connection_lost.connect(process_connection_lost)
     assert qdevio.start() == True
@@ -566,7 +537,7 @@ def test_Worker_DAQ___lose_connection():
 
 class QDeviceIO_subclassed(QDeviceIO, QtCore.QObject):
     def __init__(
-        self, dev=None, DAQ_function=None, DEBUG=False, parent=None,
+        self, dev=None, DAQ_function=None, debug=False, parent=None,
     ):
         super(QDeviceIO_subclassed, self).__init__(parent=parent)
 
@@ -580,10 +551,10 @@ class QDeviceIO_subclassed(QDeviceIO, QtCore.QObject):
             DAQ_timer_type             = QtCore.Qt.PreciseTimer,
             critical_not_alive_count   = 10,
             calc_DAQ_rate_every_N_iter = 5,
-            DEBUG                      = DEBUG,
+            debug                      = DEBUG,
         )
         # fmt: on
-        self.create_worker_jobs(DEBUG=DEBUG)
+        self.create_worker_jobs(debug=DEBUG)
 
 
 def test_Worker_DAQ___INTERNAL_TIMER__mixin_class():
@@ -597,7 +568,7 @@ def test_Worker_DAQ___INTERNAL_TIMER__mixin_class():
     app = create_QApplication()
     dev = FakeDevice()
     qdevio = QDeviceIO_subclassed(
-        dev=dev, DAQ_function=DAQ_function, DEBUG=DEBUG,
+        dev=dev, DAQ_function=DAQ_function, debug=DEBUG,
     )
     qdevio.signal_DAQ_updated.connect(process_DAQ_updated)
     qdevio.signal_jobs_updated.connect(process_jobs_updated)

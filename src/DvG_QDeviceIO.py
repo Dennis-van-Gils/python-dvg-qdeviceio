@@ -6,7 +6,7 @@ communication with an I/O device.
 __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
-__date__ = "22-06-2020"
+__date__ = "24-06-2020"
 __version__ = "0.0.11"  # v0.0.1 on PyPI is based on prototype DvG_dev_Base__pyqt_lib.py v1.3.3
 
 from enum import IntEnum, unique
@@ -93,7 +93,7 @@ class QDeviceIO(QtCore.QObject):
         
             class QDeviceIO_Arduino(DvG_QDeviceIO.QDeviceIO, QtCore.QObject):
                 def __init__(
-                    self, dev=None, DAQ_function=None, DEBUG=False, parent=None,
+                    self, dev=None, DAQ_function=None, debug=False, parent=None,
                 ):
                     super(QDeviceIO_Arduino, self).__init__(parent=parent)
     
@@ -108,11 +108,11 @@ class QDeviceIO(QtCore.QObject):
                         DAQ_timer_type             = QtCore.Qt.PreciseTimer,
                         critical_not_alive_count   = 3,
                         calc_DAQ_rate_every_N_iter = 10,
-                        DEBUG                      = DEBUG,
+                        debug                      = debug,
                     )
                     
                     # Standard jobs handling
-                    self.create_worker_jobs(DEBUG=DEBUG)
+                    self.create_worker_jobs(debug=debug)
         
         Now, the user only has to call the following to get up and running::
             
@@ -127,9 +127,9 @@ class QDeviceIO(QtCore.QObject):
     Args:
         dev (:obj:`object` | :obj:`None`, optional):
             Reference to a user-supplied *device* class instance containing 
-            your I/O methods. In addition, `dev` should also have the
-            following members. If not, they will be injected into the `dev`
-            instance for you:
+            I/O methods. In addition, `dev` should also have the following
+            members. If not, they will be injected into the `dev` instance for
+            you:
             
                 * **dev.name** (:obj:`str`) -- Short display name for the \
                     device. Default: "myDevice".
@@ -148,7 +148,7 @@ class QDeviceIO(QtCore.QObject):
     Attributes:
         dev (:obj:`object` | :obj:`None`):
             Reference to a user-supplied *device* class instance containing
-            your I/O methods.
+            I/O methods.
         
         worker_DAQ (:class:`Worker_DAQ` | :obj:`None`):
             Instance of :class:`Worker_DAQ` as created by
@@ -255,7 +255,7 @@ class QDeviceIO(QtCore.QObject):
 
     def attach_device(self, dev):
         """Attach a reference to a user-supplied *device* class instance
-        containing your I/O methods. In addition, `dev` should also have the
+        containing I/O methods. In addition, `dev` should also have the
         following members. If not, they will be injected into the `dev`
         instance for you:
             
@@ -272,7 +272,7 @@ class QDeviceIO(QtCore.QObject):
         Args:
             dev (:obj:`object`):
                 Reference to a user-supplied *device* class instance containing
-                your I/O methods.
+                I/O methods.
         
         Returns:
             True if successful, False otherwise.
@@ -416,7 +416,7 @@ class QDeviceIO(QtCore.QObject):
         else:
             self.worker_DAQ._started_okay = True
 
-        if self.worker_DAQ.DEBUG:
+        if self.worker_DAQ.debug:
             tprint(
                 "Worker_DAQ  %s: start requested..." % self.dev.name,
                 ANSI.WHITE,
@@ -482,7 +482,7 @@ class QDeviceIO(QtCore.QObject):
         else:
             self.worker_jobs._started_okay = True
 
-        if self.worker_jobs.DEBUG:
+        if self.worker_jobs.debug:
             tprint(
                 "Worker_jobs %s: start requested..." % self.dev.name,
                 ANSI.WHITE,
@@ -544,7 +544,7 @@ class QDeviceIO(QtCore.QObject):
         #   _thread_DAQ == QThread()
         #   _started_okay = True
 
-        if self.worker_DAQ.DEBUG:
+        if self.worker_DAQ.debug:
             tprint(
                 "Worker_DAQ  %s: stop requested..." % self.dev.name, ANSI.WHITE,
             )
@@ -610,7 +610,7 @@ class QDeviceIO(QtCore.QObject):
         #   _thread_DAQ == QThread()
         #   _started_okay = True
 
-        if self.worker_jobs.DEBUG:
+        if self.worker_jobs.debug:
             tprint(
                 "Worker_jobs %s: stop requested..." % self.dev.name, ANSI.WHITE,
             )
@@ -740,10 +740,10 @@ class QDeviceIO(QtCore.QObject):
 class Worker_DAQ(QtCore.QObject):
     """This worker periodically acquires data from the I/O device. It does so by
     calling a user-supplied function, passed as initialization parameter
-    :obj:`DAQ_function`, containing your device I/O operations and/or
-    subsequent data processing, every time the worker *updates*. There are
-    different modes of operation for this worker to perform an *update*. This is
-    set by initialization parameter :class:`DAQ_trigger`.
+    :obj:`DAQ_function`, containing device I/O operations and subsequent data
+    processing, every time the worker *updates*. There are different modes of
+    operation for this worker to perform an *update*. This is set by
+    initialization parameter :class:`DAQ_trigger`.
 
     An instance of this worker will be created and placed inside a new thread by
     a call to :meth:`QDeviceIO.create_worker_DAQ`.
@@ -762,6 +762,10 @@ class Worker_DAQ(QtCore.QObject):
     .. _`Worker_DAQ_args`:
         
     Args:
+        qdev (:class:`QDeviceIO`):
+            Link to the parent :class:`QDeviceIO` class instance, automatically
+            set when being initialized by :meth:`QDeviceIO.create_worker_DAQ`.
+            
         DAQ_trigger (:obj:`int`, optional):
             Mode of operation. See :class:`DAQ_trigger`.
             
@@ -771,7 +775,7 @@ class Worker_DAQ(QtCore.QObject):
             
         DAQ_function (:obj:`function` | :obj:`None`, optional):
             Reference to a user-supplied function containing the device
-            query operations and subsequent data processing, to be invoked
+            I/O operations and subsequent data processing, to be invoked
             every DAQ update. 
             
             Default: :obj:`None`.
@@ -806,7 +810,7 @@ class Worker_DAQ(QtCore.QObject):
         
                         # Parse readings into separate variables and store them
                         try:
-                            [time, temperature] = parse(reply)
+                            [time, temperature] = reply
                         except Exception as err:
                             print(err)
                             return False    # Return failure
@@ -849,20 +853,23 @@ class Worker_DAQ(QtCore.QObject):
             
             Default: :const:`10`.
 
-        DEBUG (:obj:`bool`, optional):
+        debug (:obj:`bool`, optional):
             Print debug info to the terminal? Warning: Slow! Do not leave on
             unintentionally.
             
             Default: :const:`False`.
     
     Attributes:
-        qdev ():
-            TODO: description.
-        
-        dev ():
-            TODO: description. Shorthand for :obj:`qdev.dev`.
+        qdev (:class:`QDeviceIO`):
+            Link to the parent :class:`QDeviceIO` class instance.
+            
+        dev (:obj:`object` | :obj:`None`):
+            Reference to the user-supplied *device* class instance containing
+            I/O methods, automatically set when calling
+            :meth:`QDeviceIO.create_worker_DAQ`. It is a shorthand for
+            :obj:`self.qdev.dev`.
     
-        DAQ_function (:obj:`function|None`):
+        DAQ_function (:obj:`function` | :obj:`None`):
             See the similarly named initialization parameter, 
             :ref:`here <DAQ_function>`.
         
@@ -877,19 +884,19 @@ class Worker_DAQ(QtCore.QObject):
 
     def __init__(
         self,
+        qdev,
         *,
-        qdev=None,
         DAQ_trigger=DAQ_trigger.INTERNAL_TIMER,
         DAQ_function=None,
         DAQ_interval_ms=100,
         DAQ_timer_type=QtCore.Qt.CoarseTimer,
         critical_not_alive_count=1,
         calc_DAQ_rate_every_N_iter=10,  # TODO: set default value to 'auto' and implement further down. When integer, take over that value.
-        DEBUG=False,
+        debug=False,
     ):
         super().__init__()
-        self.DEBUG = DEBUG
-        self.DEBUG_color = ANSI.CYAN
+        self.debug = debug
+        self.debug_color = ANSI.CYAN
 
         self.qdev = qdev
         self.dev = None if qdev is None else qdev.dev
@@ -932,11 +939,11 @@ class Worker_DAQ(QtCore.QObject):
         self._prev_tick_DAQ_update = 0
         self._prev_tick_DAQ_rate = 0
 
-        if self.DEBUG:
+        if self.debug:
             tprint(
                 "Worker_DAQ  %s: init @ thread %s"
                 % (self.dev.name, _cur_thread_name()),
-                self.DEBUG_color,
+                self.debug_color,
             )
 
     @_coverage_resolve_trace
@@ -950,20 +957,20 @@ class Worker_DAQ(QtCore.QObject):
             # of method 'start_worker_###()'.
             time.sleep(0.05)
 
-            if self.DEBUG:
+            if self.debug:
                 tprint(
                     "Worker_DAQ  %s: start confirmed" % self.dev.name,
-                    self.DEBUG_color,
+                    self.debug_color,
                 )
 
             # Send confirmation
             self.qdev._qwc_worker_DAQ_started.wakeAll()
 
-        if self.DEBUG:
+        if self.debug:
             tprint(
                 "Worker_DAQ  %s: starting @ thread %s"
                 % (self.dev.name, _cur_thread_name()),
-                self.DEBUG_color,
+                self.debug_color,
             )
 
         # INTERNAL_TIMER
@@ -983,11 +990,11 @@ class Worker_DAQ(QtCore.QObject):
             while self._running:
                 locker_wait.relock()
 
-                if self.DEBUG:
+                if self.debug:
                     tprint(
                         "Worker_DAQ  %s: waiting for wake trigger"
                         % self.dev.name,
-                        self.DEBUG_color,
+                        self.debug_color,
                     )
 
                 if init:
@@ -996,10 +1003,10 @@ class Worker_DAQ(QtCore.QObject):
 
                 self._qwc.wait(self._mutex_wait)
 
-                if self.DEBUG:
+                if self.debug:
                     tprint(
                         "Worker_DAQ  %s: wake confirmed" % self.dev.name,
-                        self.DEBUG_color,
+                        self.debug_color,
                     )
 
                 # Needed check to prevent _perform_DAQ() at final wake up
@@ -1009,10 +1016,10 @@ class Worker_DAQ(QtCore.QObject):
 
                 locker_wait.unlock()
 
-            if self.DEBUG:
+            if self.debug:
                 tprint(
                     "Worker_DAQ  %s: stop confirmed" % self.dev.name,
-                    self.DEBUG_color,
+                    self.debug_color,
                 )
 
             # Wait a tiny amount for the other thread to have entered the
@@ -1028,11 +1035,11 @@ class Worker_DAQ(QtCore.QObject):
                     self._pause = True
                     self._paused = True
 
-                    if self.DEBUG:
+                    if self.debug:
                         tprint(
                             "Worker_DAQ  %s: starting up paused"
                             % self.dev.name,
-                            self.DEBUG_color,
+                            self.debug_color,
                         )
 
                     self.qdev.signal_DAQ_paused.emit()
@@ -1042,11 +1049,11 @@ class Worker_DAQ(QtCore.QObject):
 
                 if self._pause:  # == True
                     if self._pause != self._paused:
-                        if self.DEBUG and not init:
+                        if self.debug and not init:
                             tprint(
                                 "Worker_DAQ  %s: pause confirmed"
                                 % self.dev.name,
-                                self.DEBUG_color,
+                                self.debug_color,
                             )
                         self.qdev.signal_DAQ_paused.emit()
                         self._paused = True
@@ -1055,20 +1062,20 @@ class Worker_DAQ(QtCore.QObject):
 
                 else:  # == False
                     if self._pause != self._paused:
-                        if self.DEBUG:
+                        if self.debug:
                             tprint(
                                 "Worker_DAQ  %s: unpause confirmed"
                                 % self.dev.name,
-                                self.DEBUG_color,
+                                self.debug_color,
                             )
                         self._paused = False
 
                     self._perform_DAQ()
 
-            if self.DEBUG:
+            if self.debug:
                 tprint(
                     "Worker_DAQ  %s: stop confirmed" % self.dev.name,
-                    self.DEBUG_color,
+                    self.debug_color,
                 )
 
             # Wait a tiny amount for 'create_worker_DAQ()', which is running
@@ -1087,11 +1094,11 @@ class Worker_DAQ(QtCore.QObject):
         locker = QtCore.QMutexLocker(self.dev.mutex)
         self.qdev.update_counter_DAQ += 1
 
-        if self.DEBUG:
+        if self.debug:
             tprint(
                 "Worker_DAQ  %s: lock   # %i"
                 % (self.dev.name, self.qdev.update_counter_DAQ),
-                self.DEBUG_color,
+                self.debug_color,
             )
 
         # Keep track of the obtained DAQ update interval
@@ -1145,11 +1152,11 @@ class Worker_DAQ(QtCore.QObject):
         #   End user-supplied DAQ function
         # ----------------------------------
 
-        if self.DEBUG:
+        if self.debug:
             tprint(
                 "Worker_DAQ  %s: unlock # %i"
                 % (self.dev.name, self.qdev.update_counter_DAQ),
-                self.DEBUG_color,
+                self.debug_color,
             )
 
         locker.unlock()
@@ -1159,17 +1166,17 @@ class Worker_DAQ(QtCore.QObject):
     def _stop(self):
         """Stop the worker to prepare for quitting the worker thread.
         """
-        if self.DEBUG:
-            tprint("Worker_DAQ  %s: stopping" % self.dev.name, self.DEBUG_color)
+        if self.debug:
+            tprint("Worker_DAQ  %s: stopping" % self.dev.name, self.debug_color)
 
         if self._DAQ_trigger == DAQ_trigger.INTERNAL_TIMER:
             # NOTE: The timer /must/ be stopped from the worker_DAQ thread!
             self._timer.stop()
 
-            if self.DEBUG:
+            if self.debug:
                 tprint(
                     "Worker_DAQ  %s: stop confirmed" % self.dev.name,
-                    self.DEBUG_color,
+                    self.debug_color,
                 )
 
             # Wait a tiny amount for the other thread to have entered the
@@ -1197,7 +1204,7 @@ class Worker_DAQ(QtCore.QObject):
         This method can be called from another thread.
         """
         if self._DAQ_trigger == DAQ_trigger.CONTINUOUS:
-            if self.DEBUG:
+            if self.debug:
                 tprint(
                     "Worker_DAQ  %s: pause requested..." % self.dev.name,
                     ANSI.WHITE,
@@ -1216,7 +1223,7 @@ class Worker_DAQ(QtCore.QObject):
         This method can be called from another thread.
         """
         if self._DAQ_trigger == DAQ_trigger.CONTINUOUS:
-            if self.DEBUG:
+            if self.debug:
                 tprint(
                     "Worker_DAQ  %s: unpause requested..." % self.dev.name,
                     ANSI.WHITE,
@@ -1239,7 +1246,7 @@ class Worker_DAQ(QtCore.QObject):
         This method can be called from another thread.
         """
         if self._DAQ_trigger == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
-            if self.DEBUG:
+            if self.debug:
                 tprint(
                     "Worker_DAQ  %s: wake requested..." % self.dev.name,
                     ANSI.WHITE,
@@ -1270,8 +1277,14 @@ class Worker_jobs(QtCore.QObject):
     .. _`Worker_jobs_args`:
         
     Args:
+        qdev (:class:`QDeviceIO`):
+            Link to the parent :class:`QDeviceIO` class instance, automatically
+            set when being initialized by :meth:`QDeviceIO.create_worker_jobs`.
+            
+            .. _`jobs_function`:
+        
         jobs_function (:obj:`function` | :obj:`None`, optional):
-            Reference to an user-supplied function performing an alternative
+            Reference to a user-supplied function performing an alternative
             job handling when processing the worker_jobs queue.
             
             Default: :obj:`None`.
@@ -1316,39 +1329,42 @@ class Worker_jobs(QtCore.QObject):
                 def my_jobs_function(func, args):
                     if func == "query_id?":
                         # Query the device for its identity string
-                        [success, ans_str] = self.dev.query("id?")
+                        [success, ans_str] = dev.query("id?")
                         # And store the reply 'ans_str' in another variable
                         # at a higher scope or do stuff with it here.
                     else:
                         # Default job handling where, e.g.
-                        # func = self.dev.write
+                        # func = dev.write
                         # args = ("toggle LED",)
                         func(*args)
 
-        DEBUG (:obj:`bool`, optional):
+        debug (:obj:`bool`, optional):
             Print debug info to the terminal? Warning: Slow! Do not leave on
             unintentionally.
             
             Default: :const:`False`.
        
     Attributes:
-        qdev ():
-            TODO: description.
-        
-        dev ():
-            TODO: description. Shorthand for :obj:`qdev.dev`.
+        qdev (:class:`QDeviceIO`):
+            Link to the parent :class:`QDeviceIO` class instance.
+            
+        dev (:obj:`object` | :obj:`None`):
+            Reference to the user-supplied *device* class instance containing
+            I/O methods, automatically set when calling
+            :meth:`QDeviceIO.create_worker_jobs`. It is a shorthand for
+            :obj:`self.qdev.dev`.
     
-        jobs_function (:obj:`function|None`):
+        jobs_function (:obj:`function` | :obj:`None`):
             See the similarly named initialization parameter, 
-            :ref:`here <Worker_jobs_args>`.
+            :ref:`here <jobs_function>`.
     """
 
     def __init__(
-        self, *, qdev=None, jobs_function=None, DEBUG=False,
+        self, qdev, *, jobs_function=None, debug=False,
     ):
         super().__init__(None)
-        self.DEBUG = DEBUG
-        self.DEBUG_color = ANSI.YELLOW
+        self.debug = debug
+        self.debug_color = ANSI.YELLOW
 
         self.qdev = qdev
         self.dev = None if qdev is None else qdev.dev
@@ -1366,11 +1382,11 @@ class Worker_jobs(QtCore.QObject):
         self._queue = queue.Queue()
         self._queue.put(self._sentinel)
 
-        if self.DEBUG:
+        if self.debug:
             tprint(
                 "Worker_jobs %s: init @ thread %s"
                 % (self.dev.name, _cur_thread_name()),
-                self.DEBUG_color,
+                self.debug_color,
             )
 
     @_coverage_resolve_trace
@@ -1384,20 +1400,20 @@ class Worker_jobs(QtCore.QObject):
             # of method 'start_worker_###()'.
             time.sleep(0.05)
 
-            if self.DEBUG:
+            if self.debug:
                 tprint(
                     "Worker_jobs %s: start confirmed" % self.dev.name,
-                    self.DEBUG_color,
+                    self.debug_color,
                 )
 
             # Send confirmation
             self.qdev._qwc_worker_jobs_started.wakeAll()
 
-        if self.DEBUG:
+        if self.debug:
             tprint(
                 "Worker_jobs %s: starting @ thread %s"
                 % (self.dev.name, _cur_thread_name()),
-                self.DEBUG_color,
+                self.debug_color,
             )
 
         locker_wait = QtCore.QMutexLocker(self._mutex_wait)
@@ -1406,10 +1422,10 @@ class Worker_jobs(QtCore.QObject):
         while self._running:
             locker_wait.relock()
 
-            if self.DEBUG:
+            if self.debug:
                 tprint(
                     "Worker_jobs %s: waiting for wake trigger" % self.dev.name,
-                    self.DEBUG_color,
+                    self.debug_color,
                 )
 
             if init:
@@ -1418,10 +1434,10 @@ class Worker_jobs(QtCore.QObject):
 
             self._qwc.wait(self._mutex_wait)
 
-            if self.DEBUG:
+            if self.debug:
                 tprint(
                     "Worker_jobs %s: wake confirmed" % self.dev.name,
-                    self.DEBUG_color,
+                    self.debug_color,
                 )
 
             # Needed check to prevent _perform_jobs() at final wake up
@@ -1431,10 +1447,10 @@ class Worker_jobs(QtCore.QObject):
 
             locker_wait.unlock()
 
-        if self.DEBUG:
+        if self.debug:
             tprint(
                 "Worker_jobs %s: stop confirmed" % self.dev.name,
-                self.DEBUG_color,
+                self.debug_color,
             )
 
         # Wait a tiny amount for the other thread to have entered the
@@ -1452,11 +1468,11 @@ class Worker_jobs(QtCore.QObject):
         locker = QtCore.QMutexLocker(self.dev.mutex)
         self.qdev.update_counter_jobs += 1
 
-        if self.DEBUG:
+        if self.debug:
             tprint(
                 "Worker_jobs %s: lock   # %i"
                 % (self.dev.name, self.qdev.update_counter_jobs),
-                self.DEBUG_color,
+                self.debug_color,
             )
 
         """Process all jobs until the queue is empty. We must iterate 2
@@ -1469,18 +1485,18 @@ class Worker_jobs(QtCore.QObject):
                 func = job[0]
                 args = job[1:]
 
-                if self.DEBUG:
+                if self.debug:
                     if type(func) == str:
                         tprint(
                             "Worker_jobs %s: %s %s"
                             % (self.dev.name, func, args),
-                            self.DEBUG_color,
+                            self.debug_color,
                         )
                     else:
                         tprint(
                             "Worker_jobs %s: %s %s"
                             % (self.dev.name, func.__name__, args),
-                            self.DEBUG_color,
+                            self.debug_color,
                         )
 
                 if self.jobs_function is None:
@@ -1497,11 +1513,11 @@ class Worker_jobs(QtCore.QObject):
             # Put sentinel back in
             self._queue.put(self._sentinel)
 
-        if self.DEBUG:
+        if self.debug:
             tprint(
                 "Worker_jobs %s: unlock # %i"
                 % (self.dev.name, self.qdev.update_counter_jobs),
-                self.DEBUG_color,
+                self.debug_color,
             )
 
         locker.unlock()
@@ -1511,9 +1527,9 @@ class Worker_jobs(QtCore.QObject):
     def _stop(self):
         """Stop the worker to prepare for quitting the worker thread
         """
-        if self.DEBUG:
+        if self.debug:
             tprint(
-                "Worker_jobs %s: stopping" % self.dev.name, self.DEBUG_color,
+                "Worker_jobs %s: stopping" % self.dev.name, self.debug_color,
             )
 
         self._running = False
@@ -1553,7 +1569,7 @@ class Worker_jobs(QtCore.QObject):
         
         This method can be called from another thread.
         """
-        if self.DEBUG:
+        if self.debug:
             tprint(
                 "Worker_jobs %s: wake requested..." % self.dev.name, ANSI.WHITE,
             )

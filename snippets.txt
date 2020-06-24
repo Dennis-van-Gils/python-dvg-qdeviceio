@@ -120,3 +120,33 @@ MAIN CONTENTS:
    :width: 100%
    
    * - **METHODS**
+   
+   
+"""
+DAQ_trigger.INTERNAL_TIMER
+    I/O device slaved to an external timer originating from Worker_DAQ
+
+DAQ_trigger.SINGLE_SHOT_WAKE_UP
+    Typical use case: Multiple I/O devices that are slaved to a common single
+    external timer originating from a higher scope Python module than 
+    this 'DvG_QdeviceIO' module.
+    See Keysight_N8700_PSU for an example.
+    
+    def simultaneously_trigger_update_multiple_devices():
+        for qdevio in qdevios:
+            qdevio.wake_up()
+            
+    timer_qdevios = QtCore.QTimer()
+    timer_qdevios.timeout.connect(simultaneously_trigger_update_multiple_devices)
+    timer_qdevios.start(UPDATE_INTERVAL_MS)
+
+DAQ_trigger.CONTINUOUS
+    Typical use case: I/O device acting as a master and outputting a continuous
+    stream of data. The worker_DAQ will start up in suspended mode (idling).
+    This allows for a start command to be send to the I/O device, for instance,
+    over a Worker_jobs instance. Once the start command has been received and
+    processed by the device, such that it will output a continuous stream of
+    data, worker_DAQ can be taken out of suspended mode and have it listen and
+    receive this data stream.
+    
+"""
