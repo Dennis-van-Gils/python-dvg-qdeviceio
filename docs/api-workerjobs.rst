@@ -3,6 +3,7 @@ Worker_jobs
 .. autoclass:: DvG_QDeviceIO.Worker_jobs
    :members: ,
    :member-order: bysource
+   :show-inheritance:
 
 Methods
 --------------------

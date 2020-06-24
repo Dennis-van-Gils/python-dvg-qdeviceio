@@ -56,6 +56,29 @@ def _cur_thread_name():
 
 @unique
 class DAQ_trigger(IntEnum):
+    """An enumeration decoding different modes of operation for
+    :class:`Worker_DAQ` to perform an *update*.
+
+    .. image:: DAQ_trigger_diagram.png
+        :width: 800
+
+    :INTERNAL_TIMER:
+        
+        I/O device slaved to an external timer originating from Worker_DAQ
+
+
+
+    :SINGLE_SHOT_WAKE_UP:
+
+        Blah
+
+
+
+    :CONTINUOUS:
+
+        Blah
+    """
+
     [INTERNAL_TIMER, SINGLE_SHOT_WAKE_UP, CONTINUOUS] = range(3)
 
 
@@ -65,41 +88,41 @@ class DAQ_trigger(IntEnum):
 
 
 class QDeviceIO(QtCore.QObject):
-    """This class provides the base framework for multithreaded periodical data
+    """This class provides the framework for multithreaded periodical data
     acquisition (DAQ) and communication with an I/O device.
 
     All device I/O operations will be offloaded to *workers*, each running in
     their dedicated thread. The following workers can be created:
 
     * :class:`Worker_DAQ` :
-        
+
         Periodically acquires data from the device.
-        
+
         Created by calling :meth:`create_worker_DAQ`.
 
     * :class:`Worker_jobs` :
-        
+
         Maintains a thread-safe queue where desired device I/O operations,
         called *jobs*, can be put onto. It will send out the queued jobs
         first-in, first-out (FIFO) to the device.
-        
+
         Created by calling :meth:`create_worker_jobs`.
-        
+
     Tip:
         This class can be mixed into your own specific `QDeviceIO` class. E.g.,
         you could make a derived class, named :class:`QDeviceIO_Arduino`, that
         hides the specifics of creating :class:`Worker_DAQ` and
         :class:`Worker_jobs` from the user::
-        
+
             class QDeviceIO_Arduino(DvG_QDeviceIO.QDeviceIO, QtCore.QObject):
                 def __init__(
                     self, dev=None, DAQ_function=None, debug=False, parent=None,
                 ):
                     super(QDeviceIO_Arduino, self).__init__(parent=parent)
-    
+
                     # In the case of a derived class, we have to attach the device ourselves
                     self.attach_device(dev)
-                    
+
                     # Fix the DAQ to a `precise` 10 Hz internal timer
                     self.create_worker_DAQ(
                         DAQ_trigger                = DAQ_trigger.INTERNAL_TIMER,
@@ -110,72 +133,72 @@ class QDeviceIO(QtCore.QObject):
                         calc_DAQ_rate_every_N_iter = 10,
                         debug                      = debug,
                     )
-                    
+
                     # Standard jobs handling
                     self.create_worker_jobs(debug=debug)
-        
+
         Now, the user only has to call the following to get up and running::
-            
+
             qdev_ard = QDeviceIO_Arduino(
                 dev=my_Arduino_device,
                 DAQ_function=my_DAQ_function
             )
             qdev_ard.start()
-            
+
     .. _`QDeviceIO_args`:
-        
+
     Args:
         dev (:obj:`object` | :obj:`None`, optional):
-            Reference to a user-supplied *device* class instance containing 
+            Reference to a user-supplied *device* class instance containing
             I/O methods. In addition, `dev` should also have the following
             members. If not, they will be injected into the `dev` instance for
             you:
-            
+
                 * **dev.name** (:obj:`str`) -- Short display name for the \
                     device. Default: "myDevice".
-                
+
                 * **dev.mutex** (:class:`PyQt5.QtCore.QMutex`) -- To allow \
                     for properly multithreaded device I/O operations. It will \
                     be used by :class:`Worker_DAQ` and :class:`Worker_jobs`.
-                
+
                 * **dev.is_alive** (:obj:`bool`) -- Device is up and \
                     communicatable? Default: :const:`True`.
-                    
+
             Default: :obj:`None`
 
     .. _`QDeviceIO_attributes`:
-    
+
     Attributes:
         dev (:obj:`object` | :obj:`None`):
             Reference to a user-supplied *device* class instance containing
             I/O methods.
-        
+
         worker_DAQ (:class:`Worker_DAQ` | :obj:`None`):
             Instance of :class:`Worker_DAQ` as created by
             :meth:`create_worker_DAQ`. This worker runs in a dedicated thread.
-        
+
         worker_jobs (:class:`Worker_jobs` | :obj:`None`):
-            Instance of :class:`Worker_jobs` as created by 
+            Instance of :class:`Worker_jobs` as created by
             :meth:`create_worker_jobs`. This worker runs in a dedicated thread.
-        
+
         update_counter_DAQ (:obj:`int`):
             Increments every time :attr:`worker_DAQ` tries to update.
-        
+
         update_counter_jobs (:obj:`int`):
             Increments every time :attr:`worker_jobs` tries to update.
-        
+
         obtained_DAQ_interval_ms (:obj:`int` | :obj:`numpy.nan`):
             Obtained time interval in milliseconds since the previous
             :attr:`worker_DAQ` update.
-        
+
         obtained_DAQ_rate_Hz (:obj:`float` | :obj:`numpy.nan`):
             Obtained acquisition rate of :attr:`worker_DAQ` in hertz. It will
             take several DAQ updates for the value to be properly calculated,
             and till that time it will be :obj:`numpy.nan`.
-            
+
         not_alive_counter_DAQ (:obj:`int`):
             Number of consecutive failed attempts to update :attr:`worker_DAQ`,
-            presumably due to device I/O errors. Will be reset to 0 once a 
+            presumably due to device I/O errors. Will be reset to 0 once a
             successful DAQ update occurs. See the
             :obj:`signal_connection_lost()` mechanism.
     """
@@ -184,13 +207,13 @@ class QDeviceIO(QtCore.QObject):
     """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by :class:`Worker_DAQ` when its
     :attr:`~Worker_DAQ.DAQ_function` has run and finished, either succesfully or
     not.
-    
+
     Tip:
         It can be useful to connect this signal to your own slot containing
         your GUI redraw routine, as such::
-            
+
             qdeviceio.signal_DAQ_updated.connect(my_GUI_redraw_routine)
-            
+
         where ``qdeviceio`` is your instance of :class:`QDeviceIO`.
     """
 
@@ -258,22 +281,22 @@ class QDeviceIO(QtCore.QObject):
         containing I/O methods. In addition, `dev` should also have the
         following members. If not, they will be injected into the `dev`
         instance for you:
-            
+
             * **dev.name** (:obj:`str`) -- Short display name for the \
                 device. Default: "myDevice".
-            
+
             * **dev.mutex** (:class:`PyQt5.QtCore.QMutex`) -- To allow \
                 for properly multithreaded device I/O operations. It will \
                 be used by :class:`Worker_DAQ` and :class:`Worker_jobs`.
-            
+
             * **dev.is_alive** (:obj:`bool`) -- Device is up and \
                 communicatable? Default: :const:`True`.
-    
+
         Args:
             dev (:obj:`object`):
                 Reference to a user-supplied *device* class instance containing
                 I/O methods.
-        
+
         Returns:
             True if successful, False otherwise.
         """
@@ -365,14 +388,14 @@ class QDeviceIO(QtCore.QObject):
                 change to higher priority by setting `priority` to, e.g.,
                 :const:`PyQt5.QtCore.QThread.TimeCriticalPriority`. Be aware that this
                 is resource heavy, so use sparingly.
-                
+
                 Default: :const:`PyQt5.QtCore.QThread.InheritPriority`.
-            
+
             jobs_priority (:obj:`PyQt5.QtCore.QThread.Priority`, optional):
                 Like `DAQ_priority`.
-                
+
                 Default: :const:`PyQt5.QtCore.QThread.InheritPriority`.
-        
+
         Returns:
             True if successful, False otherwise.
         """
@@ -515,7 +538,7 @@ class QDeviceIO(QtCore.QObject):
 
     def quit(self):
         """Stop all of any running workers and close their respective threads.
-        
+
         Returns:
             True if successful, False otherwise.
         """
@@ -523,7 +546,7 @@ class QDeviceIO(QtCore.QObject):
 
     def quit_worker_DAQ(self):
         """Stop :attr:`worker_DAQ` and close its thread.
-        
+
         Returns:
             True if successful, False otherwise.
         """
@@ -589,7 +612,7 @@ class QDeviceIO(QtCore.QObject):
 
     def quit_worker_jobs(self):
         """Stop :attr:`worker_jobs` and close its thread.
-        
+
         Returns:
             True if successful, False otherwise.
         """
@@ -685,7 +708,7 @@ class QDeviceIO(QtCore.QObject):
         """Put a job on the :attr:`worker_jobs` queue and send out the full
         queue first-in, first-out to the device until empty. Once finished, it
         will emit :obj:`signal_jobs_updated()`.
-        
+
         See :meth:`add_to_jobs_queue` for details on the parameters.
         """
         if self.worker_jobs is not None:
@@ -700,7 +723,7 @@ class QDeviceIO(QtCore.QObject):
                 Intended to be a reference to a device I/O method such as
                 ``dev.write()``. Any arguments to be passed to the I/O method
                 need to be set in the :attr:`pass_args` parameter.
-                
+
                 You have the freedom to be creative and put, e.g., strings
                 decoding special instructions on the queue as well. Handling
                 such special cases must be programmed by supplying the argument
@@ -712,11 +735,11 @@ class QDeviceIO(QtCore.QObject):
                 Arguments to be passed to the instruction. Must be given as a
                 :obj:`tuple`, but for convenience any other type will also be
                 accepted if it just concerns a single argument.
-                
+
                 Default: :obj:`()`.
-                
+
         Example::
-            
+
             add_to_jobs_queue(dev.write, "toggle LED")
         """
         if self.worker_jobs is not None:
@@ -743,7 +766,7 @@ class Worker_DAQ(QtCore.QObject):
     :ref:`DAQ_function <arg_DAQ_function>`, containing device I/O operations and
     subsequent data processing, every time the worker *updates*. There are
     different modes of operation for this worker to perform an *update*. This is
-    set by initialization parameter :class:`DAQ_trigger`.
+    set by initialization parameter :ref:`DAQ_trigger <arg_DAQ_trigger>`.
 
     An instance of this worker will be created and placed inside a new thread by
     a call to :meth:`QDeviceIO.create_worker_DAQ`.
@@ -760,36 +783,38 @@ class Worker_DAQ(QtCore.QObject):
     transmission. See initialization parameter :obj:`critical_not_alive_count`.
 
     .. _`Worker_DAQ_args`:
-        
+
     Args:
         qdev (:class:`QDeviceIO`):
             Link to the parent :class:`QDeviceIO` class instance, automatically
             set when being initialized by :meth:`QDeviceIO.create_worker_DAQ`.
-            
+
+            .. _`arg_DAQ_trigger`:
+
         DAQ_trigger (:obj:`int`, optional):
             Mode of operation. See :class:`DAQ_trigger`.
-            
+
             Default: :const:`DAQ_trigger.INTERNAL_TIMER`.
-            
+
             .. _`arg_DAQ_function`:
-            
+
         DAQ_function (:obj:`function` | :obj:`None`, optional):
             Reference to a user-supplied function containing the device
             I/O operations and subsequent data processing, to be invoked
-            every DAQ update. 
-            
+            every DAQ update.
+
             Default: :obj:`None`.
-            
+
             Important:
                 The function must return :const:`True` when the communication
                 with the device was successful, and :const:`False` otherwise.
 
             Warning:
-                 No direct changes to the GUI should be performed inside this 
+                 No direct changes to the GUI should be performed inside this
                  function. If you do anyhow, expect a penalty in the timing
                  stability of this worker. Instead, connect to
                  :meth:`QDeviceIO.signal_DAQ_updated` from out of the *main/GUI*
-                 thread to instigate GUI changes when needed. 
+                 thread to instigate GUI changes when needed.
 
             Example:
                 Pseudo-code, where ``time`` and ``temperature`` are variables
@@ -801,26 +826,26 @@ class Worker_DAQ(QtCore.QObject):
                 ``dev.query_temperature()`` are ``success`` as boolean and
                 ``reply`` as a tuple containing a time stamp and a temperature
                 reading. ::
-                                        
+
                     def my_DAQ_function():
                         [success, reply] = dev.query_temperature()
                         if not(success):
                             print("Device IOerror")
                             return False    # Return failure
-        
+
                         # Parse readings into separate variables and store them
                         try:
                             [time, temperature] = reply
                         except Exception as err:
                             print(err)
                             return False    # Return failure
-        
+
                         return True         # Return success
 
         DAQ_interval_ms (:obj:`int`, optional):
             Only useful in mode :const:`DAQ_trigger.INTERNAL_TIMER`. Desired
             data acquisition update interval in milliseconds.
-            
+
             Default: :const:`100`.
 
         DAQ_timer_type (:obj:`PyQt5.QtCore.Qt.TimerType`, optional):
@@ -830,7 +855,7 @@ class Worker_DAQ(QtCore.QObject):
             improved by setting it to :const:`PyQt5.QtCore.Qt.PreciseTimer` with
             a ~1 ms granularity depending on the OS, but it is resource heavy so
             use sparingly.
-            
+
             Default: :const:`PyQt5.QtCore.Qt.CoarseTimer`.
 
             .. _`arg_critical_not_alive_count`:
@@ -840,43 +865,43 @@ class Worker_DAQ(QtCore.QObject):
             communication failures with the device, before hope is given up
             and a :meth:`QDeviceIO.signal_connection_lost` is emitted. Use at
             your own discretion.
-            
+
             Default: :const:`1`.
-            
+
             .. _`arg_calc_DAQ_rate_every_N_iter`:
-            
+
         calc_DAQ_rate_every_N_iter (:obj:`int`, optional):
             The increase the accuracy of calculating the DAQ rate, it is advised
             to average over several iterations, i.e. DAQ updates. It will take
             at least *N* updates before :attr:`QDeviceIO.obtained_DAQ_rate_Hz`
             will contain the calculated rate.
-            
+
             Default: :const:`10`.
 
         debug (:obj:`bool`, optional):
             Print debug info to the terminal? Warning: Slow! Do not leave on
             unintentionally.
-            
+
             Default: :const:`False`.
-    
+
     Attributes:
         qdev (:class:`QDeviceIO`):
             Link to the parent :class:`QDeviceIO` class instance.
-            
+
         dev (:obj:`object` | :obj:`None`):
             Reference to the user-supplied *device* class instance containing
             I/O methods, automatically set when calling
             :meth:`QDeviceIO.create_worker_DAQ`. It is a shorthand for
             :obj:`self.qdev.dev`.
-    
+
         DAQ_function (:obj:`function` | :obj:`None`):
             See the similarly named :ref:`initialization parameter
             <arg_DAQ_function>`.
-        
+
         critical_not_alive_count (:obj:`int`):
             See the similarly named :ref:`initialization parameter
             <arg_critical_not_alive_count>`.
-        
+
         calc_DAQ_rate_every_N_iter (:obj:`int`):
             See the similarly named :ref:`initialization parameter
             <arg_calc_DAQ_rate_every_N_iter>`.
@@ -1200,7 +1225,7 @@ class Worker_DAQ(QtCore.QObject):
     def pause(self):
         """Only useful in mode :const:`DAQ_trigger.CONTINUOUS`. See the
         description at :meth:`QDeviceIO.pause_DAQ`.
-        
+
         This method can be called from another thread.
         """
         if self._DAQ_trigger == DAQ_trigger.CONTINUOUS:
@@ -1219,7 +1244,7 @@ class Worker_DAQ(QtCore.QObject):
     def unpause(self):
         """Only useful in mode :const:`DAQ_trigger.CONTINUOUS`. See the
         description at :meth:`QDeviceIO.unpause_DAQ`.
-        
+
         This method can be called from another thread.
         """
         if self._DAQ_trigger == DAQ_trigger.CONTINUOUS:
@@ -1242,7 +1267,7 @@ class Worker_DAQ(QtCore.QObject):
     def wake_up(self):
         """Only useful in mode :const:`DAQ_trigger.SINGLE_SHOT_WAKE_UP`. See the
         description at :meth:`QDeviceIO.wake_up_DAQ`.
-        
+
         This method can be called from another thread.
         """
         if self._DAQ_trigger == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
@@ -1264,7 +1289,7 @@ class Worker_jobs(QtCore.QObject):
     """This worker maintains a thread-safe queue where desired device I/O
     operations, called *jobs*, can be put onto. The worker will send out the
     operations to the device, first-in, first-out (FIFO), until the queue is
-    empty again. The manner in which each job gets handled is explained by 
+    empty again. The manner in which each job gets handled is explained by
     initialization parameter :ref:`jobs_function <arg_jobs_function>`.
 
     An instance of this worker will be created and placed inside a new thread by
@@ -1276,57 +1301,57 @@ class Worker_jobs(QtCore.QObject):
     emptied the queue, the thread will go back to sleep again.
 
     .. _`Worker_jobs_args`:
-        
+
     Args:
         qdev (:class:`QDeviceIO`):
             Link to the parent :class:`QDeviceIO` class instance, automatically
             set when being initialized by :meth:`QDeviceIO.create_worker_jobs`.
-            
+
             .. _`arg_jobs_function`:
-        
+
         jobs_function (:obj:`function` | :obj:`None`, optional): Routine to be
             performed per job.
-            
+
             Default: :obj:`None`.
-            
+
             When omitted and, hence, left set to the default value :obj:`None`,
             it will perform the default job handling routine, which goes as
             follows:
-                
+
                 ``func`` and ``args`` will be retrieved from the jobs
                 queue and their combination ``func(*args)`` will get executed.
                 Respectively, *func* and *args* correspond to *instruction* and
                 *pass_args* of methods :meth:`send` and :meth:`add_to_queue`.
-                
+
             The default is sufficient when ``func`` corresponds to an
             I/O operation that is an one-way send, i.e. a write operation
             with optionally passed arguments, but without a reply from the
             device.
-            
+
             Alternatively, you can pass it a reference to a user-supplied
             function performing an alternative job handling routine. This
             allows you to get creative and put, e.g., special string messages on
             the queue that decode into, e.g.,
-            
+
             - multiple write operations to be executed as one block,
             - query operations whose return values can be acted upon accordingly,
             - extra data processing in between I/O operations.
-            
+
             The function you supply must take two arguments, where the first
             argument is to be ``func`` and the second argument is to be
             ``args`` of type :obj:`tuple`. Both ``func`` and ``args`` will be
             retrieved from the jobs queue and passed onto your supplied
             function.
-            
+
             Warning:
-                 No direct changes to the GUI should be performed inside this 
+                 No direct changes to the GUI should be performed inside this
                  function. If you do anyhow, expect a penalty in the timing
                  stability of this worker. Instead, connect to
                  :meth:`QDeviceIO.signal_jobs_updated` from out of the
-                 *main/GUI* thread to instigate GUI changes when needed. 
-            
+                 *main/GUI* thread to instigate GUI changes when needed.
+
             Example::
-                
+
                 def my_jobs_function(func, args):
                     if func == "query_id?":
                         # Query the device for its identity string
@@ -1342,19 +1367,19 @@ class Worker_jobs(QtCore.QObject):
         debug (:obj:`bool`, optional):
             Print debug info to the terminal? Warning: Slow! Do not leave on
             unintentionally.
-            
+
             Default: :const:`False`.
-       
+
     Attributes:
         qdev (:class:`QDeviceIO`):
             Link to the parent :class:`QDeviceIO` class instance.
-            
+
         dev (:obj:`object` | :obj:`None`):
             Reference to the user-supplied *device* class instance containing
             I/O methods, automatically set when calling
             :meth:`QDeviceIO.create_worker_jobs`. It is a shorthand for
             :obj:`self.qdev.dev`.
-    
+
         jobs_function (:obj:`function` | :obj:`None`):
             See the similarly named :ref:`initialization parameter
             <arg_jobs_function>`.
@@ -1542,7 +1567,7 @@ class Worker_jobs(QtCore.QObject):
 
     def send(self, instruction, pass_args=()):
         """See the description at :meth:`QDeviceIO.send`.
-        
+
         This method can be called from another thread.
         """
         self.add_to_queue(instruction, pass_args)
@@ -1554,7 +1579,7 @@ class Worker_jobs(QtCore.QObject):
 
     def add_to_queue(self, instruction, pass_args=()):
         """See the description at :meth:`QDeviceIO.add_to_jobs_queue`.
-                
+
         This method can be called from another thread.
         """
         if type(pass_args) is not tuple:
@@ -1567,7 +1592,7 @@ class Worker_jobs(QtCore.QObject):
 
     def process_queue(self):
         """See the description at :meth:`QDeviceIO.process_jobs_queue`.
-        
+
         This method can be called from another thread.
         """
         if self.debug:

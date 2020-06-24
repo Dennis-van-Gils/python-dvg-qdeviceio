@@ -3,6 +3,7 @@ Worker_DAQ
 .. autoclass:: DvG_QDeviceIO.Worker_DAQ
    :members: ,
    :member-order: bysource
+   :show-inheritance:
 
 Methods
 --------------------

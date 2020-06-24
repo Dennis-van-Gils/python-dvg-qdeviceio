@@ -3,6 +3,7 @@ QDeviceIO
 .. autoclass:: DvG_QDeviceIO.QDeviceIO
    :members: ,
    :member-order: bysource
+   :show-inheritance:
 
 Signals
 --------------------
