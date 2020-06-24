@@ -740,10 +740,10 @@ class QDeviceIO(QtCore.QObject):
 class Worker_DAQ(QtCore.QObject):
     """This worker periodically acquires data from the I/O device. It does so by
     calling a user-supplied function, passed as initialization parameter
-    :obj:`DAQ_function`, containing device I/O operations and subsequent data
-    processing, every time the worker *updates*. There are different modes of
-    operation for this worker to perform an *update*. This is set by
-    initialization parameter :class:`DAQ_trigger`.
+    :ref:`DAQ_function <arg_DAQ_function>`, containing device I/O operations and
+    subsequent data processing, every time the worker *updates*. There are
+    different modes of operation for this worker to perform an *update*. This is
+    set by initialization parameter :class:`DAQ_trigger`.
 
     An instance of this worker will be created and placed inside a new thread by
     a call to :meth:`QDeviceIO.create_worker_DAQ`.
@@ -771,7 +771,7 @@ class Worker_DAQ(QtCore.QObject):
             
             Default: :const:`DAQ_trigger.INTERNAL_TIMER`.
             
-            .. _`DAQ_function`:
+            .. _`arg_DAQ_function`:
             
         DAQ_function (:obj:`function` | :obj:`None`, optional):
             Reference to a user-supplied function containing the device
@@ -833,7 +833,7 @@ class Worker_DAQ(QtCore.QObject):
             
             Default: :const:`PyQt5.QtCore.Qt.CoarseTimer`.
 
-            .. _`critical_not_alive_count`:
+            .. _`arg_critical_not_alive_count`:
 
         critical_not_alive_count (:obj:`int`, optional):
             The worker will allow for up to a certain number of consecutive
@@ -843,7 +843,7 @@ class Worker_DAQ(QtCore.QObject):
             
             Default: :const:`1`.
             
-            .. _`calc_DAQ_rate_every_N_iter`:
+            .. _`arg_calc_DAQ_rate_every_N_iter`:
             
         calc_DAQ_rate_every_N_iter (:obj:`int`, optional):
             The increase the accuracy of calculating the DAQ rate, it is advised
@@ -870,16 +870,16 @@ class Worker_DAQ(QtCore.QObject):
             :obj:`self.qdev.dev`.
     
         DAQ_function (:obj:`function` | :obj:`None`):
-            See the similarly named initialization parameter, 
-            :ref:`here <DAQ_function>`.
+            See the similarly named :ref:`initialization parameter
+            <arg_DAQ_function>`.
         
         critical_not_alive_count (:obj:`int`):
-            See the similarly named initialization parameter, 
-            :ref:`here <critical_not_alive_count>`.
+            See the similarly named :ref:`initialization parameter
+            <arg_critical_not_alive_count>`.
         
         calc_DAQ_rate_every_N_iter (:obj:`int`):
-            See the similarly named initialization parameter, 
-            :ref:`here <calc_DAQ_rate_every_N_iter>`.
+            See the similarly named :ref:`initialization parameter
+            <arg_calc_DAQ_rate_every_N_iter>`.
     """
 
     def __init__(
@@ -1264,7 +1264,8 @@ class Worker_jobs(QtCore.QObject):
     """This worker maintains a thread-safe queue where desired device I/O
     operations, called *jobs*, can be put onto. The worker will send out the
     operations to the device, first-in, first-out (FIFO), until the queue is
-    empty again.
+    empty again. The manner in which each job gets handled is explained by 
+    initialization parameter :ref:`jobs_function <arg_jobs_function>`.
 
     An instance of this worker will be created and placed inside a new thread by
     a call to :meth:`QDeviceIO.create_worker_jobs`.
@@ -1281,41 +1282,41 @@ class Worker_jobs(QtCore.QObject):
             Link to the parent :class:`QDeviceIO` class instance, automatically
             set when being initialized by :meth:`QDeviceIO.create_worker_jobs`.
             
-            .. _`jobs_function`:
+            .. _`arg_jobs_function`:
         
-        jobs_function (:obj:`function` | :obj:`None`, optional):
-            Reference to a user-supplied function performing an alternative
-            job handling when processing the worker_jobs queue.
+        jobs_function (:obj:`function` | :obj:`None`, optional): Routine to be
+            performed per job.
             
             Default: :obj:`None`.
             
-            When set to :obj:`None`, it will perform the default job handling
-            routine, which goes as follows:
+            When omitted and, hence, left set to the default value :obj:`None`,
+            it will perform the default job handling routine, which goes as
+            follows:
                 
-                ``func`` and ``args`` will be retrieved from the worker_jobs
-                queue and their combination ``func(*args)`` will get called.
+                ``func`` and ``args`` will be retrieved from the jobs
+                queue and their combination ``func(*args)`` will get executed.
+                Respectively, *func* and *args* correspond to *instruction* and
+                *pass_args* of methods :meth:`send` and :meth:`add_to_queue`.
                 
             The default is sufficient when ``func`` corresponds to an
             I/O operation that is an one-way send, i.e. a write operation
             with optionally passed arguments, but without a reply from the
             device.
-                        
-            Instead of just write operations, you can also put a special
-            instruction on the queue, ... multiple actions as one job.
             
-            Blah...
+            Alternatively, you can pass it a reference to a user-supplied
+            function performing an alternative job handling routine. This
+            allows you to get creative and put, e.g., special string messages on
+            the queue that decode into, e.g.,
             
-            single or
-            multiple query/write/data processing operation(s) on the queue 
+            - multiple write operations to be executed as one block,
+            - query operations whose return values can be acted upon accordingly,
+            - extra data processing in between I/O operations.
             
-            and process each reply
-            of the device accordingly. This is the purpose of this argument:
-            To provide your own *job processing routines* function. The
-            function you supply must take two arguments, where the first
-            argument will be ``func`` and the second argument will be
-            ``args``, which is a tuple. Both ``func`` and ``args`` will be
-            retrieved from the worker_jobs queue and passed onto your
-            own function.
+            The function you supply must take two arguments, where the first
+            argument is to be ``func`` and the second argument is to be
+            ``args`` of type :obj:`tuple`. Both ``func`` and ``args`` will be
+            retrieved from the jobs queue and passed onto your supplied
+            function.
             
             Warning:
                  No direct changes to the GUI should be performed inside this 
@@ -1355,8 +1356,8 @@ class Worker_jobs(QtCore.QObject):
             :obj:`self.qdev.dev`.
     
         jobs_function (:obj:`function` | :obj:`None`):
-            See the similarly named initialization parameter, 
-            :ref:`here <jobs_function>`.
+            See the similarly named :ref:`initialization parameter
+            <arg_jobs_function>`.
     """
 
     def __init__(
