@@ -170,15 +170,15 @@ class DAQ_trigger(IntEnum):
 
 
     Note:
-        There are two common approaches to register a time-stamp to a
-        reading. Either one can rely on a performance timer of the master
-        PC -- suggestion: :class:`time.perf_counter()` -- and log a
-        time stamp inside of your :attr:`~Worker_DAQ.DAQ_function` routine.
-        Or one could rely on a hardware timer build into the I/O device and
-        have this time-stamp additionally being send back to the PC together
-        with the other requested readings. There are pros and cons to each of
-        these approaches, which is a topic in itself and will not be
-        discussed here.
+        There are two common approaches to register a timestamp to a
+        reading. Either one can rely on a software timer of the master PC --
+        suggested: :class:`time.perf_counter()` -- and log a timestamp inside
+        of your :attr:`~Worker_DAQ.DAQ_function` routine. Or one could rely on a
+        hardware timer build into the I/O device and have this timestamp
+        additionally being send back to the PC together with the other requested
+        readings. In general, the latter is superior in high-speed
+        applications. There are pros and cons to each of these approaches, which
+        is a topic in itself and will not be discussed here.
     """
 
     INTERNAL_TIMER = 0  #: :ref:`Link <INTERNAL_TIMER>`
