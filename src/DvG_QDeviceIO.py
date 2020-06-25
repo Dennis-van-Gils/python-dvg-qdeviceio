@@ -57,29 +57,100 @@ def _cur_thread_name():
 @unique
 class DAQ_trigger(IntEnum):
     """An enumeration decoding different modes of operation for
-    :class:`Worker_DAQ` to perform an *update*.
+    :class:`Worker_DAQ` to perform a data-acquisition (DAQ) update.
 
-    .. image:: DAQ_trigger_diagram.png
-        :width: 800
-
-    :INTERNAL_TIMER:
+    .. _`DAQ_trigger_diagram`:
+    .. figure:: DAQ_trigger_diagram.png
+        :target: _images/DAQ_trigger_diagram.png
+        :alt: DAQ_trigger diagram
         
-        I/O device slaved to an external timer originating from Worker_DAQ
+        Typical use-cases for the different :class:`DAQ_trigger` modes of
+        :class:`Worker_DAQ`. Above schematic shows just a single typical
+        implementation for each of the modes, but variations are possible.
+    
+    
+    
+    .. _`INTERNAL_TIMER`:        
+    
+    **INTERNAL_TIMER**:
+    
+        The DAQ time interval is set by a software timer (Type:
+        :class:`PyQt5.QtCore.QTimer`) that is running internal to the
+        :class:`Worker_DAQ` class instance, see :ref:`this diagram
+        <DAQ_trigger_diagram>`. Hence, the PC is acting as a master to the
+        peripheral I/O device. Every 'tick' of the timer will trigger an update
+        in :class:`Worker_DAQ`, i.e., perform a single execution of its
+        :attr:`~Worker_DAQ.DAQ_function` member. The typical maximum granularity
+        of such a software timer is around ~1 ms, depending on the operating
+        system [1]_.
+    
+        Example::
+            
+            qdev = DvG_QDeviceIO.QDeviceIO(my_device)
+            qdev.create_worker_DAQ(
+                DAQ_trigger     = DAQ_trigger.INTERNAL_TIMER,
+                DAQ_function    = my_DAQ_function,
+                DAQ_interval_ms = 10,                     # 100 Hz
+                DAQ_timer_type  = QtCore.Qt.PreciseTimer, # ~1 ms granularity
+            )
+        
+        Typically, the :attr:`~Worker_DAQ.DAQ_function` could instruct the
+        device to report back on a requested quantity; a so-called *query*
+        operation. Either, the requested quantity still needs to get
+        measured by the device and, hence, there is a delay before the
+        device can reply. Or, the requested quantity was already measured
+        and only has to be retreived from a memory buffer on the device. The
+        latter is faster.
+        
+        .. [1] Qt5 C++ API, https://doc.qt.io/qt-5/qtimer.html
 
 
+    
+    .. _`SINGLE_SHOT_WAKE_UP`:
+    
+    **SINGLE_SHOT_WAKE_UP**:
+        
+        The :class:`Worker_DAQ` class instance will update only once, whenever
+        it has received a so-called *wake-up* call. A wake-up can be requested
+        by calling method :meth:`QDeviceIO.wake_up_DAQ`. Like the
+        :const:`~DAQ_trigger.INTERNAL_TIMER` mode, also here the PC acts as a
+        master to the peripheral I/O device(s).
+        
+        There are two distinct ways in which this mode can be used. The one
+        outlined in :ref:`this diagram <DAQ_trigger_diagram>` shows a
+        stand-alone :class:`PyQt5.QtCore.QTimer` that periodically and
+        simultaneously wakes up two different instances of :class:`Worker_DAQ`,
+        each communicating with a different I/O device. It is an easy way to
+        sync the data acquisition between different devices.
+        
+        The other way is aperiodical
+        ... button press by the user
+        ... other condition
 
-    :SINGLE_SHOT_WAKE_UP:
 
+    .. _`CONTINUOUS`:
+    
+    **CONTINUOUS**:
+        
         Blah
-
-
-
-    :CONTINUOUS:
-
-        Blah
+        
+        
+        
+    Note:
+        There are two common approaches to register a time-stamp to a
+        reading. Either, one can rely on a performance timer of the master
+        PC -- I suggest to use :class:`time.perf_counter()` -- and log a
+        time stamp inside of your :attr:`~Worker_DAQ.DAQ_function` routine.
+        Or, one could rely on a hardware timer build into the I/O device and
+        have this time-stamp additionally being send back to the PC together
+        with the requested quantities. There are pros and cons to each of
+        these approaches, which is a topic in itself and will not be
+        discussed here.
     """
 
-    [INTERNAL_TIMER, SINGLE_SHOT_WAKE_UP, CONTINUOUS] = range(3)
+    INTERNAL_TIMER = 0  #: :ref:`Link <INTERNAL_TIMER>`
+    SINGLE_SHOT_WAKE_UP = 1  #: :ref:`Link <SINGLE_SHOT_WAKE_UP>`
+    CONTINUOUS = 2  #: :ref:`Link <CONTINUOUS>`
 
 
 # ------------------------------------------------------------------------------
@@ -212,9 +283,9 @@ class QDeviceIO(QtCore.QObject):
         It can be useful to connect this signal to your own slot containing
         your GUI redraw routine, as such::
 
-            qdeviceio.signal_DAQ_updated.connect(my_GUI_redraw_routine)
+            qdev.signal_DAQ_updated.connect(my_GUI_redraw_routine)
 
-        where ``qdeviceio`` is your instance of :class:`QDeviceIO`.
+        where ``qdev`` is your instance of :class:`QDeviceIO`.
     """
 
     signal_jobs_updated = QtCore.pyqtSignal()

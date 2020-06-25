@@ -4,4 +4,4 @@ DAQ_trigger
    :members:
    :member-order: bysource
    :show-inheritance:
-   :undoc-members:
+   :inherited-members:
