@@ -108,9 +108,9 @@ def test_Worker_DAQ___INTERNAL_TIMER(start_alive=True):
 
     app = create_QApplication()
     dev = FakeDevice(start_alive=start_alive)
-    qdevio = QDeviceIO(dev)
+    qdev = QDeviceIO(dev)
     # fmt: off
-    qdevio.create_worker_DAQ(
+    qdev.create_worker_DAQ(
         DAQ_trigger                = DAQ_trigger.INTERNAL_TIMER,
         DAQ_function               = DAQ_function,
         DAQ_interval_ms            = 100,
@@ -119,8 +119,8 @@ def test_Worker_DAQ___INTERNAL_TIMER(start_alive=True):
         calc_DAQ_rate_every_N_iter = 5,
         debug                      = DEBUG)
     # fmt: on
-    qdevio.signal_DAQ_updated.connect(process_DAQ_updated)
-    assert qdevio.start() == start_alive
+    qdev.signal_DAQ_updated.connect(process_DAQ_updated)
+    assert qdev.start() == start_alive
 
     # Simulate device runtime
     start_time = time.perf_counter()
@@ -132,7 +132,7 @@ def test_Worker_DAQ___INTERNAL_TIMER(start_alive=True):
 
     tprint("About to quit")
     app.processEvents()
-    assert qdevio.quit() == True
+    assert qdev.quit() == True
     app.quit()
 
     if start_alive:
@@ -160,32 +160,32 @@ def test_Worker_DAQ___SINGLE_SHOT_WAKE_UP(start_alive=True):
 
     app = create_QApplication()
     dev = FakeDevice(start_alive=start_alive)
-    qdevio = QDeviceIO(dev)
+    qdev = QDeviceIO(dev)
     # fmt: off
-    qdevio.create_worker_DAQ(
+    qdev.create_worker_DAQ(
         DAQ_trigger                = DAQ_trigger.SINGLE_SHOT_WAKE_UP,
         DAQ_function               = DAQ_function,
         critical_not_alive_count   = 1,
         calc_DAQ_rate_every_N_iter = 5,
         debug                      = DEBUG)
     # fmt: on
-    qdevio.signal_DAQ_updated.connect(process_DAQ_updated)
-    assert qdevio.start() == start_alive
+    qdev.signal_DAQ_updated.connect(process_DAQ_updated)
+    assert qdev.start() == start_alive
 
     # Immediately fire a call to test if the worker is ready for it
-    qdevio.wake_up_DAQ()
+    qdev.wake_up_DAQ()
 
     # Simulate device runtime
     start_time = time.perf_counter()
-    QtCore.QTimer.singleShot(300, lambda: qdevio.wake_up_DAQ())
-    QtCore.QTimer.singleShot(600, lambda: qdevio.wake_up_DAQ())
+    QtCore.QTimer.singleShot(300, lambda: qdev.wake_up_DAQ())
+    QtCore.QTimer.singleShot(600, lambda: qdev.wake_up_DAQ())
     while time.perf_counter() - start_time < 1:
         app.processEvents()
         time.sleep(0.001)  # Do not hog the CPU
 
     tprint("About to quit")
     app.processEvents()
-    assert qdevio.quit() == True
+    assert qdev.quit() == True
     app.quit()
 
     if start_alive:
@@ -211,9 +211,9 @@ def test_Worker_DAQ___CONTINUOUS(start_alive=True):
 
     app = create_QApplication()
     dev = FakeDevice(start_alive=start_alive)
-    qdevio = QDeviceIO(dev)
+    qdev = QDeviceIO(dev)
     # fmt: off
-    qdevio.create_worker_DAQ(
+    qdev.create_worker_DAQ(
         DAQ_trigger                = DAQ_trigger.CONTINUOUS,
         DAQ_function               = DAQ_function,
         critical_not_alive_count   = 1,
@@ -221,19 +221,19 @@ def test_Worker_DAQ___CONTINUOUS(start_alive=True):
         debug                      = DEBUG,
     )
     # fmt: on
-    qdevio.signal_DAQ_updated.connect(process_DAQ_updated)
-    qdevio.signal_DAQ_paused.connect(process_DAQ_paused)
-    assert qdevio.start() == start_alive
+    qdev.signal_DAQ_updated.connect(process_DAQ_updated)
+    qdev.signal_DAQ_paused.connect(process_DAQ_paused)
+    assert qdev.start() == start_alive
 
     # Immediately fire a call to test if the worker is ready for it
-    qdevio.unpause_DAQ()
+    qdev.unpause_DAQ()
 
     # Simulate device runtime
     start_time = time.perf_counter()
-    QtCore.QTimer.singleShot(300, lambda: qdevio.pause_DAQ())
-    QtCore.QTimer.singleShot(600, lambda: qdevio.unpause_DAQ())
-    QtCore.QTimer.singleShot(900, lambda: qdevio.pause_DAQ())
-    QtCore.QTimer.singleShot(1200, lambda: qdevio.unpause_DAQ())
+    QtCore.QTimer.singleShot(300, lambda: qdev.pause_DAQ())
+    QtCore.QTimer.singleShot(600, lambda: qdev.unpause_DAQ())
+    QtCore.QTimer.singleShot(900, lambda: qdev.pause_DAQ())
+    QtCore.QTimer.singleShot(1200, lambda: qdev.unpause_DAQ())
     while time.perf_counter() - start_time < 1.6:
         app.processEvents()
         if dev.count_commands == 12:
@@ -242,7 +242,7 @@ def test_Worker_DAQ___CONTINUOUS(start_alive=True):
 
     tprint("About to quit")
     app.processEvents()
-    assert qdevio.quit() == True
+    assert qdev.quit() == True
     app.quit()
 
     if start_alive:
@@ -263,24 +263,24 @@ def test_Worker_jobs(start_alive=True):
 
     app = create_QApplication()
     dev = FakeDevice(start_alive=start_alive)
-    qdevio = QDeviceIO(dev)
-    qdevio.create_worker_jobs(debug=DEBUG)
-    qdevio.signal_jobs_updated.connect(process_jobs_updated)
-    assert qdevio.start() == start_alive
+    qdev = QDeviceIO(dev)
+    qdev.create_worker_jobs(debug=DEBUG)
+    qdev.signal_jobs_updated.connect(process_jobs_updated)
+    assert qdev.start() == start_alive
 
     # Immediately fire a call to test if the worker is ready for it
-    qdevio.add_to_jobs_queue(dev.fake_query_2)
+    qdev.add_to_jobs_queue(dev.fake_query_2)
 
     # fmt: off
     # Simulate device runtime
     start_time = time.perf_counter()
-    QtCore.QTimer.singleShot(100, lambda: qdevio.process_jobs_queue())
-    QtCore.QTimer.singleShot(200, lambda: qdevio.send(dev.fake_query_2))
-    QtCore.QTimer.singleShot(300, lambda: qdevio.add_to_jobs_queue(dev.fake_command_with_argument, 0))
-    QtCore.QTimer.singleShot(400, lambda: qdevio.add_to_jobs_queue(dev.fake_command_with_argument, 0))
-    QtCore.QTimer.singleShot(500, lambda: qdevio.add_to_jobs_queue(dev.fake_command_with_argument, 0))
-    QtCore.QTimer.singleShot(600, lambda: qdevio.process_jobs_queue())
-    QtCore.QTimer.singleShot(700, lambda: qdevio.send("trigger_illegal_function_call_error"))
+    QtCore.QTimer.singleShot(100, lambda: qdev.process_jobs_queue())
+    QtCore.QTimer.singleShot(200, lambda: qdev.send(dev.fake_query_2))
+    QtCore.QTimer.singleShot(300, lambda: qdev.add_to_jobs_queue(dev.fake_command_with_argument, 0))
+    QtCore.QTimer.singleShot(400, lambda: qdev.add_to_jobs_queue(dev.fake_command_with_argument, 0))
+    QtCore.QTimer.singleShot(500, lambda: qdev.add_to_jobs_queue(dev.fake_command_with_argument, 0))
+    QtCore.QTimer.singleShot(600, lambda: qdev.process_jobs_queue())
+    QtCore.QTimer.singleShot(700, lambda: qdev.send("trigger_illegal_function_call_error"))
     # fmt: on
     while time.perf_counter() - start_time < 1:
         app.processEvents()
@@ -288,7 +288,7 @@ def test_Worker_jobs(start_alive=True):
 
     tprint("About to quit")
     app.processEvents()
-    assert qdevio.quit() == True
+    assert qdev.quit() == True
     app.quit()
 
     if start_alive:
@@ -315,21 +315,21 @@ def test_Worker_jobs__jobs_function():
 
     app = create_QApplication()
     dev = FakeDevice()
-    qdevio = QDeviceIO(dev)
-    qdevio.create_worker_jobs(
+    qdev = QDeviceIO(dev)
+    qdev.create_worker_jobs(
         jobs_function=jobs_function, debug=DEBUG,
     )
-    qdevio.signal_jobs_updated.connect(process_jobs_updated)
-    assert qdevio.start() == True
+    qdev.signal_jobs_updated.connect(process_jobs_updated)
+    assert qdev.start() == True
 
     # Immediately fire a call to test if the worker is ready for it
-    qdevio.send(dev.fake_query_2)
+    qdev.send(dev.fake_query_2)
 
     # fmt: off
     # Simulate device runtime
     start_time = time.perf_counter()
-    QtCore.QTimer.singleShot(100, lambda: qdevio.send("special command"))
-    QtCore.QTimer.singleShot(200, lambda: qdevio.send(dev.fake_command_with_argument, 0))
+    QtCore.QTimer.singleShot(100, lambda: qdev.send("special command"))
+    QtCore.QTimer.singleShot(200, lambda: qdev.send(dev.fake_command_with_argument, 0))
     # fmt: on
     while time.perf_counter() - start_time < 0.5:
         app.processEvents()
@@ -337,7 +337,7 @@ def test_Worker_jobs__jobs_function():
 
     tprint("About to quit")
     app.processEvents()
-    assert qdevio.quit() == True
+    assert qdev.quit() == True
     app.quit()
 
     assert dev.count_commands == 3
@@ -349,10 +349,10 @@ def test_attach_device_twice():
     print_title("Attach device twice")
     import pytest
 
-    qdevio = QDeviceIO(FakeDevice())
+    qdev = QDeviceIO(FakeDevice())
 
     with pytest.raises(SystemExit) as pytest_wrapped_e:
-        qdevio.attach_device(FakeDevice())
+        qdev.attach_device(FakeDevice())
     assert pytest_wrapped_e.type == SystemExit
     dprint("Exit code: %i" % pytest_wrapped_e.value.code)
     assert pytest_wrapped_e.value.code == 22
@@ -362,10 +362,10 @@ def test_Worker_DAQ___no_device_attached():
     print_title("Worker_DAQ - no device attached")
     import pytest
 
-    qdevio = QDeviceIO()
+    qdev = QDeviceIO()
 
     with pytest.raises(SystemExit) as pytest_wrapped_e:
-        qdevio.create_worker_DAQ()
+        qdev.create_worker_DAQ()
     assert pytest_wrapped_e.type == SystemExit
     dprint("Exit code: %i" % pytest_wrapped_e.value.code)
     assert pytest_wrapped_e.value.code == 99
@@ -375,10 +375,10 @@ def test_Worker_jobs__no_device_attached():
     print_title("Worker_jobs - no device attached")
     import pytest
 
-    qdevio = QDeviceIO()
+    qdev = QDeviceIO()
 
     with pytest.raises(SystemExit) as pytest_wrapped_e:
-        qdevio.create_worker_jobs()
+        qdev.create_worker_jobs()
     assert pytest_wrapped_e.type == SystemExit
     dprint("Exit code: %i" % pytest_wrapped_e.value.code)
     assert pytest_wrapped_e.value.code == 99
@@ -388,10 +388,10 @@ def test_Worker_DAQ___start_without_create():
     print_title("Worker_DAQ - start without create")
     import pytest
 
-    qdevio = QDeviceIO(FakeDevice())
+    qdev = QDeviceIO(FakeDevice())
 
     with pytest.raises(SystemExit) as pytest_wrapped_e:
-        qdevio.start_worker_DAQ()
+        qdev.start_worker_DAQ()
     assert pytest_wrapped_e.type == SystemExit
     dprint("Exit code: %i" % pytest_wrapped_e.value.code)
     assert pytest_wrapped_e.value.code == 404
@@ -401,10 +401,10 @@ def test_Worker_jobs__start_without_create():
     print_title("Worker_jobs - start without create")
     import pytest
 
-    qdevio = QDeviceIO(FakeDevice())
+    qdev = QDeviceIO(FakeDevice())
 
     with pytest.raises(SystemExit) as pytest_wrapped_e:
-        qdevio.start_worker_jobs()
+        qdev.start_worker_jobs()
     assert pytest_wrapped_e.type == SystemExit
     dprint("Exit code: %i" % pytest_wrapped_e.value.code)
     assert pytest_wrapped_e.value.code == 404
@@ -414,12 +414,12 @@ def test_Worker_DAQ___quit_without_start():
     print_title("Worker_DAQ - quit without start")
 
     app = create_QApplication()
-    qdevio = QDeviceIO(FakeDevice())
-    qdevio.create_worker_DAQ()
+    qdev = QDeviceIO(FakeDevice())
+    qdev.create_worker_DAQ()
 
     tprint("About to quit")
     app.processEvents()
-    assert qdevio.quit() == True
+    assert qdev.quit() == True
     app.quit()
 
 
@@ -427,12 +427,12 @@ def test_Worker_jobs__quit_without_start():
     print_title("Worker_jobs - quit without start")
 
     app = create_QApplication()
-    qdevio = QDeviceIO(FakeDevice())
-    qdevio.create_worker_jobs()
+    qdev = QDeviceIO(FakeDevice())
+    qdev.create_worker_jobs()
 
     tprint("About to quit")
     app.processEvents()
-    assert qdevio.quit() == True
+    assert qdev.quit() == True
     app.quit()
 
 
@@ -442,14 +442,14 @@ def test_Worker_DAQ___rate():
     def DAQ_function():
         # Must return True when successful, False otherwise
         reply = dev.fake_query_1()
-        dprint(" " * 50 + "%.1f Hz" % qdevio.obtained_DAQ_rate_Hz)
+        dprint(" " * 50 + "%.1f Hz" % qdev.obtained_DAQ_rate_Hz)
         return reply[-4:] == "0101"
 
     app = create_QApplication()
     dev = FakeDevice()
-    qdevio = QDeviceIO(dev)
+    qdev = QDeviceIO(dev)
     # fmt: off
-    qdevio.create_worker_DAQ(
+    qdev.create_worker_DAQ(
         DAQ_trigger                = DAQ_trigger.INTERNAL_TIMER,
         DAQ_function               = DAQ_function,
         DAQ_interval_ms            = 10,
@@ -458,7 +458,7 @@ def test_Worker_DAQ___rate():
         calc_DAQ_rate_every_N_iter = 20,
         debug                      = DEBUG)
     # fmt: on
-    assert qdevio.start() == True
+    assert qdev.start() == True
 
     # Simulate device runtime
     start_time = time.perf_counter()
@@ -468,15 +468,15 @@ def test_Worker_DAQ___rate():
 
     tprint("About to quit")
     app.processEvents()
-    assert qdevio.quit() == True
+    assert qdev.quit() == True
     app.quit()
 
     assert (
-        qdevio.obtained_DAQ_interval_ms >= 9
-        and qdevio.obtained_DAQ_interval_ms <= 11
+        qdev.obtained_DAQ_interval_ms >= 9
+        and qdev.obtained_DAQ_interval_ms <= 11
     )
     assert (
-        qdevio.obtained_DAQ_rate_Hz >= 99 and qdevio.obtained_DAQ_rate_Hz <= 101
+        qdev.obtained_DAQ_rate_Hz >= 99 and qdev.obtained_DAQ_rate_Hz <= 101
     )
 
 
@@ -485,7 +485,7 @@ def test_Worker_DAQ___lose_connection():
 
     def DAQ_function():
         # Must return True when successful, False otherwise
-        if qdevio.update_counter_DAQ == 10:
+        if qdev.update_counter_DAQ == 10:
             dev.is_alive = False
 
         reply = dev.fake_query_1()
@@ -510,9 +510,9 @@ def test_Worker_DAQ___lose_connection():
     del dev.name
     del dev.is_alive
 
-    qdevio = QDeviceIO(dev)
+    qdev = QDeviceIO(dev)
     # fmt: off
-    qdevio.create_worker_DAQ(
+    qdev.create_worker_DAQ(
         DAQ_trigger                = DAQ_trigger.INTERNAL_TIMER,
         DAQ_function               = DAQ_function,
         DAQ_interval_ms            = 20,
@@ -521,8 +521,8 @@ def test_Worker_DAQ___lose_connection():
         calc_DAQ_rate_every_N_iter = 20,
         debug                      = DEBUG)
     # fmt: on
-    qdevio.signal_connection_lost.connect(process_connection_lost)
-    assert qdevio.start() == True
+    qdev.signal_connection_lost.connect(process_connection_lost)
+    assert qdev.start() == True
 
     # Simulate device runtime
     while go:
@@ -531,7 +531,7 @@ def test_Worker_DAQ___lose_connection():
 
     tprint("About to quit")
     app.processEvents()
-    assert qdevio.quit() == True
+    assert qdev.quit() == True
     app.quit()
 
 
@@ -567,18 +567,18 @@ def test_Worker_DAQ___INTERNAL_TIMER__mixin_class():
 
     app = create_QApplication()
     dev = FakeDevice()
-    qdevio = QDeviceIO_subclassed(
+    qdev = QDeviceIO_subclassed(
         dev=dev, DAQ_function=DAQ_function, debug=DEBUG,
     )
-    qdevio.signal_DAQ_updated.connect(process_DAQ_updated)
-    qdevio.signal_jobs_updated.connect(process_jobs_updated)
-    qdevio.start()
+    qdev.signal_DAQ_updated.connect(process_DAQ_updated)
+    qdev.signal_jobs_updated.connect(process_jobs_updated)
+    qdev.start()
 
     # fmt: off
     # Simulate device runtime
     start_time = time.perf_counter()
-    QtCore.QTimer.singleShot(300, lambda: qdevio.send(dev.fake_query_2))
-    QtCore.QTimer.singleShot(600, lambda: qdevio.send(dev.fake_command_with_argument, 0))
+    QtCore.QTimer.singleShot(300, lambda: qdev.send(dev.fake_query_2))
+    QtCore.QTimer.singleShot(600, lambda: qdev.send(dev.fake_command_with_argument, 0))
     # fmt: on
     while time.perf_counter() - start_time < 1:
         app.processEvents()
@@ -586,7 +586,7 @@ def test_Worker_DAQ___INTERNAL_TIMER__mixin_class():
 
     tprint("About to quit")
     app.processEvents()
-    assert qdevio.quit() == True
+    assert qdev.quit() == True
     app.quit()
 
     assert dev.count_commands >= 11
