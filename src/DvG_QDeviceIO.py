@@ -63,87 +63,120 @@ class DAQ_trigger(IntEnum):
     .. figure:: DAQ_trigger_diagram.png
         :target: _images/DAQ_trigger_diagram.png
         :alt: DAQ_trigger diagram
-        
+
         Typical use-cases for the different :class:`DAQ_trigger` modes of
-        :class:`Worker_DAQ`. Above schematic shows just a single typical
+        :class:`Worker_DAQ`. Above diagram shows just a single typical
         implementation for each of the modes, but variations are possible.
-    
-    
-    
-    .. _`INTERNAL_TIMER`:        
-    
+
+
+
+    .. _`INTERNAL_TIMER`:
+
     **INTERNAL_TIMER**:
-    
-        The DAQ time interval is set by a software timer (Type:
-        :class:`PyQt5.QtCore.QTimer`) that is running internal to the
-        :class:`Worker_DAQ` class instance, see :ref:`this diagram
-        <DAQ_trigger_diagram>`. Hence, the PC is acting as a master to the
-        peripheral I/O device. Every 'tick' of the timer will trigger an update
-        in :class:`Worker_DAQ`, i.e., perform a single execution of its
-        :attr:`~Worker_DAQ.DAQ_function` member. The typical maximum granularity
-        of such a software timer is around ~1 ms, depending on the operating
-        system [1]_.
-    
+
+        Internal to the :class:`Worker_DAQ` class instance will be a software
+        timer of type :class:`PyQt5.QtCore.QTimer` that will periodically tick,
+        see :ref:`this diagram <DAQ_trigger_diagram>`. Every *tick* of the timer
+        will trigger an *update* in :class:`Worker_DAQ`; make it perform a
+        single execution of its :attr:`~Worker_DAQ.DAQ_function` member.
+
+        Typically, the :attr:`~Worker_DAQ.DAQ_function` could instruct the
+        device to report back on a requested quantity: a so-called *query*
+        operation. In this case, the PC is acting as a master to the peripheral
+        I/O device. Either the requested quantity still needs to get
+        measured by the device and, hence, there is a delay before the
+        device can reply. Or the requested quantity was already measured
+        and only has to be retreived from a memory buffer on the device. The
+        latter is faster.
+
         Example::
-            
-            qdev = DvG_QDeviceIO.QDeviceIO(my_device)
+
+            from DvG_QDeviceIO import QDeviceIO, DAQ_trigger
+
+            qdev = QDeviceIO(my_device)
             qdev.create_worker_DAQ(
                 DAQ_trigger     = DAQ_trigger.INTERNAL_TIMER,
                 DAQ_function    = my_DAQ_function,
-                DAQ_interval_ms = 10,                     # 100 Hz
-                DAQ_timer_type  = QtCore.Qt.PreciseTimer, # ~1 ms granularity
+                DAQ_interval_ms = 10,                      # 100 Hz
+                DAQ_timer_type  = QtCore.Qt.PreciseTimer,  # ~1 ms granularity, resource heavy so use sparingly
             )
-        
-        Typically, the :attr:`~Worker_DAQ.DAQ_function` could instruct the
-        device to report back on a requested quantity; a so-called *query*
-        operation. Either, the requested quantity still needs to get
-        measured by the device and, hence, there is a delay before the
-        device can reply. Or, the requested quantity was already measured
-        and only has to be retreived from a memory buffer on the device. The
-        latter is faster.
-        
+            qdev.start()
+
+        The typical maximum granularity of :class:`PyQt5.QtCore.QTimer` is
+        around ~1 ms, depending on the operating system [1]_.
+
         .. [1] Qt5 C++ API, https://doc.qt.io/qt-5/qtimer.html
 
 
-    
+
     .. _`SINGLE_SHOT_WAKE_UP`:
-    
+
     **SINGLE_SHOT_WAKE_UP**:
-        
-        The :class:`Worker_DAQ` class instance will update only once, whenever
+
+        The :class:`Worker_DAQ` class instance will update once only, whenever
         it has received a so-called *wake-up* call. A wake-up can be requested
-        by calling method :meth:`QDeviceIO.wake_up_DAQ`. Like the
-        :const:`~DAQ_trigger.INTERNAL_TIMER` mode, also here the PC acts as a
-        master to the peripheral I/O device(s).
+        by calling method :meth:`QDeviceIO.wake_up_DAQ`. There are two distinct
+        ways in which this mode can be used.
         
-        There are two distinct ways in which this mode can be used. The one
-        outlined in :ref:`this diagram <DAQ_trigger_diagram>` shows a
+        
+        **Periodical**:
+        
+        The one outlined in :ref:`this diagram <DAQ_trigger_diagram>` shows a
         stand-alone :class:`PyQt5.QtCore.QTimer` that periodically and
         simultaneously wakes up two different instances of :class:`Worker_DAQ`,
-        each communicating with a different I/O device. It is an easy way to
-        sync the data acquisition between different devices.
-        
-        The other way is aperiodical
+        each communicating with a different peripheral I/O device. It is an easy
+        way to sync the data acquisition between different devices, where the PC
+        acts as a master.
+
+        Example::
+
+            from DvG_QDeviceIO import QDeviceIO, DAQ_trigger
+            from PyQt5 import QtCore
+
+            qdev_1 = QDeviceIO(my_device_1)
+            qdev_1.create_worker_DAQ(
+                DAQ_trigger  = DAQ_trigger.SINGLE_SHOT_WAKE_UP,
+                DAQ_function = my_DAQ_function_1,
+            )
+
+            qdev_2 = QDeviceIO(my_device_2)
+            qdev_2.create_worker_DAQ(
+                DAQ_trigger  = DAQ_trigger.SINGLE_SHOT_WAKE_UP,
+                DAQ_function = my_DAQ_function_2,
+            )
+
+            timer = QtCore.QTimer()
+            timer.setInterval(10)                       # [ms] --> 100 Hz
+            timer.setTimerType(QtCore.Qt.PreciseTimer)  # ~1 ms granularity, resource heavy so use sparingly
+            timer.timeout.connect(qdev_1.wake_up_DAQ)
+            timer.timeout.connect(qdev_2.wake_up_DAQ)
+
+            qdev_1.start()
+            qdev_2.start()
+            timer.start()
+
+        **Aperiodical**:
+            
         ... button press by the user
-        ... other condition
+        ... a process variable that crossed a threshold
 
 
     .. _`CONTINUOUS`:
-    
+
     **CONTINUOUS**:
-        
+
         Blah
-        
-        
-        
+
+
+
     Note:
         There are two common approaches to register a time-stamp to a
-        reading. Either, one can rely on a performance timer of the master
-        PC -- I suggest to use :class:`time.perf_counter()` -- and log a
+        reading. Either one can rely on a performance timer of the master
+        PC -- suggestion: :class:`time.perf_counter()` -- and log a
         time stamp inside of your :attr:`~Worker_DAQ.DAQ_function` routine.
-        Or, one could rely on a hardware timer build into the I/O device and
+        Or one could rely on a hardware timer build into the I/O device and
         have this time-stamp additionally being send back to the PC together
-        with the requested quantities. There are pros and cons to each of
+        with the other requested readings. There are pros and cons to each of
         these approaches, which is a topic in itself and will not be
         discussed here.
     """
@@ -811,7 +844,10 @@ class QDeviceIO(QtCore.QObject):
 
         Example::
 
-            add_to_jobs_queue(dev.write, "toggle LED")
+            qdev.add_to_jobs_queue(dev.write, "toggle LED")
+
+        where ``qdev`` is your :class:`QDeviceIO` class instance and ``dev`` is
+        your *device* class instance containing I/O methods.
         """
         if self.worker_jobs is not None:
             self.worker_jobs.add_to_queue(instruction, pass_args)
@@ -857,8 +893,9 @@ class Worker_DAQ(QtCore.QObject):
 
     Args:
         qdev (:class:`QDeviceIO`):
-            Link to the parent :class:`QDeviceIO` class instance, automatically
-            set when being initialized by :meth:`QDeviceIO.create_worker_DAQ`.
+            Reference to the parent :class:`QDeviceIO` class instance,
+            automatically set when being initialized by
+            :meth:`QDeviceIO.create_worker_DAQ`.
 
             .. _`arg_DAQ_trigger`:
 
@@ -957,7 +994,7 @@ class Worker_DAQ(QtCore.QObject):
 
     Attributes:
         qdev (:class:`QDeviceIO`):
-            Link to the parent :class:`QDeviceIO` class instance.
+            Reference to the parent :class:`QDeviceIO` class instance.
 
         dev (:obj:`object` | :obj:`None`):
             Reference to the user-supplied *device* class instance containing
@@ -1375,8 +1412,9 @@ class Worker_jobs(QtCore.QObject):
 
     Args:
         qdev (:class:`QDeviceIO`):
-            Link to the parent :class:`QDeviceIO` class instance, automatically
-            set when being initialized by :meth:`QDeviceIO.create_worker_jobs`.
+            Reference to the parent :class:`QDeviceIO` class instance,
+            automatically set when being initialized by
+            :meth:`QDeviceIO.create_worker_jobs`.
 
             .. _`arg_jobs_function`:
 
@@ -1443,7 +1481,7 @@ class Worker_jobs(QtCore.QObject):
 
     Attributes:
         qdev (:class:`QDeviceIO`):
-            Link to the parent :class:`QDeviceIO` class instance.
+            Reference to the parent :class:`QDeviceIO` class instance.
 
         dev (:obj:`object` | :obj:`None`):
             Reference to the user-supplied *device* class instance containing
