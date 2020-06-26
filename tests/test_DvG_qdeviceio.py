@@ -114,7 +114,6 @@ def test_Worker_DAQ___INTERNAL_TIMER(start_alive=True):
         DAQ_trigger                = DAQ_trigger.INTERNAL_TIMER,
         DAQ_function               = DAQ_function,
         DAQ_interval_ms            = 100,
-        DAQ_timer_type             = QtCore.Qt.PreciseTimer,
         critical_not_alive_count   = 10,
         calc_DAQ_rate_every_N_iter = 5,
         debug                      = DEBUG)
@@ -453,7 +452,6 @@ def test_Worker_DAQ___rate():
         DAQ_trigger                = DAQ_trigger.INTERNAL_TIMER,
         DAQ_function               = DAQ_function,
         DAQ_interval_ms            = 10,
-        DAQ_timer_type             = QtCore.Qt.PreciseTimer,
         critical_not_alive_count   = 1,
         calc_DAQ_rate_every_N_iter = 20,
         debug                      = DEBUG)
@@ -516,7 +514,6 @@ def test_Worker_DAQ___lose_connection():
         DAQ_trigger                = DAQ_trigger.INTERNAL_TIMER,
         DAQ_function               = DAQ_function,
         DAQ_interval_ms            = 20,
-        DAQ_timer_type             = QtCore.Qt.PreciseTimer,
         critical_not_alive_count   = 3,
         calc_DAQ_rate_every_N_iter = 20,
         debug                      = DEBUG)
@@ -548,7 +545,6 @@ class QDeviceIO_subclassed(QDeviceIO, QtCore.QObject):
             DAQ_trigger                = DAQ_trigger.INTERNAL_TIMER,
             DAQ_function               = DAQ_function,
             DAQ_interval_ms            = 100,
-            DAQ_timer_type             = QtCore.Qt.PreciseTimer,
             critical_not_alive_count   = 10,
             calc_DAQ_rate_every_N_iter = 5,
             debug                      = DEBUG,
