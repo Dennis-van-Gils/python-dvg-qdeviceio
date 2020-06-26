@@ -60,13 +60,11 @@ class DAQ_trigger(IntEnum):
     :class:`Worker_DAQ` to perform a data-acquisition (DAQ) update.
     """
 
-    INTERNAL_TIMER = (
-        0  #: :ref:`Link to background information <INTERNAL_TIMER>`.
-    )
-    SINGLE_SHOT_WAKE_UP = (
-        1  #: :ref:`Link to background information <SINGLE_SHOT_WAKE_UP>`.
-    )
-    CONTINUOUS = 2  #: :ref:`Link to background information <CONTINUOUS>`.
+    # fmt: off
+    INTERNAL_TIMER = 0       #: :ref:`Link to background information <INTERNAL_TIMER>`.
+    SINGLE_SHOT_WAKE_UP = 1  #: :ref:`Link to background information <SINGLE_SHOT_WAKE_UP>`.
+    CONTINUOUS = 2           #: :ref:`Link to background information <CONTINUOUS>`.
+    # fmt: on
 
 
 # ------------------------------------------------------------------------------
