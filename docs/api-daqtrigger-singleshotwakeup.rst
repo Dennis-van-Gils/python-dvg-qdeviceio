@@ -17,9 +17,10 @@ by calling method :meth:`QDeviceIO.wake_up_DAQ`. There are two distinct
 ways in which this mode can be used.
 
 
-**Periodical**:
+For device synchronization
+""""""""""""""""""""""""""
 
-The one outlined in the above diagram shows a
+The one outlined in the diagram above shows a
 stand-alone :class:`PyQt5.QtCore.QTimer` that periodically and
 simultaneously wakes up two different instances of :class:`Worker_DAQ`,
 each communicating with a different peripheral I/O device. It is an easy
@@ -81,7 +82,8 @@ Alternative example (undocumented)::
     qdev_2.start()  # First make sure SINGLE_SHOT_WAKE_UP is up and running
     qdev_1.start()  # and only then start INTERNAL_TIMER
 
-**Aperiodical**:
+For aperiodical triggering
+""""""""""""""""""""""""""
 
 ... button press by the user
 ... a process variable that crossed a threshold
