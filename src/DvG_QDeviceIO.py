@@ -97,8 +97,7 @@ class DAQ_trigger(IntEnum):
             qdev.create_worker_DAQ(
                 DAQ_trigger     = DAQ_trigger.INTERNAL_TIMER,
                 DAQ_function    = my_DAQ_function,
-                DAQ_interval_ms = 10,                      # 100 Hz
-                DAQ_timer_type  = QtCore.Qt.PreciseTimer,  # ~1 ms granularity, resource heavy so use sparingly
+                DAQ_interval_ms = 10,  # 100 Hz
             )
             qdev.start()
 
@@ -227,12 +226,11 @@ class QDeviceIO(QtCore.QObject):
                     # In the case of a derived class, we have to attach the device ourselves
                     self.attach_device(dev)
 
-                    # Fix the DAQ to a `precise` 10 Hz internal timer
+                    # Set the DAQ to 10 Hz internal timer
                     self.create_worker_DAQ(
                         DAQ_trigger                = DAQ_trigger.INTERNAL_TIMER,
                         DAQ_function               = DAQ_function,
                         DAQ_interval_ms            = 100,  # 100 ms -> 10 Hz
-                        DAQ_timer_type             = QtCore.Qt.PreciseTimer,
                         critical_not_alive_count   = 3,
                         calc_DAQ_rate_every_N_iter = 10,
                         debug                      = debug,
@@ -955,19 +953,22 @@ class Worker_DAQ(QtCore.QObject):
 
         DAQ_interval_ms (:obj:`int`, optional):
             Only useful in mode :const:`DAQ_trigger.INTERNAL_TIMER`. Desired
-            data acquisition update interval in milliseconds.
+            data-acquisition update interval in milliseconds.
 
             Default: :const:`100`.
 
         DAQ_timer_type (:obj:`PyQt5.QtCore.Qt.TimerType`, optional):
             Only useful in mode :const:`DAQ_trigger.INTERNAL_TIMER`.
             The update interval is timed to a :class:`PyQt5.QtCore.QTimer`
-            running inside :class:`Worker_DAQ`. The accuracy of the timer can be
-            improved by setting it to :const:`PyQt5.QtCore.Qt.PreciseTimer` with
-            a ~1 ms granularity depending on the OS, but it is resource heavy so
-            use sparingly.
+            running inside :class:`Worker_DAQ`. The default value
+            :const:`PyQt5.QtCore.Qt.PreciseTimer` tries to ensure the best
+            possible timer accuracy, usually ~1 ms granularity depending on the
+            OS, but it is resource heavy so use sparingly. One can reduce the
+            CPU load by setting it to less precise timer types 
+            :const:`PyQt5.QtCore.Qt.CoarseTimer` or 
+            :const:`PyQt5.QtCore.Qt.VeryCoarseTimer`.
 
-            Default: :const:`PyQt5.QtCore.Qt.CoarseTimer`.
+            Default: :const:`PyQt5.QtCore.Qt.PreciseTimer`.
 
             .. _`arg_critical_not_alive_count`:
 
@@ -1025,7 +1026,7 @@ class Worker_DAQ(QtCore.QObject):
         DAQ_trigger=DAQ_trigger.INTERNAL_TIMER,
         DAQ_function=None,
         DAQ_interval_ms=100,
-        DAQ_timer_type=QtCore.Qt.CoarseTimer,
+        DAQ_timer_type=QtCore.Qt.PreciseTimer,
         critical_not_alive_count=1,
         calc_DAQ_rate_every_N_iter=10,  # TODO: set default value to 'auto' and implement further down. When integer, take over that value.
         debug=False,
