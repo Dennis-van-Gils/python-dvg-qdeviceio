@@ -22,7 +22,7 @@ copyright = '2020, Dennis van Gils'
 author = 'Dennis van Gils'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.9'
+release = '0.0.11'
 
 # -- General configuration ---------------------------------------------------
 
@@ -33,7 +33,11 @@ extensions = [
     'sphinx.ext.autodoc',
     'sphinx.ext.napoleon',
     'sphinx.ext.viewcode',
+    'sphinx.ext.intersphinx',
+    'sphinx_qt_documentation',
 ]
+
+qt_documentation = "Qt5"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
