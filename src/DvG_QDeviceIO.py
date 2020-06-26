@@ -867,7 +867,7 @@ class Worker_DAQ(QtCore.QObject):
 
         calc_DAQ_rate_every_N_iter (:obj:`int`, optional):
             The increase the accuracy of calculating the DAQ rate, it is advised
-            to average over several iterations, i.e. DAQ updates. It will take
+            to average over several DAQ updates, i.e. iterations. It will take
             at least *N* updates before :attr:`QDeviceIO.obtained_DAQ_rate_Hz`
             will contain the calculated rate.
 
