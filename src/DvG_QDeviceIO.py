@@ -443,7 +443,7 @@ class QDeviceIO(QtCore.QObject):
             # Wait a tiny amount of extra time for the worker to have entered
             # 'self._qwc.wait(self._mutex_wait)' of method '_do_work()'.
             # Unfortunately, we can't use
-            #   'QTimer.singleShot(500, confirm_started(self))'
+            #   'QTimer.singleShot(500, confirm_has_started(self))'
             # inside the '_do_work()' routine, because it won't never resolve
             # due to the upcoming blocking 'self._qwc.wait(self._mutex_wait)'.
             # Hence, we use a blocking 'time.sleep()' here. Also note we can't
@@ -508,7 +508,7 @@ class QDeviceIO(QtCore.QObject):
         # Wait a tiny amount of extra time for the worker to have entered
         # 'self._qwc.wait(self._mutex_wait)' of method '_do_work()'.
         # Unfortunately, we can't use
-        #   'QTimer.singleShot(500, confirm_started(self))'
+        #   'QTimer.singleShot(500, confirm_has_started(self))'
         # inside the '_do_work()' routine, because it won't never resolve
         # due to the upcoming blocking 'self._qwc.wait(self._mutex_wait)'.
         # Hence, we use a blocking 'time.sleep()' here. Also note we can't
@@ -973,7 +973,7 @@ class Worker_DAQ(QtCore.QObject):
     def _do_work(self):
         init = True
 
-        def confirm_started(self):
+        def confirm_has_started(self):
             # Wait a tiny amount of extra time for QDeviceIO to have entered
             # 'self._qwc_worker_###_started.wait(self._mutex_wait_worker_###)'
             # of method 'start_worker_###()'.
@@ -998,7 +998,7 @@ class Worker_DAQ(QtCore.QObject):
         # INTERNAL_TIMER
         if self._DAQ_trigger == DAQ_trigger.INTERNAL_TIMER:
             self._timer.start()
-            confirm_started(self)
+            confirm_has_started(self)
 
         # SINGLE_SHOT_WAKE_UP
         elif self._DAQ_trigger == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
@@ -1010,13 +1010,13 @@ class Worker_DAQ(QtCore.QObject):
 
                 if self.debug:
                     tprint(
-                        "Worker_DAQ  %s: waiting for wake trigger"
+                        "Worker_DAQ  %s: waiting for wake-up trigger"
                         % self.dev.name,
                         self.debug_color,
                     )
 
                 if init:
-                    confirm_started(self)
+                    confirm_has_started(self)
                     init = False
 
                 self._qwc.wait(self._mutex_wait)
@@ -1062,7 +1062,7 @@ class Worker_DAQ(QtCore.QObject):
 
                     self.qdev.signal_DAQ_paused.emit()
 
-                    confirm_started(self)
+                    confirm_has_started(self)
                     init = False
 
                 if self._pause:  # == True
@@ -1414,7 +1414,7 @@ class Worker_jobs(QtCore.QObject):
     def _do_work(self):
         init = True
 
-        def confirm_started(self):
+        def confirm_has_started(self):
             # Wait a tiny amount of extra time for QDeviceIO to have entered
             # 'self._qwc_worker_###_started.wait(self._mutex_wait_worker_###)'
             # of method 'start_worker_###()'.
@@ -1444,12 +1444,13 @@ class Worker_jobs(QtCore.QObject):
 
             if self.debug:
                 tprint(
-                    "Worker_jobs %s: waiting for wake trigger" % self.dev.name,
+                    "Worker_jobs %s: waiting for wake-up trigger"
+                    % self.dev.name,
                     self.debug_color,
                 )
 
             if init:
-                confirm_started(self)
+                confirm_has_started(self)
                 init = False
 
             self._qwc.wait(self._mutex_wait)
