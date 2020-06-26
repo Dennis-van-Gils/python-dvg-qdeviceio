@@ -14,13 +14,13 @@ DAQ_trigger.SINGLE_SHOT_WAKE_UP
 The :class:`Worker_DAQ` class instance will update once only, whenever
 it has received a so-called *wake-up* call. A wake-up can be requested
 by calling method :meth:`QDeviceIO.wake_up_DAQ`. There are two distinct
-ways in which this mode can be used.
+cases for which this mode can be used.
 
 
 For device synchronization
 """"""""""""""""""""""""""
 
-The one outlined in the diagram above shows a
+The use-case outlined in the diagram above shows a
 stand-alone :class:`PyQt5.QtCore.QTimer` that periodically and
 simultaneously wakes up two different instances of :class:`Worker_DAQ`,
 each communicating with a different peripheral I/O device. It is an easy
