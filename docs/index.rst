@@ -9,6 +9,7 @@ DvG_QDeviceIO
 
    intro
    example
+   notes
 
    
 .. toctree::
@@ -17,8 +18,11 @@ DvG_QDeviceIO
    api-qdeviceio
    api-workerdaq
    api-workerjobs
+   
    api-daqtrigger
-
+   api-daqtrigger-internaltimer
+   api-daqtrigger-singleshotwakeup
+   api-daqtrigger-continuous
 
 .. toctree::
    :maxdepth: 1
