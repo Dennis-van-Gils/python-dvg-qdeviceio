@@ -8,7 +8,7 @@ Timestamping
     
 There are two common approaches to register a timestamp to a
 reading. Either one can rely on a software timer of the master PC --
-suggested: :class:`time.perf_counter()` -- and log a timestamp inside
+suggested: :func:`python:time.perf_counter` -- and log a timestamp inside
 of your :attr:`~Worker_DAQ.DAQ_function` routine. Or one could rely on a
 hardware timer build into the I/O device and have this timestamp
 additionally being send back to the PC together with the other requested

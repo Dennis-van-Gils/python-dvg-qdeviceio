@@ -37,7 +37,13 @@ extensions = [
     'sphinx_qt_documentation',
 ]
 
-qt_documentation = "Qt5"
+intersphinx_mapping = {
+    'PyQt5': ('https://www.riverbankcomputing.com/static/Docs/PyQt5/', None),
+    'NumPy': ('https://numpy.org/doc/stable/', None),
+    'python': ('https://docs.python.org/3', None)
+}
+
+qt_documentation = 'Qt5'
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
