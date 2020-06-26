@@ -451,6 +451,7 @@ class QDeviceIO(QtCore.QObject):
         self._thread_DAQ.started.connect(self.worker_DAQ._do_work)
         self.worker_DAQ.moveToThread(self._thread_DAQ)
 
+        if hasattr(self.worker_DAQ, "_timer"):
             self.worker_DAQ._timer.moveToThread(self._thread_DAQ)
 
     def create_worker_jobs(self, **kwargs):
