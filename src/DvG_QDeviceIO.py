@@ -451,6 +451,8 @@ class QDeviceIO(QtCore.QObject):
         self._thread_DAQ.started.connect(self.worker_DAQ._do_work)
         self.worker_DAQ.moveToThread(self._thread_DAQ)
 
+            self.worker_DAQ._timer.moveToThread(self._thread_DAQ)
+
     def create_worker_jobs(self, **kwargs):
         """Create and configure an instance of :class:`Worker_jobs` and transfer
         it to a new :class:`PyQt5.QtCore.QThread`.
@@ -1041,14 +1043,16 @@ class Worker_DAQ(QtCore.QObject):
 
         # Members specifically for INTERNAL_TIMER
         if self._DAQ_trigger == DAQ_trigger.INTERNAL_TIMER:
-            self._DAQ_interval_ms = DAQ_interval_ms
-            self._timer_type = DAQ_timer_type
-            self._timer = None
+            self._timer = QtCore.QTimer()
+            self._timer.setInterval(DAQ_interval_ms)
+            self._timer.setTimerType(DAQ_timer_type)
+            self._timer.timeout.connect(self._perform_DAQ)
+
             self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
             # TODO: create a special value, like string 'auto_1_Hz' to
             # trigger below calculation
             # self.calc_DAQ_rate_every_N_iter = max(
-            #        round(1e3/self._DAQ_interval_ms), 1)
+            #        round(1e3/DAQ_interval_ms), 1)
 
         # Members specifically for SINGLE_SHOT_WAKE_UP
         elif self._DAQ_trigger == DAQ_trigger.SINGLE_SHOT_WAKE_UP:
@@ -1108,10 +1112,6 @@ class Worker_DAQ(QtCore.QObject):
 
         # INTERNAL_TIMER
         if self._DAQ_trigger == DAQ_trigger.INTERNAL_TIMER:
-            self._timer = QtCore.QTimer()
-            self._timer.setInterval(self._DAQ_interval_ms)
-            self._timer.timeout.connect(self._perform_DAQ)
-            self._timer.setTimerType(self._timer_type)
             self._timer.start()
             confirm_started(self)
 
