@@ -469,13 +469,8 @@ def test_Worker_DAQ___rate():
     assert qdev.quit() == True
     app.quit()
 
-    assert (
-        qdev.obtained_DAQ_interval_ms >= 9
-        and qdev.obtained_DAQ_interval_ms <= 11
-    )
-    assert (
-        qdev.obtained_DAQ_rate_Hz >= 99 and qdev.obtained_DAQ_rate_Hz <= 101
-    )
+    assert 9 <= qdev.obtained_DAQ_interval_ms <= 11
+    assert 99 <= qdev.obtained_DAQ_rate_Hz <= 101
 
 
 def test_Worker_DAQ___lose_connection():
