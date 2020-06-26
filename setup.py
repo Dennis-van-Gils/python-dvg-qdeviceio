@@ -26,7 +26,7 @@ setup(
     name="dvg-qdeviceio",
     version="0.0.11",
     license="MIT",
-    description="PyQt5 interface for multithreaded periodical data acquisition and communication with an I/O device.",
+    description="PyQt5 interface for multithreaded data acquisition and communication with an I/O device.",
     long_description="%s\n%s"
     % (
         re.compile("^.. start-badges.*^.. end-badges", re.M | re.S).sub(

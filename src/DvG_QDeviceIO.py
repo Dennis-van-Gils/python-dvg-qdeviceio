@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""PyQt5 framework for multithreaded periodical data acquisition and
-communication with an I/O device.
+"""PyQt5 framework for multithreaded data acquisition and communication with an
+I/O device.
 """
 __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
@@ -97,7 +97,7 @@ class DAQ_trigger(IntEnum):
             qdev.create_worker_DAQ(
                 DAQ_trigger     = DAQ_trigger.INTERNAL_TIMER,
                 DAQ_function    = my_DAQ_function,
-                DAQ_interval_ms = 10,  # 100 Hz
+                DAQ_interval_ms = 10,  # 10 ms --> 100 Hz
             )
             qdev.start()
 
@@ -116,10 +116,10 @@ class DAQ_trigger(IntEnum):
         it has received a so-called *wake-up* call. A wake-up can be requested
         by calling method :meth:`QDeviceIO.wake_up_DAQ`. There are two distinct
         ways in which this mode can be used.
-        
-        
+
+
         **Periodical**:
-        
+
         The one outlined in :ref:`this diagram <DAQ_trigger_diagram>` shows a
         stand-alone :class:`PyQt5.QtCore.QTimer` that periodically and
         simultaneously wakes up two different instances of :class:`Worker_DAQ`,
@@ -131,6 +131,8 @@ class DAQ_trigger(IntEnum):
 
             from DvG_QDeviceIO import QDeviceIO, DAQ_trigger
             from PyQt5 import QtCore
+
+            app = QtCore.QCoreApplication()
 
             qdev_1 = QDeviceIO(my_device_1)
             qdev_1.create_worker_DAQ(
@@ -144,9 +146,11 @@ class DAQ_trigger(IntEnum):
                 DAQ_function = my_DAQ_function_2,
             )
 
+            # We create the sync timer in the main thread in this example, but it is better
+            # for the timing stability to transfer the sync timer to a separate thread.
             timer = QtCore.QTimer()
-            timer.setInterval(10)                       # [ms] --> 100 Hz
-            timer.setTimerType(QtCore.Qt.PreciseTimer)  # ~1 ms granularity, resource heavy so use sparingly
+            timer.setInterval(10)                       # 10 ms --> 100 Hz
+            timer.setTimerType(QtCore.Qt.PreciseTimer)  # ~1 ms granularity, resource heavy
             timer.timeout.connect(qdev_1.wake_up_DAQ)
             timer.timeout.connect(qdev_2.wake_up_DAQ)
 
@@ -154,8 +158,32 @@ class DAQ_trigger(IntEnum):
             qdev_2.start()
             timer.start()
 
+            while True:
+                app.processEvents()  # Needed to have the sync timer tick
+
+        Alternative example (undocumented)::
+
+            from DvG_QDeviceIO import QDeviceIO, DAQ_trigger
+
+            qdev_1 = QDeviceIO(my_device_1)
+            qdev_1.create_worker_DAQ(
+                DAQ_trigger     = DAQ_trigger.INTERNAL_TIMER,
+                DAQ_function    = my_DAQ_function_1,
+                DAQ_interval_ms = 10,  # 10 ms --> 100 Hz
+            )
+
+            qdev_2 = QDeviceIO(my_device_2)
+            qdev_2.create_worker_DAQ(
+                DAQ_trigger  = DAQ_trigger.SINGLE_SHOT_WAKE_UP,
+                DAQ_function = my_DAQ_function_2,
+            )
+
+            qdev_1.worker_DAQ._timer.timeout.connect(qdev_2.wake_up_DAQ)
+            qdev_2.start()  # First make sure SINGLE_SHOT_WAKE_UP is up and running
+            qdev_1.start()  # and only then start INTERNAL_TIMER
+
         **Aperiodical**:
-            
+
         ... button press by the user
         ... a process variable that crossed a threshold
 
@@ -191,15 +219,15 @@ class DAQ_trigger(IntEnum):
 
 
 class QDeviceIO(QtCore.QObject):
-    """This class provides the framework for multithreaded periodical data
-    acquisition (DAQ) and communication with an I/O device.
+    """This class provides the framework for multithreaded data acquisition
+    (DAQ) and communication with an I/O device.
 
     All device I/O operations will be offloaded to *workers*, each running in
     their dedicated thread. The following workers can be created:
 
     * :class:`Worker_DAQ` :
 
-        Periodically acquires data from the device.
+        Acquires data from the device, either periodically or aperiodically.
 
         Created by calling :meth:`create_worker_DAQ`.
 
@@ -515,8 +543,8 @@ class QDeviceIO(QtCore.QObject):
         return success
 
     def start_worker_DAQ(self, priority=QtCore.QThread.InheritPriority):
-        """Start the periodical data acquisition with the device by starting
-        the event loop of the :attr:`worker_DAQ` thread.
+        """Start the data acquisition with the device by starting the event loop
+        of the :attr:`worker_DAQ` thread.
 
         Args:
             priority (:const:`PyQt5.QtCore.QThread.Priority`, optional):
@@ -869,12 +897,13 @@ class QDeviceIO(QtCore.QObject):
 
 
 class Worker_DAQ(QtCore.QObject):
-    """This worker periodically acquires data from the I/O device. It does so by
-    calling a user-supplied function, passed as initialization parameter
-    :ref:`DAQ_function <arg_DAQ_function>`, containing device I/O operations and
-    subsequent data processing, every time the worker *updates*. There are
-    different modes of operation for this worker to perform an *update*. This is
-    set by initialization parameter :ref:`DAQ_trigger <arg_DAQ_trigger>`.
+    """This worker acquires data from the I/O device, either periodically or
+    aperiodically. It does so by calling a user-supplied function, passed as
+    initialization parameter :ref:`DAQ_function <arg_DAQ_function>`, containing
+    device I/O operations and subsequent data processing, every time the worker
+    *updates*. There are different modes of operation for this worker to perform
+    an *update*. This is set by initialization parameter
+    :ref:`DAQ_trigger <arg_DAQ_trigger>`.
 
     An instance of this worker will be created and placed inside a new thread by
     a call to :meth:`QDeviceIO.create_worker_DAQ`.
@@ -964,8 +993,8 @@ class Worker_DAQ(QtCore.QObject):
             :const:`PyQt5.QtCore.Qt.PreciseTimer` tries to ensure the best
             possible timer accuracy, usually ~1 ms granularity depending on the
             OS, but it is resource heavy so use sparingly. One can reduce the
-            CPU load by setting it to less precise timer types 
-            :const:`PyQt5.QtCore.Qt.CoarseTimer` or 
+            CPU load by setting it to less precise timer types
+            :const:`PyQt5.QtCore.Qt.CoarseTimer` or
             :const:`PyQt5.QtCore.Qt.VeryCoarseTimer`.
 
             Default: :const:`PyQt5.QtCore.Qt.PreciseTimer`.
