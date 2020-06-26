@@ -38,7 +38,7 @@ Example::
     )
     qdev.start()
 
-The typical maximum granularity of :class:`PyQt5.QtCore.QTimer` is
-around ~1 ms, depending on the operating system [1]_.
-
-.. [1] Qt5 C++ API, https://doc.qt.io/qt-5/qtimer.html
+.. Attention::
+    
+    The typical maximum granularity of :class:`PyQt5.QtCore.QTimer` is
+    around ~1 ms, depending on the operating system.
