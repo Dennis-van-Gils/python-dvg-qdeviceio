@@ -6,6 +6,9 @@
     :target: https://travis-ci.org/Dennis-van-Gils/python-dvg-qdeviceio
 .. image:: https://coveralls.io/repos/github/Dennis-van-Gils/python-dvg-qdeviceio/badge.svg?branch=master
     :target: https://coveralls.io/github/Dennis-van-Gils/python-dvg-qdeviceio?branch=master
+.. image:: https://requires.io/github/Dennis-van-Gils/python-dvg-qdeviceio/requirements.svg?branch=master
+     :target: https://requires.io/github/Dennis-van-Gils/python-dvg-qdeviceio/requirements/?branch=master
+     :alt: Requirements Status
 .. image:: https://readthedocs.org/projects/python-dvg-qdeviceio/badge/?version=latest
     :target: https://python-dvg-qdeviceio.readthedocs.io/en/latest/?badge=latest
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg
