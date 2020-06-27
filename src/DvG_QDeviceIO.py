@@ -193,12 +193,20 @@ class QDeviceIO(QtCore.QObject):
     not.
 
     Tip:
-        It can be useful to connect this signal to your own slot containing
-        your GUI redraw routine, as such::
+        It can be useful to connect this signal to a slot containing, e.g., 
+        your GUI redraw routine::
+
+            from PyQt5 import QtCore
+
+            @QtCore.pyqtSlot()
+            def my_GUI_redraw_routine():
+                ...
 
             qdev.signal_DAQ_updated.connect(my_GUI_redraw_routine)
 
-        where ``qdev`` is your instance of :class:`QDeviceIO`.
+        where ``qdev`` is your instance of :class:`QDeviceIO`. Don't forget to
+        decorate the function definition with a :func:`PyQt5.QtCore.pyqtSlot`
+        decorator.
     """
 
     signal_jobs_updated = QtCore.pyqtSignal()
@@ -696,15 +704,6 @@ class QDeviceIO(QtCore.QObject):
         queue first-in, first-out to the device until empty. Once finished, it
         will emit :obj:`signal_jobs_updated()`.
 
-        See :meth:`add_to_jobs_queue` for details on the parameters.
-        """
-        if self.worker_jobs is not None:
-            self.worker_jobs.send(instruction, pass_args)
-
-    @QtCore.pyqtSlot()
-    def add_to_jobs_queue(self, instruction, pass_args=()):
-        """Put a job on the :attr:`worker_jobs` queue.
-
         Args:
             instruction (:obj:`function` | *other*):
                 Intended to be a reference to a device I/O method such as
@@ -727,10 +726,19 @@ class QDeviceIO(QtCore.QObject):
 
         Example::
 
-            qdev.add_to_jobs_queue(dev.write, "toggle LED")
+            qdev.send(dev.write, "toggle LED")
 
         where ``qdev`` is your :class:`QDeviceIO` class instance and ``dev`` is
         your *device* class instance containing I/O methods.
+        """
+        if self.worker_jobs is not None:
+            self.worker_jobs.send(instruction, pass_args)
+
+    @QtCore.pyqtSlot()
+    def add_to_jobs_queue(self, instruction, pass_args=()):
+        """Put a job on the :attr:`worker_jobs` queue.
+
+        See :meth:`send` for details on the parameters.
         """
         if self.worker_jobs is not None:
             self.worker_jobs.add_to_queue(instruction, pass_args)
