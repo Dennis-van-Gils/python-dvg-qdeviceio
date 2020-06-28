@@ -1,5 +1,12 @@
 Usage
 ==============
+
+Step 0
+--------------
+
+TODO: Mention it must be running inside a
+:class:`PyQt5.QtCore.QCoreApplication` or
+:class:`PyQt5.QtWidgets.QApplication`!
     
 Step 1
 --------------
