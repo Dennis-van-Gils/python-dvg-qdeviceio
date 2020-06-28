@@ -810,11 +810,17 @@ class Worker_DAQ(QtCore.QObject):
                 with the device was successful, and :const:`False` otherwise.
 
             Warning:
-                 No direct changes to the GUI should be performed inside this
-                 function. If you do anyhow, expect a penalty in the timing
-                 stability of this worker. Instead, connect to
-                 :meth:`QDeviceIO.signal_DAQ_updated` from out of the *main/GUI*
-                 thread to instigate GUI changes when needed.
+                **Neither directly change the GUI, nor print to the terminal
+                from out of this function.** Doing so might temporarily suspend
+                the function and could mess with the timing stability of the
+                worker. (You're basically undermining the reason to have
+                multithreading in the first place). That could be acceptable,
+                though, when you need to print debug or critical error
+                information to the terminal, but be aware about this warning.
+                
+                Instead, connect to :meth:`QDeviceIO.signal_DAQ_updated` from
+                out of the *main/GUI* thread to instigate changes to the
+                terminal/GUI when needed.
 
             Example:
                 Pseudo-code, where ``time`` and ``temperature`` are variables
@@ -1346,11 +1352,17 @@ class Worker_jobs(QtCore.QObject):
             function.
 
             Warning:
-                 No direct changes to the GUI should be performed inside this
-                 function. If you do anyhow, expect a penalty in the timing
-                 stability of this worker. Instead, connect to
-                 :meth:`QDeviceIO.signal_jobs_updated` from out of the
-                 *main/GUI* thread to instigate GUI changes when needed.
+                **Neither directly change the GUI, nor print to the terminal
+                from out of this function.** Doing so might temporarily suspend
+                the function and could mess with the timing stability of the
+                worker. (You're basically undermining the reason to have
+                multithreading in the first place). That could be acceptable,
+                though, when you need to print debug or critical error
+                information to the terminal, but be aware about this warning.
+                 
+                Instead, connect to :meth:`QDeviceIO.signal_jobs_updated` from
+                out of the *main/GUI* thread to instigate changes to the
+                terminal/GUI when needed.
 
             Example::
 
