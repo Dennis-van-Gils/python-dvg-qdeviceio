@@ -31,7 +31,11 @@ Changelog
 * Major: Changed name 'Worker_send' to 'Worker_jobs' and similar
 * Added more Sphinx documentation
 
-0.0.11 (2020-06-29)
+0.0.11
+-------------------
+Skipped (I screwed up the versioning)
+
+0.0.12 (2020-06-29)
 -------------------
 * INTERNAL_TIMER: Already instantiate the QTimer in 'create_worker_DAQ()', instead of in 'start_worker_DAQ()'
 * Changed default DAQ_timer_type from CoarseTimer to PreciseTimer
