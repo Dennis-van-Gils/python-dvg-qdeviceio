@@ -40,3 +40,7 @@ Skipped (I screwed up the versioning)
 * INTERNAL_TIMER: Already instantiate the QTimer in 'create_worker_DAQ()', instead of in 'start_worker_DAQ()'
 * Changed default DAQ_timer_type from CoarseTimer to PreciseTimer
 * Added more Sphinx documentation
+
+0.0.13 (2020-07-02)
+-------------------
+DvG module filenames changed to lowercase

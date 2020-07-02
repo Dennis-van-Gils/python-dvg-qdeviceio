@@ -17,12 +17,12 @@
 
 # -- Project information -----------------------------------------------------
 
-project = 'QDeviceIO'
+project = 'DvG_QDeviceIO'
 copyright = '2020, Dennis van Gils'
 author = 'Dennis van Gils'
 
 # The full version, including alpha/beta/rc tags
-release = '0.0.12'
+release = '0.0.13'
 
 # -- General configuration ---------------------------------------------------
 

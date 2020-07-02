@@ -1,4 +1,4 @@
-.. py:module:: DvG_QDeviceIO
+.. py:module:: dvg_qdeviceio
 .. _`INTERNAL_TIMER`:
 
 DAQ_trigger.INTERNAL_TIMER
@@ -28,7 +28,7 @@ latter is faster.
 
 Example::
 
-    from DvG_QDeviceIO import QDeviceIO, DAQ_trigger
+    from dvg_qdeviceio import QDeviceIO, DAQ_trigger
 
     qdev = QDeviceIO(my_device)
     qdev.create_worker_DAQ(

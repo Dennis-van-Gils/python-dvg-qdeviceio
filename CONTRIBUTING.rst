@@ -16,7 +16,7 @@ When `reporting a bug <https://github.com/Dennis-van-Gils/python-dvg-qdeviceio/i
 Documentation improvements
 ==========================
 
-DvG-QDeviceIO could always use more documentation, whether as part of the official DvG-QDeviceIO docs, in docstrings, or even on the web in blog posts, articles, and such.
+DvG_QDeviceIO could always use more documentation, whether as part of the official DvG_QDeviceIO docs, in docstrings, or even on the web in blog posts, articles, and such.
 
 Feature requests and feedback
 =============================

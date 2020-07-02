@@ -1,8 +1,8 @@
 import sys
 import time
 from PyQt5 import QtCore
-from DvG_QDeviceIO import QDeviceIO, DAQ_trigger
-from DvG_debug_functions import dprint, tprint, ANSI
+from dvg_qdeviceio import QDeviceIO, DAQ_trigger
+from dvg_debug_functions import dprint, tprint, ANSI
 
 # Show extra debug info in terminal?
 DEBUG = True

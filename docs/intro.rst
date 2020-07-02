@@ -14,7 +14,7 @@ Features
     * It will manage the creation and handling of the threads, workers,
       signals and mutexes -- all necessary components for proper multithreading --
       *for you*, reducing it to just a few simple method calls of a
-      :class:`~DvG_QDeviceIO.QDeviceIO` class instance to get set up and going.
+      :class:`~dvg_qdeviceio.QDeviceIO` class instance to get set up and going.
 
     * Different modes of data-acquisition are available:
         - periodic to a fixed clock

@@ -1,4 +1,4 @@
-.. py:module:: DvG_QDeviceIO
+.. py:module:: dvg_qdeviceio
 .. _`CONTINUOUS`:
 
 DAQ_trigger.CONTINUOUS

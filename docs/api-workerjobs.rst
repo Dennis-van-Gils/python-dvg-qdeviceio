@@ -1,6 +1,6 @@
 Worker_jobs
 ===================
-.. autoclass:: DvG_QDeviceIO.Worker_jobs
+.. autoclass:: dvg_qdeviceio.Worker_jobs
    :members: ,
    :member-order: bysource
    :show-inheritance:
@@ -8,6 +8,6 @@ Worker_jobs
 Methods
 --------------------
 
-.. automethod:: DvG_QDeviceIO.Worker_jobs.send
-.. automethod:: DvG_QDeviceIO.Worker_jobs.add_to_queue
-.. automethod:: DvG_QDeviceIO.Worker_jobs.process_queue
+.. automethod:: dvg_qdeviceio.Worker_jobs.send
+.. automethod:: dvg_qdeviceio.Worker_jobs.add_to_queue
+.. automethod:: dvg_qdeviceio.Worker_jobs.process_queue

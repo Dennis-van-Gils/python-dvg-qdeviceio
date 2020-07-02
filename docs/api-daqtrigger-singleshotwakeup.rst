@@ -1,4 +1,4 @@
-.. py:module:: DvG_QDeviceIO
+.. py:module:: dvg_qdeviceio
 .. _`SINGLE_SHOT_WAKE_UP`:
 
 DAQ_trigger.SINGLE_SHOT_WAKE_UP
@@ -29,7 +29,7 @@ acts as a master.
 
 Example::
 
-    from DvG_QDeviceIO import QDeviceIO, DAQ_trigger
+    from dvg_qdeviceio import QDeviceIO, DAQ_trigger
     from PyQt5 import QtCore
 
     app = QtCore.QCoreApplication()
@@ -63,7 +63,7 @@ Example::
 
 Alternative example (undocumented)::
 
-    from DvG_QDeviceIO import QDeviceIO, DAQ_trigger
+    from dvg_qdeviceio import QDeviceIO, DAQ_trigger
 
     qdev_1 = QDeviceIO(my_device_1)
     qdev_1.create_worker_DAQ(

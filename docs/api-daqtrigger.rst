@@ -1,6 +1,6 @@
 DAQ_trigger
 ===================
-.. autoclass:: DvG_QDeviceIO.DAQ_trigger
+.. autoclass:: dvg_qdeviceio.DAQ_trigger
    :members:
    :member-order: bysource
    :show-inheritance:

@@ -18,7 +18,7 @@ peripheral I/O device.
 
    ::
         
-    from DvG_QDeviceIO import QDeviceIO, DAQ_trigger
+    from dvg_qdeviceio import QDeviceIO, DAQ_trigger
    
     dev = My_device()
     dev.connect(115200, "COM1")

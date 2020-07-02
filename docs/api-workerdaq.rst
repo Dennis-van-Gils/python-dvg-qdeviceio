@@ -1,6 +1,6 @@
 Worker_DAQ
 ===================
-.. autoclass:: DvG_QDeviceIO.Worker_DAQ
+.. autoclass:: dvg_qdeviceio.Worker_DAQ
    :members: ,
    :member-order: bysource
    :show-inheritance:
@@ -8,6 +8,6 @@ Worker_DAQ
 Methods
 --------------------
 
-.. automethod:: DvG_QDeviceIO.Worker_DAQ.pause
-.. automethod:: DvG_QDeviceIO.Worker_DAQ.unpause
-.. automethod:: DvG_QDeviceIO.Worker_DAQ.wake_up
+.. automethod:: dvg_qdeviceio.Worker_DAQ.pause
+.. automethod:: dvg_qdeviceio.Worker_DAQ.unpause
+.. automethod:: dvg_qdeviceio.Worker_DAQ.wake_up
