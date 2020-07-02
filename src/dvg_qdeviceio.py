@@ -6,8 +6,8 @@ I/O device.
 __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
-__date__ = "29-06-2020"
-__version__ = "0.0.12"  # v0.0.1 on PyPI is based on prototype DvG_dev_Base__pyqt_lib.py v1.3.3
+__date__ = "02-07-2020"
+__version__ = "0.0.13"  # v0.0.1 on PyPI is based on prototype DvG_dev_Base__pyqt_lib.py v1.3.3
 
 from enum import IntEnum, unique
 import queue
@@ -42,7 +42,7 @@ def _coverage_resolve_trace(fn):
 
 import numpy as np
 from PyQt5 import QtCore
-from DvG_debug_functions import (
+from dvg_debug_functions import (
     print_fancy_traceback as pft,
     dprint,
     tprint,
