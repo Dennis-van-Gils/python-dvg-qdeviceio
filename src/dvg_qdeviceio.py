@@ -7,7 +7,7 @@ __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
 __date__ = "02-07-2020"
-__version__ = "0.1.0"  # v0.0.1 on PyPI is based on prototype DvG_dev_Base__pyqt_lib.py v1.3.3
+__version__ = "0.1.1"  # v0.0.1 on PyPI is based on prototype DvG_dev_Base__pyqt_lib.py v1.3.3
 
 from enum import IntEnum, unique
 import queue
@@ -935,9 +935,13 @@ class Worker_DAQ(QtCore.QObject):
         self.qdev = qdev
         self.dev = None if qdev is None else qdev.dev
 
-        self.DAQ_function = DAQ_function
-        self.critical_not_alive_count = critical_not_alive_count
         self._DAQ_trigger = DAQ_trigger
+        self.DAQ_function = DAQ_function
+        self._DAQ_interval_ms = DAQ_interval_ms
+        self._DAQ_timer_type = DAQ_timer_type
+        self.critical_not_alive_count = critical_not_alive_count
+        self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
+
         self._started_okay = None
 
         # Members specifically for INTERNAL_TIMER
@@ -947,7 +951,6 @@ class Worker_DAQ(QtCore.QObject):
             self._timer.setTimerType(DAQ_timer_type)
             self._timer.timeout.connect(self._perform_DAQ)
 
-            self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
             # TODO: create a special value, like string 'auto_1_Hz' to
             # trigger below calculation
             # self.calc_DAQ_rate_every_N_iter = max(
@@ -958,7 +961,6 @@ class Worker_DAQ(QtCore.QObject):
             self._running = True
             self._qwc = QtCore.QWaitCondition()
             self._mutex_wait = QtCore.QMutex()
-            self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
 
         # Members specifically for CONTINUOUS
         # Note: At start-up, the worker will directly go into a paused state
@@ -967,7 +969,6 @@ class Worker_DAQ(QtCore.QObject):
             self._running = True
             self._pause = None  # Will be set at init of '_do_work()' when 'start_worker_DAQ()' is called
             self._paused = None  # Will be set at init of '_do_work()' when 'start_worker_DAQ()' is called
-            self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
 
         # QElapsedTimer (QET) to keep track of DAQ interval and DAQ rate
         self._QET_DAQ = QtCore.QElapsedTimer()

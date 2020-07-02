@@ -45,3 +45,7 @@ Skipped (I screwed up the versioning)
 -------------------
 * DvG module filenames changed to lowercase
 * Nearing full release status
+
+0.1.1 (2020-07-02)
+-------------------
+* Worker_DAQ now stores all init arguments, some as _private
