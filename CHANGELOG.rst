@@ -43,4 +43,4 @@ Skipped (I screwed up the versioning)
 
 0.0.13 (2020-07-02)
 -------------------
-DvG module filenames changed to lowercase
+* DvG module filenames changed to lowercase
