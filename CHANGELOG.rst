@@ -41,6 +41,7 @@ Skipped (I screwed up the versioning)
 * Changed default DAQ_timer_type from CoarseTimer to PreciseTimer
 * Added more Sphinx documentation
 
-0.0.13 (2020-07-02)
+0.1.0 (2020-07-02)
 -------------------
 * DvG module filenames changed to lowercase
+* Nearing full release status

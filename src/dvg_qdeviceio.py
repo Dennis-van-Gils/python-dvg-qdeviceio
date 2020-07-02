@@ -7,7 +7,7 @@ __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
 __date__ = "02-07-2020"
-__version__ = "0.0.13"  # v0.0.1 on PyPI is based on prototype DvG_dev_Base__pyqt_lib.py v1.3.3
+__version__ = "0.1.0"  # v0.0.1 on PyPI is based on prototype DvG_dev_Base__pyqt_lib.py v1.3.3
 
 from enum import IntEnum, unique
 import queue
@@ -193,7 +193,7 @@ class QDeviceIO(QtCore.QObject):
     not.
 
     Tip:
-        It can be useful to connect this signal to a slot containing, e.g., 
+        It can be useful to connect this signal to a slot containing, e.g.,
         your GUI redraw routine::
 
             from PyQt5 import QtCore
@@ -817,7 +817,7 @@ class Worker_DAQ(QtCore.QObject):
                 multithreading in the first place). That could be acceptable,
                 though, when you need to print debug or critical error
                 information to the terminal, but be aware about this warning.
-                
+
                 Instead, connect to :meth:`QDeviceIO.signal_DAQ_updated` from
                 out of the *main/GUI* thread to instigate changes to the
                 terminal/GUI when needed.
@@ -1359,7 +1359,7 @@ class Worker_jobs(QtCore.QObject):
                 multithreading in the first place). That could be acceptable,
                 though, when you need to print debug or critical error
                 information to the terminal, but be aware about this warning.
-                 
+
                 Instead, connect to :meth:`QDeviceIO.signal_jobs_updated` from
                 out of the *main/GUI* thread to instigate changes to the
                 terminal/GUI when needed.

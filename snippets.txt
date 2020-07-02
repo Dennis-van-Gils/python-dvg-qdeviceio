@@ -11,49 +11,6 @@ https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html#module-sphin
 http://openalea.gforge.inria.fr/doc/openalea/doc/_build/html/source/sphinx/rest_syntax.html
 
 
-    .. rubric:: **Instance variables:**
-
-    .. note:: **Instance variables -- QDeviceIO**
-
-    .. list-table:: 
-       :width: 100%
-       :header-rows: 0
-    
-       * - **Instance variables**
-       
-       
-    :Signals:
-        Type: :obj:`PyQt5.QtCore.pyqtSignal`
-        
-        * :obj:`signal_DAQ_updated()`
-        
-        * :obj:`signal_send_updated()`
-        
-        * :obj:`signal_DAQ_paused()`
-        
-        * :obj:`signal_connection_lost()`
-        
-        
-        
-        
-.. _`QDeviceIO_signals`:
-.. list-table:: 
-   :width: 100%
-   
-   * - **SIGNALS**
-   
-.. automethod:: signal_DAQ_updated
-.. automethod:: signal_send_updated
-.. automethod:: signal_DAQ_paused
-.. automethod:: signal_connection_lost
-   
-.. _`QDeviceIO_methods`:
-.. list-table:: 
-   :width: 100%
-   
-   * - **METHODS**
-   
-   
 """
 DAQ_trigger.INTERNAL_TIMER
     I/O device slaved to an external timer originating from Worker_DAQ
