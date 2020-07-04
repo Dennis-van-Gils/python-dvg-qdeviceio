@@ -52,4 +52,4 @@ Skipped (I screwed up the versioning)
 
 0.1.2 (2020-07-04)
 -------------------
-* Proper use of super(), now passing **kwargs onto subclass QtCore.QObject()
+* Proper use of super(), now passing `**kwargs` onto subclass QtCore.QObject()
