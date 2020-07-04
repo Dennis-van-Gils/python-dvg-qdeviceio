@@ -49,3 +49,7 @@ Skipped (I screwed up the versioning)
 0.1.1 (2020-07-02)
 -------------------
 * Worker_DAQ now stores all init arguments, some as _private
+
+0.1.2 (2020-07-04)
+-------------------
+* Proper use of super(), now passing **kwargs onto subclass QtCore.QObject()

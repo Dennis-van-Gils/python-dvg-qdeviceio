@@ -527,13 +527,12 @@ def test_Worker_DAQ___lose_connection():
     app.quit()
 
 
-class QDeviceIO_subclassed(QDeviceIO, QtCore.QObject):
+class QDeviceIO_subclassed(QDeviceIO):
     def __init__(
-        self, dev=None, DAQ_function=None, debug=False, parent=None,
+        self, dev=None, DAQ_function=None, debug=False, **kwargs,
     ):
-        super(QDeviceIO_subclassed, self).__init__(parent=parent)
-
-        assert self.attach_device(dev) == True
+        # Pass `dev` onto QDeviceIO() and pass `**kwargs` onto QtCore.QObject()
+        super().__init__(dev, **kwargs)
 
         # fmt: off
         self.create_worker_DAQ(
@@ -548,8 +547,8 @@ class QDeviceIO_subclassed(QDeviceIO, QtCore.QObject):
         self.create_worker_jobs(debug=DEBUG)
 
 
-def test_Worker_DAQ___INTERNAL_TIMER__mixin_class():
-    print_title("Worker_DAQ - INTERNAL_TIMER - mixin class")
+def test_Worker_DAQ___INTERNAL_TIMER__subclassed():
+    print_title("Worker_DAQ - INTERNAL_TIMER - subclassed")
 
     def DAQ_function():
         # Must return True when successful, False otherwise
@@ -613,7 +612,7 @@ if __name__ == "__main__":
         test_Worker_jobs__quit_without_start()
         test_Worker_DAQ___rate()
         test_Worker_DAQ___lose_connection()
-        test_Worker_DAQ___INTERNAL_TIMER__mixin_class()
+        test_Worker_DAQ___INTERNAL_TIMER__subclassed()
     else:
         # test_Worker_DAQ___INTERNAL_TIMER()
         # test_Worker_DAQ___INTERNAL_TIMER__start_dead()
@@ -647,5 +646,5 @@ if __name__ == "__main__":
 
         # test_attach_device_twice()
 
-        # test_Worker_DAQ___INTERNAL_TIMER__mixin_class()
+        # test_Worker_DAQ___INTERNAL_TIMER__subclassed()
         test_Worker_DAQ___lose_connection()

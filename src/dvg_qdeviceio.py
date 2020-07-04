@@ -6,8 +6,8 @@ I/O device.
 __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
-__date__ = "02-07-2020"
-__version__ = "0.1.1"  # v0.0.1 on PyPI is based on prototype DvG_dev_Base__pyqt_lib.py v1.3.3
+__date__ = "04-07-2020"
+__version__ = "0.1.2"  # v0.0.1 on PyPI is based on prototype DvG_dev_Base__pyqt_lib.py v1.3.3
 
 from enum import IntEnum, unique
 import queue
@@ -94,19 +94,20 @@ class QDeviceIO(QtCore.QObject):
         Created by calling :meth:`create_worker_jobs`.
 
     Tip:
-        This class can be mixed into your own specific `QDeviceIO` class. E.g.,
-        you could make a derived class, named :class:`QDeviceIO_Arduino`, that
+        You can inherit from `QDeviceIO` to build your own subclass that
         hides the specifics of creating :class:`Worker_DAQ` and
-        :class:`Worker_jobs` from the user::
+        :class:`Worker_jobs` from the user and modifies the default parameter
+        values. E.g., when making a `QDeviceIO` subclass specific to your
+        Arduino project::
 
-            class QDeviceIO_Arduino(DvG_QDeviceIO.QDeviceIO, QtCore.QObject):
+            from dvg_qdeviceio import QDeviceIO, DAQ_trigger
+
+            class Arduino_qdev(QDeviceIO):
                 def __init__(
-                    self, dev=None, DAQ_function=None, debug=False, parent=None,
+                    self, dev=None, DAQ_function=None, debug=False, **kwargs,
                 ):
-                    super(QDeviceIO_Arduino, self).__init__(parent=parent)
-
-                    # In the case of a derived class, we have to attach the device ourselves
-                    self.attach_device(dev)
+                    # Pass `dev` onto QDeviceIO() and pass `**kwargs` onto QtCore.QObject()
+                    super().__init__(dev, **kwargs)
 
                     # Set the DAQ to 10 Hz internal timer
                     self.create_worker_DAQ(
@@ -123,11 +124,11 @@ class QDeviceIO(QtCore.QObject):
 
         Now, the user only has to call the following to get up and running::
 
-            qdev_ard = QDeviceIO_Arduino(
+            ard_qdev = Arduino_qdev(
                 dev=my_Arduino_device,
                 DAQ_function=my_DAQ_function
             )
-            qdev_ard.start()
+            ard_qdev.start()
 
     .. _`QDeviceIO_args`:
 
@@ -149,6 +150,10 @@ class QDeviceIO(QtCore.QObject):
                     communicatable? Default: :const:`True`.
 
             Default: :obj:`None`
+
+        **kwargs:
+            All remaining keyword arguments will be passed onto inherited class
+            :class:`PyQt5.QtCore.QObject`.
 
     .. _`QDeviceIO_attributes`:
 
@@ -233,8 +238,8 @@ class QDeviceIO(QtCore.QObject):
     # Necessary for INTERNAL_TIMER
     _signal_stop_worker_DAQ = QtCore.pyqtSignal()
 
-    def __init__(self, dev=None, parent=None):
-        super(QDeviceIO, self).__init__(parent=parent)
+    def __init__(self, dev=None, **kwargs):
+        super().__init__(**kwargs)  # Pass **kwargs onto QtCore.QObject()
 
         self.dev = self._NoDevice()
         if dev is not None:
@@ -893,6 +898,10 @@ class Worker_DAQ(QtCore.QObject):
 
             Default: :const:`False`.
 
+        **kwargs:
+            All remaining keyword arguments will be passed onto inherited class
+            :class:`PyQt5.QtCore.QObject`.
+
     Attributes:
         qdev (:class:`QDeviceIO`):
             Reference to the parent :class:`QDeviceIO` class instance.
@@ -919,7 +928,6 @@ class Worker_DAQ(QtCore.QObject):
     def __init__(
         self,
         qdev,
-        *,
         DAQ_trigger=DAQ_trigger.INTERNAL_TIMER,
         DAQ_function=None,
         DAQ_interval_ms=100,
@@ -927,8 +935,9 @@ class Worker_DAQ(QtCore.QObject):
         critical_not_alive_count=1,
         calc_DAQ_rate_every_N_iter=10,  # TODO: set default value to 'auto' and implement further down. When integer, take over that value.
         debug=False,
+        **kwargs,
     ):
-        super().__init__()
+        super().__init__(**kwargs)  # Pass **kwargs onto QtCore.QObject()
         self.debug = debug
         self.debug_color = ANSI.CYAN
 
@@ -1385,6 +1394,10 @@ class Worker_jobs(QtCore.QObject):
 
             Default: :const:`False`.
 
+        **kwargs:
+            All remaining keyword arguments will be passed onto inherited class
+            :class:`PyQt5.QtCore.QObject`.
+
     Attributes:
         qdev (:class:`QDeviceIO`):
             Reference to the parent :class:`QDeviceIO` class instance.
@@ -1401,9 +1414,9 @@ class Worker_jobs(QtCore.QObject):
     """
 
     def __init__(
-        self, qdev, *, jobs_function=None, debug=False,
+        self, qdev, jobs_function=None, debug=False, **kwargs,
     ):
-        super().__init__(None)
+        super().__init__(**kwargs)  # Pass **kwargs onto QtCore.QObject()
         self.debug = debug
         self.debug_color = ANSI.YELLOW
 
