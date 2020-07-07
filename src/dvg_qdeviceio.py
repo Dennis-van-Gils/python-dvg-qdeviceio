@@ -6,8 +6,8 @@ I/O device.
 __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
-__date__ = "07-07-2020"
-__version__ = "0.1.3"  # v0.0.1 on PyPI is based on prototype DvG_dev_Base__pyqt_lib.py v1.3.3
+__date__ = "04-07-2020"
+__version__ = "0.1.2"  # v0.0.1 on PyPI is based on prototype DvG_dev_Base__pyqt_lib.py v1.3.3
 
 from enum import IntEnum, unique
 import queue
@@ -550,16 +550,6 @@ class QDeviceIO(QtCore.QObject):
         Returns:
             True if successful, False otherwise.
         """
-
-        if self._thread_DAQ.isFinished():
-            # CASE: Device has had a 'connection_lost' event during run-time,
-            # which already stopped and closed the thread.
-            print(
-                "Closing thread %s already closed."
-                % "{:.<16}".format(self._thread_DAQ.objectName())
-            )
-            return True
-
         if self._thread_DAQ is None or self.worker_DAQ._started_okay is None:
             # CASE: quit() without create()
             #   _thread_DAQ == None
@@ -626,16 +616,6 @@ class QDeviceIO(QtCore.QObject):
         Returns:
             True if successful, False otherwise.
         """
-
-        if self._thread_jobs.isFinished():
-            # CASE: Device has had a 'connection_lost' event during run-time,
-            # which already stopped the worker and closed the thread.
-            print(
-                "Closing thread %s already closed."
-                % "{:.<16}".format(self._thread_jobs.objectName())
-            )
-            return True
-
         if self._thread_jobs is None or self.worker_jobs._started_okay is None:
             # CASE: quit() without create()
             #   _thread_DAQ == None
