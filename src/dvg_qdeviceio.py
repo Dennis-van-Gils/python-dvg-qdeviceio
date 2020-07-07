@@ -7,7 +7,7 @@ __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
 __date__ = "07-07-2020"
-__version__ = "0.2.0"  # v0.0.1 on PyPI is based on prototype DvG_dev_Base__pyqt_lib.py v1.3.3
+__version__ = "0.2.1"  # v0.0.1 on PyPI is based on prototype DvG_dev_Base__pyqt_lib.py v1.3.3
 # pylint: disable=protected-access
 
 from enum import IntEnum, unique
@@ -423,7 +423,7 @@ class QDeviceIO(QtCore.QObject):
         """
         if self._thread_DAQ is None:
             pft(
-                "Worker_DAQ %s: Can't start thread, because it does not exist. "
+                "Worker_DAQ  %s: Can't start thread, because it does not exist. "
                 "Did you forget to call 'create_worker_DAQ()' first?"
                 % self.dev.name
             )
@@ -431,7 +431,7 @@ class QDeviceIO(QtCore.QObject):
 
         elif not self.dev.is_alive:
             dprint(
-                "\nWorker_DAQ %s: WARNING - Device is not alive.\n"
+                "\nWorker_DAQ  %s: WARNING - Device is not alive.\n"
                 % self.dev.name,
                 ANSI.RED,
             )
