@@ -1,7 +1,7 @@
 import sys
 import time
 from PyQt5 import QtCore
-from dvg_qdeviceio import QDeviceIO, DAQ_trigger
+from dvg_qdeviceio import QDeviceIO, DAQ_TRIGGER
 from dvg_debug_functions import dprint, tprint, ANSI
 
 # Show extra debug info in terminal?
@@ -111,7 +111,7 @@ def test_Worker_DAQ___INTERNAL_TIMER(start_alive=True):
     qdev = QDeviceIO(dev)
     # fmt: off
     qdev.create_worker_DAQ(
-        DAQ_trigger                = DAQ_trigger.INTERNAL_TIMER,
+        DAQ_trigger                = DAQ_TRIGGER.INTERNAL_TIMER,
         DAQ_function               = DAQ_function,
         DAQ_interval_ms            = 100,
         critical_not_alive_count   = 10,
@@ -162,7 +162,7 @@ def test_Worker_DAQ___SINGLE_SHOT_WAKE_UP(start_alive=True):
     qdev = QDeviceIO(dev)
     # fmt: off
     qdev.create_worker_DAQ(
-        DAQ_trigger                = DAQ_trigger.SINGLE_SHOT_WAKE_UP,
+        DAQ_trigger                = DAQ_TRIGGER.SINGLE_SHOT_WAKE_UP,
         DAQ_function               = DAQ_function,
         critical_not_alive_count   = 1,
         calc_DAQ_rate_every_N_iter = 5,
@@ -213,7 +213,7 @@ def test_Worker_DAQ___CONTINUOUS(start_alive=True):
     qdev = QDeviceIO(dev)
     # fmt: off
     qdev.create_worker_DAQ(
-        DAQ_trigger                = DAQ_trigger.CONTINUOUS,
+        DAQ_trigger                = DAQ_TRIGGER.CONTINUOUS,
         DAQ_function               = DAQ_function,
         critical_not_alive_count   = 1,
         calc_DAQ_rate_every_N_iter = 5,
@@ -449,7 +449,7 @@ def test_Worker_DAQ___rate():
     qdev = QDeviceIO(dev)
     # fmt: off
     qdev.create_worker_DAQ(
-        DAQ_trigger                = DAQ_trigger.INTERNAL_TIMER,
+        DAQ_trigger                = DAQ_TRIGGER.INTERNAL_TIMER,
         DAQ_function               = DAQ_function,
         DAQ_interval_ms            = 10,
         critical_not_alive_count   = 1,
@@ -506,13 +506,14 @@ def test_Worker_DAQ___lose_connection():
     qdev = QDeviceIO(dev)
     # fmt: off
     qdev.create_worker_DAQ(
-        DAQ_trigger                = DAQ_trigger.INTERNAL_TIMER,
+        DAQ_trigger                = DAQ_TRIGGER.INTERNAL_TIMER,
         DAQ_function               = DAQ_function,
         DAQ_interval_ms            = 20,
         critical_not_alive_count   = 3,
         calc_DAQ_rate_every_N_iter = 20,
         debug                      = DEBUG)
     # fmt: on
+    qdev.create_worker_jobs(debug=DEBUG)
     qdev.signal_connection_lost.connect(process_connection_lost)
     assert qdev.start() == True
 
@@ -524,6 +525,7 @@ def test_Worker_DAQ___lose_connection():
     tprint("About to quit")
     app.processEvents()
     assert qdev.quit() == True
+    assert qdev.quit() == True  # Twice, to check for msg 'already closed'.
     app.quit()
 
 
@@ -536,7 +538,7 @@ class QDeviceIO_subclassed(QDeviceIO):
 
         # fmt: off
         self.create_worker_DAQ(
-            DAQ_trigger                = DAQ_trigger.INTERNAL_TIMER,
+            DAQ_trigger                = DAQ_TRIGGER.INTERNAL_TIMER,
             DAQ_function               = DAQ_function,
             DAQ_interval_ms            = 100,
             critical_not_alive_count   = 10,

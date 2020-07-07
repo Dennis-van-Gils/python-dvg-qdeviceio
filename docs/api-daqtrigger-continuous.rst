@@ -1,14 +1,14 @@
 .. py:module:: dvg_qdeviceio
 .. _`CONTINUOUS`:
 
-DAQ_trigger.CONTINUOUS
+DAQ_TRIGGER.CONTINUOUS
 ----------------------------------
 
 .. figure:: DAQ_trigger_diagram.png
     :target: _images/DAQ_trigger_diagram.png
     :alt: DAQ_trigger diagram
 
-    Typical use-cases for the different :class:`DAQ_trigger` modes of
+    Typical use-cases for the different :class:`DAQ_TRIGGER` modes of
     :class:`Worker_DAQ`. Variations are possible.
 
 ...

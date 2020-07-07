@@ -1,14 +1,14 @@
 .. py:module:: dvg_qdeviceio
 .. _`INTERNAL_TIMER`:
 
-DAQ_trigger.INTERNAL_TIMER
+DAQ_TRIGGER.INTERNAL_TIMER
 ----------------------------------
 
 .. figure:: DAQ_trigger_diagram.png
     :target: _images/DAQ_trigger_diagram.png
     :alt: DAQ_trigger diagram
 
-    Typical use-cases for the different :class:`DAQ_trigger` modes of
+    Typical use-cases for the different :class:`DAQ_TRIGGER` modes of
     :class:`Worker_DAQ`. Variations are possible.
 
 Internal to the :class:`Worker_DAQ` class instance will be a software
@@ -28,17 +28,17 @@ latter is faster.
 
 Example::
 
-    from dvg_qdeviceio import QDeviceIO, DAQ_trigger
+    from dvg_qdeviceio import QDeviceIO, DAQ_TRIGGER
 
     qdev = QDeviceIO(my_device)
     qdev.create_worker_DAQ(
-        DAQ_trigger     = DAQ_trigger.INTERNAL_TIMER,
+        DAQ_trigger     = DAQ_TRIGGER.INTERNAL_TIMER,
         DAQ_function    = my_DAQ_function,
         DAQ_interval_ms = 10,  # 10 ms --> 100 Hz
     )
     qdev.start()
 
 .. Attention::
-    
+
     The typical maximum granularity of :class:`PyQt5.QtCore.QTimer` is
     around ~1 ms, depending on the operating system.

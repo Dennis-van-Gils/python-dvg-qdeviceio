@@ -1,14 +1,14 @@
 .. py:module:: dvg_qdeviceio
 .. _`SINGLE_SHOT_WAKE_UP`:
 
-DAQ_trigger.SINGLE_SHOT_WAKE_UP
+DAQ_TRIGGER.SINGLE_SHOT_WAKE_UP
 ----------------------------------
 
 .. figure:: DAQ_trigger_diagram.png
     :target: _images/DAQ_trigger_diagram.png
     :alt: DAQ_trigger diagram
 
-    Typical use-cases for the different :class:`DAQ_trigger` modes of
+    Typical use-cases for the different :class:`DAQ_TRIGGER` modes of
     :class:`Worker_DAQ`. Variations are possible.
 
 The :class:`Worker_DAQ` class instance will update once only, whenever
@@ -29,20 +29,20 @@ acts as a master.
 
 Example::
 
-    from dvg_qdeviceio import QDeviceIO, DAQ_trigger
+    from dvg_qdeviceio import QDeviceIO, DAQ_TRIGGER
     from PyQt5 import QtCore
 
     app = QtCore.QCoreApplication()
 
     qdev_1 = QDeviceIO(my_device_1)
     qdev_1.create_worker_DAQ(
-        DAQ_trigger  = DAQ_trigger.SINGLE_SHOT_WAKE_UP,
+        DAQ_trigger  = DAQ_TRIGGER.SINGLE_SHOT_WAKE_UP,
         DAQ_function = my_DAQ_function_1,
     )
 
     qdev_2 = QDeviceIO(my_device_2)
     qdev_2.create_worker_DAQ(
-        DAQ_trigger  = DAQ_trigger.SINGLE_SHOT_WAKE_UP,
+        DAQ_trigger  = DAQ_TRIGGER.SINGLE_SHOT_WAKE_UP,
         DAQ_function = my_DAQ_function_2,
     )
 
@@ -63,18 +63,18 @@ Example::
 
 Alternative example (undocumented)::
 
-    from dvg_qdeviceio import QDeviceIO, DAQ_trigger
+    from dvg_qdeviceio import QDeviceIO, DAQ_TRIGGER
 
     qdev_1 = QDeviceIO(my_device_1)
     qdev_1.create_worker_DAQ(
-        DAQ_trigger     = DAQ_trigger.INTERNAL_TIMER,
+        DAQ_trigger     = DAQ_TRIGGER.INTERNAL_TIMER,
         DAQ_function    = my_DAQ_function_1,
         DAQ_interval_ms = 10,  # 10 ms --> 100 Hz
     )
 
     qdev_2 = QDeviceIO(my_device_2)
     qdev_2.create_worker_DAQ(
-        DAQ_trigger  = DAQ_trigger.SINGLE_SHOT_WAKE_UP,
+        DAQ_trigger  = DAQ_TRIGGER.SINGLE_SHOT_WAKE_UP,
         DAQ_function = my_DAQ_function_2,
     )
 

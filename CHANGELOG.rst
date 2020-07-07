@@ -4,7 +4,7 @@ Changelog
 0.2.0 (2020-07-07)
 -------------------
 * `quit_worker_###()`: Added check to see if thread was already closed, due to a `lost_connection` event. This prevents an hanging app during quit.
-* Changed name of enum class `DAQ_trigger` to `DAQ_triggers`
+* Changed name of enum class `DAQ_trigger` to `DAQ_TRIGGER`
 
 0.1.2 (2020-07-04)
 -------------------
