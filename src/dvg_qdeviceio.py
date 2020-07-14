@@ -6,7 +6,7 @@ I/O device.
 __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
-__date__ = "07-07-2020"
+__date__ = "15-07-2020"
 __version__ = "0.2.1"  # v0.0.1 on PyPI is based on prototype DvG_dev_Base__pyqt_lib.py v1.3.3
 # pylint: disable=protected-access
 
@@ -842,7 +842,8 @@ class Worker_DAQ(QtCore.QObject):
                 worker. (You're basically undermining the reason to have
                 multithreading in the first place). That could be acceptable,
                 though, when you need to print debug or critical error
-                information to the terminal, but be aware about this warning.
+                information to the terminal, but be aware about the possible
+                negative effects.
 
                 Instead, connect to :meth:`QDeviceIO.signal_DAQ_updated` from
                 out of the *main/GUI* thread to instigate changes to the
@@ -906,7 +907,7 @@ class Worker_DAQ(QtCore.QObject):
             .. _`arg_calc_DAQ_rate_every_N_iter`:
 
         calc_DAQ_rate_every_N_iter (:obj:`int`, optional):
-            The increase the accuracy of calculating the DAQ rate, it is advised
+            To increase the accuracy of calculating the DAQ rate, it is advised
             to average over several DAQ updates, i.e. iterations. It will take
             at least *N* updates before :attr:`QDeviceIO.obtained_DAQ_rate_Hz`
             will contain the calculated rate.

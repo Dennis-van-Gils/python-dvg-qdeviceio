@@ -14,7 +14,7 @@ DAQ_TRIGGER.INTERNAL_TIMER
 Internal to the :class:`Worker_DAQ` class instance will be a software
 timer of type :class:`PyQt5.QtCore.QTimer` that will periodically tick,
 see the above diagram. Every *tick* of the timer
-will trigger an *update* in :class:`Worker_DAQ`; make it perform a
+will trigger an *update* in :class:`Worker_DAQ`, i.e. make it perform a
 single execution of its :attr:`~Worker_DAQ.DAQ_function` member.
 
 Typically, the :attr:`~Worker_DAQ.DAQ_function` could instruct the
