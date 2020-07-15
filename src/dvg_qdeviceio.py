@@ -157,6 +157,7 @@ class QDeviceIO(QtCore.QObject):
             :class:`PyQt5.QtCore.QObject`.
 
     .. _`QDeviceIO_attributes`:
+    .. rubric:: Attributes:
 
     Attributes:
         dev (:obj:`object` | :obj:`None`):
@@ -924,6 +925,8 @@ class Worker_DAQ(QtCore.QObject):
             All remaining keyword arguments will be passed onto inherited class
             :class:`PyQt5.QtCore.QObject`.
 
+    .. rubric:: Attributes:
+
     Attributes:
         qdev (:class:`QDeviceIO`):
             Reference to the parent :class:`QDeviceIO` class instance.
@@ -1422,6 +1425,8 @@ class Worker_jobs(QtCore.QObject):
         **kwargs:
             All remaining keyword arguments will be passed onto inherited class
             :class:`PyQt5.QtCore.QObject`.
+
+    .. rubric:: Attributes:
 
     Attributes:
         qdev (:class:`QDeviceIO`):
