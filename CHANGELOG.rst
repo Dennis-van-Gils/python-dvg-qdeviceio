@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.2.1 (2020-07-15)
+-------------------
+* Added documentation
+
 0.2.0 (2020-07-07)
 -------------------
 * `quit_worker_###()`: Added check to see if thread was already closed, due to a `lost_connection` event. This prevents an hanging app during quit.

@@ -24,7 +24,7 @@ def read(*names, **kwargs):
 
 setup(
     name="dvg-qdeviceio",
-    version="0.2.0",
+    version="0.2.1",
     license="MIT",
     description="Hassle-free PyQt5 interface for multithreaded data acquisition and communication with an I/O device.",
     long_description="%s\n%s"
@@ -37,7 +37,7 @@ setup(
     long_description_content_type="text/x-rst",
     author="Dennis van Gils",
     author_email="vangils.dennis@gmail.com",
-    url="https://github.com/Dennis-van-Gils/python-dvg-qdeviceio",
+    url="https://python-dvg-qdeviceio.readthedocs.io/",
     packages=find_packages("src"),
     package_dir={"": "src"},
     py_modules=[splitext(basename(path))[0] for path in glob("src/*.py")],
