@@ -30,4 +30,6 @@ and going.
 - Github: https://github.com/Dennis-van-Gils/python-dvg-qdeviceio
 - PyPI: https://pypi.org/project/dvg-qdeviceio
 
-Install: ``pip install dvg-qdeviceio``
+Installation:
+
+    ``pip install dvg-qdeviceio``
