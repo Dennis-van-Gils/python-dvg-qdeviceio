@@ -432,7 +432,7 @@ class QDeviceIO(QtCore.QObject):
 
         elif not self.dev.is_alive:
             dprint(
-                "\nWorker_DAQ  %s: WARNING - Device is not alive.\n"
+                "Worker_DAQ  %s: WARNING - Device is not alive.\n"
                 % self.dev.name,
                 ANSI.RED,
             )
@@ -498,7 +498,7 @@ class QDeviceIO(QtCore.QObject):
 
         elif not self.dev.is_alive:
             dprint(
-                "\nWorker_jobs %s: WARNING - Device is not alive.\n"
+                "Worker_jobs %s: WARNING - Device is not alive.\n"
                 % self.dev.name,
                 ANSI.RED,
             )
