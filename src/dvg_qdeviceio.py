@@ -6,8 +6,8 @@ I/O device.
 __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
-__date__ = "15-07-2020"
-__version__ = "0.2.1"  # v0.0.1 on PyPI is based on prototype DvG_dev_Base__pyqt_lib.py v1.3.3
+__date__ = "17-07-2020"
+__version__ = "0.2.2"
 # pylint: disable=protected-access
 
 from enum import IntEnum, unique
@@ -26,6 +26,15 @@ import sys
 import threading
 from functools import wraps
 
+import numpy as np
+from PyQt5 import QtCore
+from dvg_debug_functions import (
+    print_fancy_traceback as pft,
+    dprint,
+    tprint,
+    ANSI,
+)
+
 running_coverage = "coverage" in sys.modules
 if running_coverage:
     print("\nCode coverage test detected\n")
@@ -40,15 +49,6 @@ def _coverage_resolve_trace(fn):
 
     return wrapped
 
-
-import numpy as np
-from PyQt5 import QtCore
-from dvg_debug_functions import (
-    print_fancy_traceback as pft,
-    dprint,
-    tprint,
-    ANSI,
-)
 
 # Short-hand alias for DEBUG information
 def _cur_thread_name():
@@ -1193,7 +1193,7 @@ class Worker_DAQ(QtCore.QObject):
         # Check the not alive counter
         if self.qdev.not_alive_counter_DAQ >= self.critical_not_alive_count:
             dprint(
-                "\nWorker_DAQ %s: Lost connection to device.\n" % self.dev.name,
+                "Worker_DAQ  %s: Lost connection to device." % self.dev.name,
                 ANSI.RED,
             )
             self.dev.is_alive = False
@@ -1208,14 +1208,22 @@ class Worker_DAQ(QtCore.QObject):
         #   User-supplied DAQ function
         # ----------------------------------
 
-        if not self.DAQ_function is None:
-            if self.DAQ_function():
-                # Did return True, hence was successfull
-                # --> Reset the 'not alive' counter
-                self.qdev.not_alive_counter_DAQ = 0
+        if self.DAQ_function is not None:
+            try:
+                success = self.DAQ_function()
+            except Exception as err:  # pylint: disable=broad-except
+                pft(err)
+                dprint(
+                    "@ Worker_DAQ %s\n" % self.dev.name, ANSI.RED,
+                )
             else:
-                # Did return False, hence was unsuccessfull
-                self.qdev.not_alive_counter_DAQ += 1
+                if success:
+                    # Did return True, hence was successfull
+                    # --> Reset the 'not alive' counter
+                    self.qdev.not_alive_counter_DAQ = 0
+                else:
+                    # Did return False, hence was unsuccessfull
+                    self.qdev.not_alive_counter_DAQ += 1
 
         # ----------------------------------
         #   End user-supplied DAQ function
@@ -1591,6 +1599,9 @@ class Worker_jobs(QtCore.QObject):
                         func(*args)
                     except Exception as err:  # pylint: disable=broad-except
                         pft(err)
+                        dprint(
+                            "@ Worker_jobs %s\n" % self.dev.name, ANSI.RED,
+                        )
                 else:
                     # User-supplied job processing
                     self.jobs_function(func, args)

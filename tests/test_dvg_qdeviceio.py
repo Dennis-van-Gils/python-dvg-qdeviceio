@@ -589,6 +589,45 @@ def test_Worker_DAQ___INTERNAL_TIMER__subclassed():
     assert cnt_jobs_updated == 2
 
 
+def test_Worker_DAQ___ILLEGAL_DAQ_FUNCTION():
+    print_title("Worker_DAQ - ILLEGAL_DAQ_FUNCTION")
+
+    def DAQ_function():
+        # Must return True when successful, False otherwise
+
+        if qdev.update_counter_DAQ == 2:
+            0 / 0
+        else:
+            reply = dev.fake_query_1()
+            return reply[-4:] == "0101"
+
+    app = create_QApplication()
+    dev = FakeDevice()
+    qdev = QDeviceIO(dev)
+    # fmt: off
+    qdev.create_worker_DAQ(
+        DAQ_trigger                = DAQ_TRIGGER.INTERNAL_TIMER,
+        DAQ_function               = DAQ_function,
+        DAQ_interval_ms            = 100,
+        debug                      = DEBUG)
+    # fmt: on
+    qdev.signal_DAQ_updated.connect(process_DAQ_updated)
+    assert qdev.start() == True
+
+    # Simulate device runtime
+    start_time = time.perf_counter()
+    while time.perf_counter() - start_time < 1:
+        app.processEvents()
+        if dev.count_commands == 3:
+            break
+        time.sleep(0.001)  # Do not hog the CPU
+
+    tprint("About to quit")
+    app.processEvents()
+    assert qdev.quit() == True
+    app.quit()
+
+
 # ------------------------------------------------------------------------------
 # ------------------------------------------------------------------------------
 
@@ -615,6 +654,7 @@ if __name__ == "__main__":
         test_Worker_DAQ___rate()
         test_Worker_DAQ___lose_connection()
         test_Worker_DAQ___INTERNAL_TIMER__subclassed()
+        test_Worker_DAQ___ILLEGAL_DAQ_FUNCTION()
     else:
         # test_Worker_DAQ___INTERNAL_TIMER()
         # test_Worker_DAQ___INTERNAL_TIMER__start_dead()
@@ -649,4 +689,5 @@ if __name__ == "__main__":
         # test_attach_device_twice()
 
         # test_Worker_DAQ___INTERNAL_TIMER__subclassed()
-        test_Worker_DAQ___lose_connection()
+        # test_Worker_DAQ___lose_connection()
+        # test_Worker_DAQ___ILLEGAL_DAQ_FUNCTION()

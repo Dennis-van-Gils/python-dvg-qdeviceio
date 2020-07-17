@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.2.2 (2020-07-17)
+-------------------
+* Traceback will be printed when `DAQ_function` raises an internal error.
+
 0.2.1 (2020-07-15)
 -------------------
 * Added documentation
