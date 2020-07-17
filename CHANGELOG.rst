@@ -1,6 +1,11 @@
 Changelog
 =========
 
+0.3.0 (2020-07-18)
+-------------------
+* Updated start & stop machinery Workers
+* Removed unneccesary lambdas
+
 0.2.2 (2020-07-17)
 -------------------
 * Traceback will be printed when `DAQ_function` raises an internal error.

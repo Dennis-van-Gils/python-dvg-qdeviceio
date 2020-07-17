@@ -1065,8 +1065,7 @@ class Worker_DAQ(QtCore.QObject):
             # Wait a tiny amount for the other thread to have entered the
             # QWaitCondition lock, before giving a wakingAll().
             QtCore.QTimer.singleShot(
-                100,
-                lambda: self.qdev._qwc_worker_DAQ_stopped.wakeAll(),  # pylint: disable=unnecessary-lambda
+                100, self.qdev._qwc_worker_DAQ_stopped.wakeAll,
             )
             self._has_stopped = True
 
@@ -1122,8 +1121,7 @@ class Worker_DAQ(QtCore.QObject):
             # in a different thread than this one, to have entered the
             # QWaitCondition lock, before giving a wakingAll().
             QtCore.QTimer.singleShot(
-                100,
-                lambda: self.qdev._qwc_worker_DAQ_stopped.wakeAll(),  # pylint: disable=unnecessary-lambda
+                100, self.qdev._qwc_worker_DAQ_stopped.wakeAll,
             )
             self._has_stopped = True
 
@@ -1232,8 +1230,7 @@ class Worker_DAQ(QtCore.QObject):
             # Wait a tiny amount for the other thread to have entered the
             # QWaitCondition lock, before giving a wakingAll().
             QtCore.QTimer.singleShot(
-                100,
-                lambda: self.qdev._qwc_worker_DAQ_stopped.wakeAll(),  # pylint: disable=unnecessary-lambda
+                100, self.qdev._qwc_worker_DAQ_stopped.wakeAll,
             )
             self._has_stopped = True
 
@@ -1524,8 +1521,7 @@ class Worker_jobs(QtCore.QObject):
         # Wait a tiny amount for the other thread to have entered the
         # QWaitCondition lock, before giving a wakingAll().
         QtCore.QTimer.singleShot(
-            100,
-            lambda: self.qdev._qwc_worker_jobs_stopped.wakeAll(),  # pylint: disable=unnecessary-lambda
+            100, self.qdev._qwc_worker_jobs_stopped.wakeAll,
         )
         self._has_stopped = True
 
