@@ -6,8 +6,8 @@ I/O device.
 __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
-__date__ = "17-07-2020"
-__version__ = "0.2.2"
+__date__ = "18-07-2020"
+__version__ = "0.3.0"
 # pylint: disable=protected-access
 
 from enum import IntEnum, unique
@@ -295,9 +295,6 @@ class QDeviceIO(QtCore.QObject):
             dev (:obj:`object`):
                 Reference to a user-supplied *device* class instance containing
                 I/O methods.
-
-        Returns:
-            True if successful, False otherwise.
         """
         if not hasattr(dev, "name"):
             dev.name = "myDevice"
@@ -310,7 +307,6 @@ class QDeviceIO(QtCore.QObject):
 
         if type(self.dev) == self._NoDevice:
             self.dev = dev
-            return True
         else:
             pft(
                 "Device can be attached only once. Already attached to '%s'."
@@ -380,7 +376,7 @@ class QDeviceIO(QtCore.QObject):
         self,
         DAQ_priority=QtCore.QThread.InheritPriority,
         jobs_priority=QtCore.QThread.InheritPriority,
-    ):
+    ) -> bool:
         """Start the event loop of all of any created workers.
 
         Args:
@@ -411,7 +407,7 @@ class QDeviceIO(QtCore.QObject):
 
         return success
 
-    def start_worker_DAQ(self, priority=QtCore.QThread.InheritPriority):
+    def start_worker_DAQ(self, priority=QtCore.QThread.InheritPriority) -> bool:
         """Start the data acquisition with the device by starting the event loop
         of the :attr:`worker_DAQ` thread.
 
@@ -428,7 +424,7 @@ class QDeviceIO(QtCore.QObject):
                 "Did you forget to call 'create_worker_DAQ()' first?"
                 % self.dev.name
             )
-            sys.exit(404)
+            sys.exit(404)  # --> leaving
 
         elif not self.dev.is_alive:
             dprint(
@@ -436,10 +432,7 @@ class QDeviceIO(QtCore.QObject):
                 % self.dev.name,
                 ANSI.RED,
             )
-            self.worker_DAQ._started_okay = False
-
-        else:
-            self.worker_DAQ._started_okay = True
+            return False  # --> leaving
 
         if self.worker_DAQ.debug:
             tprint(
@@ -475,9 +468,11 @@ class QDeviceIO(QtCore.QObject):
             # to 'start_worker_DAQ()'.
             QtCore.QCoreApplication.processEvents()
 
-        return self.worker_DAQ._started_okay
+        return True
 
-    def start_worker_jobs(self, priority=QtCore.QThread.InheritPriority):
+    def start_worker_jobs(
+        self, priority=QtCore.QThread.InheritPriority
+    ) -> bool:
         """Start maintaining the jobs queue by starting the event loop of the
         :attr:`worker_jobs` thread.
 
@@ -494,7 +489,7 @@ class QDeviceIO(QtCore.QObject):
                 "Did you forget to call 'create_worker_jobs()' first?"
                 % self.dev.name
             )
-            sys.exit(404)
+            sys.exit(404)  # --> leaving
 
         elif not self.dev.is_alive:
             dprint(
@@ -502,10 +497,7 @@ class QDeviceIO(QtCore.QObject):
                 % self.dev.name,
                 ANSI.RED,
             )
-            self.worker_jobs._started_okay = False
-
-        else:
-            self.worker_jobs._started_okay = True
+            return False  # --> leaving
 
         if self.worker_jobs.debug:
             tprint(
@@ -532,13 +524,13 @@ class QDeviceIO(QtCore.QObject):
         # signal event.
         time.sleep(0.05)
 
-        return self.worker_jobs._started_okay
+        return True
 
     # --------------------------------------------------------------------------
     #   Quit workers
     # --------------------------------------------------------------------------
 
-    def quit(self):
+    def quit(self) -> bool:
         """Stop all of any running workers and close their respective threads.
 
         Returns:
@@ -546,29 +538,15 @@ class QDeviceIO(QtCore.QObject):
         """
         return self.quit_worker_DAQ() & self.quit_worker_jobs()
 
-    def quit_worker_DAQ(self):
+    def quit_worker_DAQ(self) -> bool:
         """Stop :attr:`worker_DAQ` and close its thread.
 
         Returns:
             True if successful, False otherwise.
         """
 
-        if self._thread_DAQ is None or self.worker_DAQ._started_okay is None:
-            # CASE: quit() without create()
-            #   _thread_DAQ == None
-            #   _started_okay = None
-            # CASE: quit() without start()
-            #   _thread_DAQ == QThread()
-            #   _started_okay = None
+        if self._thread_DAQ is None or not self.worker_DAQ._has_started:
             return True
-
-        # CASE: quit() with a device dead from the start
-        #   _thread_DAQ == QThread()
-        #   _started_okay = False
-
-        # CASE: quit() with a device alive from the start
-        #   _thread_DAQ == QThread()
-        #   _started_okay = True
 
         if self._thread_DAQ.isFinished():
             # CASE: Device has had a 'connection_lost' event during run-time,
@@ -579,7 +557,7 @@ class QDeviceIO(QtCore.QObject):
             )
             return True
 
-        if not self.worker_DAQ._has_finished:
+        if not self.worker_DAQ._has_stopped:
             if self.worker_DAQ.debug:
                 tprint(
                     "Worker_DAQ  %s: stop requested..." % self.dev.name,
@@ -627,29 +605,15 @@ class QDeviceIO(QtCore.QObject):
             print("FAILED.\n", end="")  # pragma: no cover
             return False  # pragma: no cover
 
-    def quit_worker_jobs(self):
+    def quit_worker_jobs(self) -> bool:
         """Stop :attr:`worker_jobs` and close its thread.
 
         Returns:
             True if successful, False otherwise.
         """
 
-        if self._thread_jobs is None or self.worker_jobs._started_okay is None:
-            # CASE: quit() without create()
-            #   _thread_DAQ == None
-            #   _started_okay = None
-            # CASE: quit() without start()
-            #   _thread_DAQ == QThread()
-            #   _started_okay = None
+        if self._thread_jobs is None or not self.worker_jobs._has_started:
             return True
-
-        # CASE: quit() with a device dead from the start
-        #   _thread_DAQ == QThread()
-        #   _started_okay = False
-
-        # CASE: quit() with a device alive from the start
-        #   _thread_DAQ == QThread()
-        #   _started_okay = True
 
         if self._thread_jobs.isFinished():
             # CASE: Device has had a 'connection_lost' event during run-time,
@@ -660,7 +624,7 @@ class QDeviceIO(QtCore.QObject):
             )
             return True
 
-        if not self.worker_jobs._has_finished:
+        if not self.worker_jobs._has_stopped:
             if self.worker_jobs.debug:
                 tprint(
                     "Worker_jobs %s: stop requested..." % self.dev.name,
@@ -983,8 +947,8 @@ class Worker_DAQ(QtCore.QObject):
         self.critical_not_alive_count = critical_not_alive_count
         self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
 
-        self._started_okay = None
-        self._has_finished = False
+        self._has_started = False
+        self._has_stopped = False
 
         # Members specifically for INTERNAL_TIMER
         if self._DAQ_trigger == DAQ_TRIGGER.INTERNAL_TIMER:
@@ -1038,12 +1002,13 @@ class Worker_DAQ(QtCore.QObject):
 
             if self.debug:
                 tprint(
-                    "Worker_DAQ  %s: start confirmed" % self.dev.name,
+                    "Worker_DAQ  %s: has started" % self.dev.name,
                     self.debug_color,
                 )
 
             # Send confirmation
             self.qdev._qwc_worker_DAQ_started.wakeAll()
+            self._has_started = True
 
         if self.debug:
             tprint(
@@ -1080,7 +1045,7 @@ class Worker_DAQ(QtCore.QObject):
 
                 if self.debug:
                     tprint(
-                        "Worker_DAQ  %s: wake confirmed" % self.dev.name,
+                        "Worker_DAQ  %s: has woken up" % self.dev.name,
                         self.debug_color,
                     )
 
@@ -1093,7 +1058,7 @@ class Worker_DAQ(QtCore.QObject):
 
             if self.debug:
                 tprint(
-                    "Worker_DAQ  %s: stop confirmed" % self.dev.name,
+                    "Worker_DAQ  %s: has stopped" % self.dev.name,
                     self.debug_color,
                 )
 
@@ -1103,8 +1068,7 @@ class Worker_DAQ(QtCore.QObject):
                 100,
                 lambda: self.qdev._qwc_worker_DAQ_stopped.wakeAll(),  # pylint: disable=unnecessary-lambda
             )
-
-            self._has_finished = True
+            self._has_stopped = True
 
         # CONTINUOUS
         elif self._DAQ_trigger == DAQ_TRIGGER.CONTINUOUS:
@@ -1129,8 +1093,7 @@ class Worker_DAQ(QtCore.QObject):
                     if self._pause != self._paused:
                         if self.debug and not init:
                             tprint(
-                                "Worker_DAQ  %s: pause confirmed"
-                                % self.dev.name,
+                                "Worker_DAQ  %s: has paused" % self.dev.name,
                                 self.debug_color,
                             )
                         self.qdev.signal_DAQ_paused.emit()
@@ -1142,8 +1105,7 @@ class Worker_DAQ(QtCore.QObject):
                     if self._pause != self._paused:
                         if self.debug:
                             tprint(
-                                "Worker_DAQ  %s: unpause confirmed"
-                                % self.dev.name,
+                                "Worker_DAQ  %s: has unpaused" % self.dev.name,
                                 self.debug_color,
                             )
                         self._paused = False
@@ -1152,7 +1114,7 @@ class Worker_DAQ(QtCore.QObject):
 
             if self.debug:
                 tprint(
-                    "Worker_DAQ  %s: stop confirmed" % self.dev.name,
+                    "Worker_DAQ  %s: has stopped" % self.dev.name,
                     self.debug_color,
                 )
 
@@ -1163,14 +1125,13 @@ class Worker_DAQ(QtCore.QObject):
                 100,
                 lambda: self.qdev._qwc_worker_DAQ_stopped.wakeAll(),  # pylint: disable=unnecessary-lambda
             )
-
-            self._has_finished = True
+            self._has_stopped = True
 
     @_coverage_resolve_trace
     @QtCore.pyqtSlot()
     def _perform_DAQ(self):
-        if not self._started_okay:
-            return
+        # if not self._has_started:  # TODO: Might be obsolete. Scheduled for remove.
+        #    return
 
         locker = QtCore.QMutexLocker(self.dev.mutex)
         self.qdev.update_counter_DAQ += 1
@@ -1264,7 +1225,7 @@ class Worker_DAQ(QtCore.QObject):
 
             if self.debug:
                 tprint(
-                    "Worker_DAQ  %s: stop confirmed" % self.dev.name,
+                    "Worker_DAQ  %s: has stopped" % self.dev.name,
                     self.debug_color,
                 )
 
@@ -1274,8 +1235,7 @@ class Worker_DAQ(QtCore.QObject):
                 100,
                 lambda: self.qdev._qwc_worker_DAQ_stopped.wakeAll(),  # pylint: disable=unnecessary-lambda
             )
-
-            self._has_finished = True
+            self._has_stopped = True
 
         elif self._DAQ_trigger == DAQ_TRIGGER.SINGLE_SHOT_WAKE_UP:
             self._running = False
@@ -1340,7 +1300,7 @@ class Worker_DAQ(QtCore.QObject):
         if self._DAQ_trigger == DAQ_TRIGGER.SINGLE_SHOT_WAKE_UP:
             if self.debug:
                 tprint(
-                    "Worker_DAQ  %s: wake requested..." % self.dev.name,
+                    "Worker_DAQ  %s: wake-up requested..." % self.dev.name,
                     ANSI.WHITE,
                 )
 
@@ -1476,8 +1436,8 @@ class Worker_jobs(QtCore.QObject):
         self.dev = None if qdev is None else qdev.dev
 
         self.jobs_function = jobs_function
-        self._started_okay = None
-        self._has_finished = False
+        self._has_started = False
+        self._has_stopped = False
 
         self._running = True
         self._qwc = QtCore.QWaitCondition()
@@ -1509,12 +1469,13 @@ class Worker_jobs(QtCore.QObject):
 
             if self.debug:
                 tprint(
-                    "Worker_jobs %s: start confirmed" % self.dev.name,
+                    "Worker_jobs %s: has started" % self.dev.name,
                     self.debug_color,
                 )
 
             # Send confirmation
             self.qdev._qwc_worker_jobs_started.wakeAll()
+            self._has_started = True
 
         if self.debug:
             tprint(
@@ -1544,7 +1505,7 @@ class Worker_jobs(QtCore.QObject):
 
             if self.debug:
                 tprint(
-                    "Worker_jobs %s: wake confirmed" % self.dev.name,
+                    "Worker_jobs %s: has woken up" % self.dev.name,
                     self.debug_color,
                 )
 
@@ -1557,8 +1518,7 @@ class Worker_jobs(QtCore.QObject):
 
         if self.debug:
             tprint(
-                "Worker_jobs %s: stop confirmed" % self.dev.name,
-                self.debug_color,
+                "Worker_jobs %s: has stopped" % self.dev.name, self.debug_color,
             )
 
         # Wait a tiny amount for the other thread to have entered the
@@ -1567,14 +1527,13 @@ class Worker_jobs(QtCore.QObject):
             100,
             lambda: self.qdev._qwc_worker_jobs_stopped.wakeAll(),  # pylint: disable=unnecessary-lambda
         )
-
-        self._has_finished = True
+        self._has_stopped = True
 
     @_coverage_resolve_trace
     @QtCore.pyqtSlot()
     def _perform_jobs(self):
-        if not self._started_okay:
-            return
+        # if not self._has_started:  # TODO: Might be obsolete. Scheduled for remove.
+        #    return
 
         locker = QtCore.QMutexLocker(self.dev.mutex)
         self.qdev.update_counter_jobs += 1
@@ -1684,7 +1643,8 @@ class Worker_jobs(QtCore.QObject):
         """
         if self.debug:
             tprint(
-                "Worker_jobs %s: wake requested..." % self.dev.name, ANSI.WHITE,
+                "Worker_jobs %s: wake-up requested..." % self.dev.name,
+                ANSI.WHITE,
             )
 
         self._qwc.wakeAll()
