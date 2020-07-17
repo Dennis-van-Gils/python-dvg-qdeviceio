@@ -4,6 +4,7 @@ Changelog
 0.2.2 (2020-07-17)
 -------------------
 * Traceback will be printed when `DAQ_function` raises an internal error.
+* Introduced `Worker_###._has_finished` to prevent hang when closing workers twice.
 
 0.2.1 (2020-07-15)
 -------------------

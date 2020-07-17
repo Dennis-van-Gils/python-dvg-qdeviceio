@@ -579,35 +579,40 @@ class QDeviceIO(QtCore.QObject):
             )
             return True
 
-        if self.worker_DAQ.debug:
-            tprint(
-                "Worker_DAQ  %s: stop requested..." % self.dev.name, ANSI.WHITE,
-            )
+        if not self.worker_DAQ._has_finished:
+            if self.worker_DAQ.debug:
+                tprint(
+                    "Worker_DAQ  %s: stop requested..." % self.dev.name,
+                    ANSI.WHITE,
+                )
 
-        if self.worker_DAQ._DAQ_trigger == DAQ_TRIGGER.INTERNAL_TIMER:
-            # The QTimer inside the INTERNAL_TIMER '_do_work()'-routine /must/
-            # be stopped from within the worker_DAQ thread. Hence, we must use a
-            # signal from out of this different thread.
-            self._signal_stop_worker_DAQ.emit()
+            if self.worker_DAQ._DAQ_trigger == DAQ_TRIGGER.INTERNAL_TIMER:
+                # The QTimer inside the INTERNAL_TIMER '_do_work()'-routine
+                # /must/ be stopped from within the worker_DAQ thread. Hence,
+                # we must use a signal from out of this different thread.
+                self._signal_stop_worker_DAQ.emit()
 
-        elif self.worker_DAQ._DAQ_trigger == DAQ_TRIGGER.SINGLE_SHOT_WAKE_UP:
-            # The QWaitCondition inside the SINGLE_SHOT_WAKE_UP '_do_work()'-
-            # routine will likely have locked worker_DAQ. Hence, a
-            # '_signal_stop_worker_DAQ' signal as above might not get handled by
-            # worker_DAQ when emitted from out of this thread. Instead,
-            # we directly call '_stop()' from out of this different thread,
-            # which is perfectly fine for SINGLE_SHOT_WAKE_UP as per my design.
-            self.worker_DAQ._stop()
+            elif (
+                self.worker_DAQ._DAQ_trigger == DAQ_TRIGGER.SINGLE_SHOT_WAKE_UP
+            ):
+                # The QWaitCondition inside the SINGLE_SHOT_WAKE_UP '_do_work()'
+                # routine will likely have locked worker_DAQ. Hence, a
+                # '_signal_stop_worker_DAQ' signal as above might not get
+                # handled by worker_DAQ when emitted from out of this thread.
+                # Instead, we directly call '_stop()' from out of this different
+                # thread, which is perfectly fine for SINGLE_SHOT_WAKE_UP as per
+                # my design.
+                self.worker_DAQ._stop()
 
-        elif self.worker_DAQ._DAQ_trigger == DAQ_TRIGGER.CONTINUOUS:
-            # We directly call '_stop()' from out of this different thread,
-            # which is perfectly fine for CONTINUOUS as per my design.
-            self.worker_DAQ._stop()
+            elif self.worker_DAQ._DAQ_trigger == DAQ_TRIGGER.CONTINUOUS:
+                # We directly call '_stop()' from out of this different thread,
+                # which is perfectly fine for CONTINUOUS as per my design.
+                self.worker_DAQ._stop()
 
-        # Wait for worker_DAQ to confirm having stopped
-        locker_wait = QtCore.QMutexLocker(self._mutex_wait_worker_DAQ)
-        self._qwc_worker_DAQ_stopped.wait(self._mutex_wait_worker_DAQ)
-        locker_wait.unlock()
+            # Wait for worker_DAQ to confirm having stopped
+            locker_wait = QtCore.QMutexLocker(self._mutex_wait_worker_DAQ)
+            self._qwc_worker_DAQ_stopped.wait(self._mutex_wait_worker_DAQ)
+            locker_wait.unlock()
 
         self._thread_DAQ.quit()
         print(
@@ -655,23 +660,25 @@ class QDeviceIO(QtCore.QObject):
             )
             return True
 
-        if self.worker_jobs.debug:
-            tprint(
-                "Worker_jobs %s: stop requested..." % self.dev.name, ANSI.WHITE,
-            )
+        if not self.worker_jobs._has_finished:
+            if self.worker_jobs.debug:
+                tprint(
+                    "Worker_jobs %s: stop requested..." % self.dev.name,
+                    ANSI.WHITE,
+                )
 
-        # The QWaitCondition inside the SINGLE_SHOT_WAKE_UP '_do_work()'-
-        # routine will likely have locked worker_DAQ. Hence, a
-        # '_signal_stop_worker_DAQ' signal might not get handled by
-        # worker_DAQ when emitted from out of this thread. Instead,
-        # we directly call '_stop()' from out of this different thread,
-        # which is perfectly fine as per my design.
-        self.worker_jobs._stop()
+            # The QWaitCondition inside the SINGLE_SHOT_WAKE_UP '_do_work()'-
+            # routine will likely have locked worker_DAQ. Hence, a
+            # '_signal_stop_worker_DAQ' signal might not get handled by
+            # worker_DAQ when emitted from out of this thread. Instead,
+            # we directly call '_stop()' from out of this different thread,
+            # which is perfectly fine as per my design.
+            self.worker_jobs._stop()
 
-        # Wait for worker_jobs to confirm having stopped
-        locker_wait = QtCore.QMutexLocker(self._mutex_wait_worker_jobs)
-        self._qwc_worker_jobs_stopped.wait(self._mutex_wait_worker_jobs)
-        locker_wait.unlock()
+            # Wait for worker_jobs to confirm having stopped
+            locker_wait = QtCore.QMutexLocker(self._mutex_wait_worker_jobs)
+            self._qwc_worker_jobs_stopped.wait(self._mutex_wait_worker_jobs)
+            locker_wait.unlock()
 
         self._thread_jobs.quit()
         print(
@@ -977,6 +984,7 @@ class Worker_DAQ(QtCore.QObject):
         self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
 
         self._started_okay = None
+        self._has_finished = False
 
         # Members specifically for INTERNAL_TIMER
         if self._DAQ_trigger == DAQ_TRIGGER.INTERNAL_TIMER:
@@ -1096,6 +1104,8 @@ class Worker_DAQ(QtCore.QObject):
                 lambda: self.qdev._qwc_worker_DAQ_stopped.wakeAll(),  # pylint: disable=unnecessary-lambda
             )
 
+            self._has_finished = True
+
         # CONTINUOUS
         elif self._DAQ_trigger == DAQ_TRIGGER.CONTINUOUS:
             while self._running:
@@ -1153,6 +1163,8 @@ class Worker_DAQ(QtCore.QObject):
                 100,
                 lambda: self.qdev._qwc_worker_DAQ_stopped.wakeAll(),  # pylint: disable=unnecessary-lambda
             )
+
+            self._has_finished = True
 
     @_coverage_resolve_trace
     @QtCore.pyqtSlot()
@@ -1262,6 +1274,8 @@ class Worker_DAQ(QtCore.QObject):
                 100,
                 lambda: self.qdev._qwc_worker_DAQ_stopped.wakeAll(),  # pylint: disable=unnecessary-lambda
             )
+
+            self._has_finished = True
 
         elif self._DAQ_trigger == DAQ_TRIGGER.SINGLE_SHOT_WAKE_UP:
             self._running = False
@@ -1463,6 +1477,7 @@ class Worker_jobs(QtCore.QObject):
 
         self.jobs_function = jobs_function
         self._started_okay = None
+        self._has_finished = False
 
         self._running = True
         self._qwc = QtCore.QWaitCondition()
@@ -1552,6 +1567,8 @@ class Worker_jobs(QtCore.QObject):
             100,
             lambda: self.qdev._qwc_worker_jobs_stopped.wakeAll(),  # pylint: disable=unnecessary-lambda
         )
+
+        self._has_finished = True
 
     @_coverage_resolve_trace
     @QtCore.pyqtSlot()
