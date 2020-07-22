@@ -456,7 +456,7 @@ def test_Worker_DAQ___rate():
 
     # Simulate device runtime
     start_time = time.perf_counter()
-    while time.perf_counter() - start_time < 0.51:
+    while time.perf_counter() - start_time < 1.51:
         app.processEvents()
         time.sleep(0.001)  # Do not hog the CPU
 

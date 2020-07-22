@@ -1167,7 +1167,7 @@ class Worker_DAQ(QtCore.QObject):
             self._rate_accumulator += 1
             dT = self._QET_rate.elapsed()
 
-            if dT > 250:  # Evaluate every N elapsed milliseconds. Hard-coded.
+            if dT >= 1000:  # Evaluate every N elapsed milliseconds. Hard-coded.
                 self._QET_rate.restart()
                 try:
                     self.qdev.obtained_DAQ_rate_Hz = (
