@@ -1,10 +1,11 @@
 Changelog
 =========
 
-0.3.0 (2020-07-18)
+0.3.0 (2020-07-23)
 -------------------
 * Updated start & stop machinery Workers
 * Removed unneccesary lambdas
+* Revamped DAQ rate calculation. Init arg `calc_DAQ_rate_every_N_iter` got removed.
 
 0.2.2 (2020-07-17)
 -------------------

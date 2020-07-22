@@ -6,7 +6,7 @@ I/O device.
 __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
-__date__ = "18-07-2020"
+__date__ = "22-07-2020"
 __version__ = "0.3.0"
 # pylint: disable=protected-access
 
@@ -116,7 +116,6 @@ class QDeviceIO(QtCore.QObject):
                         DAQ_function               = DAQ_function,
                         DAQ_interval_ms            = 100,  # 100 ms -> 10 Hz
                         critical_not_alive_count   = 3,
-                        calc_DAQ_rate_every_N_iter = 10,
                         debug                      = debug,
                     )
 
@@ -876,16 +875,6 @@ class Worker_DAQ(QtCore.QObject):
 
             Default: :const:`1`.
 
-            .. _`arg_calc_DAQ_rate_every_N_iter`:
-
-        calc_DAQ_rate_every_N_iter (:obj:`int`, optional):
-            To increase the accuracy of calculating the DAQ rate, it is advised
-            to average over several DAQ updates, i.e. iterations. It will take
-            at least *N* updates before :attr:`QDeviceIO.obtained_DAQ_rate_Hz`
-            will contain the calculated rate.
-
-            Default: :const:`10`.
-
         debug (:obj:`bool`, optional):
             Print debug info to the terminal? Warning: Slow! Do not leave on
             unintentionally.
@@ -915,10 +904,6 @@ class Worker_DAQ(QtCore.QObject):
         critical_not_alive_count (:obj:`int`):
             See the similarly named :ref:`initialization parameter
             <arg_critical_not_alive_count>`.
-
-        calc_DAQ_rate_every_N_iter (:obj:`int`):
-            See the similarly named :ref:`initialization parameter
-            <arg_calc_DAQ_rate_every_N_iter>`.
     """
 
     def __init__(
@@ -929,7 +914,6 @@ class Worker_DAQ(QtCore.QObject):
         DAQ_interval_ms=100,
         DAQ_timer_type=QtCore.Qt.PreciseTimer,
         critical_not_alive_count=1,
-        calc_DAQ_rate_every_N_iter=10,  # TODO: set default value to 'auto' and implement further down. When integer, take over that value.
         debug=False,
         **kwargs,
     ):
@@ -945,10 +929,17 @@ class Worker_DAQ(QtCore.QObject):
         self._DAQ_interval_ms = DAQ_interval_ms
         self._DAQ_timer_type = DAQ_timer_type
         self.critical_not_alive_count = critical_not_alive_count
-        self.calc_DAQ_rate_every_N_iter = calc_DAQ_rate_every_N_iter
 
         self._has_started = False
         self._has_stopped = False
+
+        # Keep track of the obtained DAQ interval and DAQ rate using
+        # QElapsedTimer (QET)
+        self._QET_interval = QtCore.QElapsedTimer()
+        self._QET_rate = QtCore.QElapsedTimer()
+        # Accumulates the number of DAQ updates passed since the previous DAQ
+        # rate evaluation
+        self._rate_accumulator = 0
 
         # Members specifically for INTERNAL_TIMER
         if self._DAQ_trigger == DAQ_TRIGGER.INTERNAL_TIMER:
@@ -956,11 +947,6 @@ class Worker_DAQ(QtCore.QObject):
             self._timer.setInterval(DAQ_interval_ms)
             self._timer.setTimerType(DAQ_timer_type)
             self._timer.timeout.connect(self._perform_DAQ)
-
-            # TODO: create a special value, like string 'auto_1_Hz' to
-            # trigger below calculation
-            # self.calc_DAQ_rate_every_N_iter = max(
-            #        round(1e3/DAQ_interval_ms), 1)
 
         # Members specifically for SINGLE_SHOT_WAKE_UP
         elif self._DAQ_trigger == DAQ_TRIGGER.SINGLE_SHOT_WAKE_UP:
@@ -975,12 +961,6 @@ class Worker_DAQ(QtCore.QObject):
             self._running = True
             self._pause = None  # Will be set at init of '_do_work()' when 'start_worker_DAQ()' is called
             self._paused = None  # Will be set at init of '_do_work()' when 'start_worker_DAQ()' is called
-
-        # QElapsedTimer (QET) to keep track of DAQ interval and DAQ rate
-        self._QET_DAQ = QtCore.QElapsedTimer()
-        self._QET_DAQ.start()
-        self._prev_tick_DAQ_update = 0
-        self._prev_tick_DAQ_rate = 0
 
         if self.debug:
             tprint(
@@ -1141,40 +1121,6 @@ class Worker_DAQ(QtCore.QObject):
                 self.debug_color,
             )
 
-        # Keep track of the obtained DAQ update interval
-        now = self._QET_DAQ.elapsed()
-        if self.qdev.update_counter_DAQ > 1:
-            self.qdev.obtained_DAQ_interval_ms = (
-                now - self._prev_tick_DAQ_update
-            )
-        self._prev_tick_DAQ_update = now
-
-        # Keep track of the obtained DAQ rate
-        if self.qdev.update_counter_DAQ % self.calc_DAQ_rate_every_N_iter == 0:
-            try:
-                self.qdev.obtained_DAQ_rate_Hz = (
-                    self.calc_DAQ_rate_every_N_iter
-                    / (now - self._prev_tick_DAQ_rate)
-                    * 1e3
-                )
-            except ZeroDivisionError:  # pragma: no cover
-                self.qdev.obtained_DAQ_rate_Hz = np.nan  # pragma: no cover
-            self._prev_tick_DAQ_rate = now
-
-        # Check the not alive counter
-        if self.qdev.not_alive_counter_DAQ >= self.critical_not_alive_count:
-            dprint(
-                "Worker_DAQ  %s: Lost connection to device." % self.dev.name,
-                ANSI.RED,
-            )
-            self.dev.is_alive = False
-
-            locker.unlock()
-            self._stop()
-            # self.qdev.signal_DAQ_updated.emit()  # TODO: Was uncommented in the prototype version. Check if we can safely remove this line.
-            self.qdev.signal_connection_lost.emit()
-            return
-
         # ----------------------------------
         #   User-supplied DAQ function
         # ----------------------------------
@@ -1208,6 +1154,41 @@ class Worker_DAQ(QtCore.QObject):
             )
 
         locker.unlock()
+
+        # Keep track of the obtained DAQ interval and DAQ rate
+        if not self._QET_interval.isValid():
+            self._QET_interval.start()
+            self._QET_rate.start()
+        else:
+            # Obtained DAQ interval
+            self.qdev.obtained_DAQ_interval_ms = self._QET_interval.restart()
+
+            # Obtained DAQ rate
+            self._rate_accumulator += 1
+            dT = self._QET_rate.elapsed()
+
+            if dT > 250:  # Evaluate every N elapsed milliseconds. Hard-coded.
+                self._QET_rate.restart()
+                try:
+                    self.qdev.obtained_DAQ_rate_Hz = (
+                        self._rate_accumulator / dT * 1e3
+                    )
+                except ZeroDivisionError:  # pragma: no cover
+                    self.qdev.obtained_DAQ_rate_Hz = np.nan  # pragma: no cover
+
+                self._rate_accumulator = 0
+
+        # Check the not alive counter
+        if self.qdev.not_alive_counter_DAQ >= self.critical_not_alive_count:
+            dprint(
+                "Worker_DAQ  %s: Lost connection to device." % self.dev.name,
+                ANSI.RED,
+            )
+            self.dev.is_alive = False
+            self._stop()
+            self.qdev.signal_connection_lost.emit()
+            return
+
         self.qdev.signal_DAQ_updated.emit()
 
     @QtCore.pyqtSlot()

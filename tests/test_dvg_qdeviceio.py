@@ -115,7 +115,6 @@ def test_Worker_DAQ___INTERNAL_TIMER(start_alive=True):
         DAQ_function               = DAQ_function,
         DAQ_interval_ms            = 100,
         critical_not_alive_count   = 10,
-        calc_DAQ_rate_every_N_iter = 5,
         debug                      = DEBUG)
     # fmt: on
     qdev.signal_DAQ_updated.connect(process_DAQ_updated)
@@ -165,7 +164,6 @@ def test_Worker_DAQ___SINGLE_SHOT_WAKE_UP(start_alive=True):
         DAQ_trigger                = DAQ_TRIGGER.SINGLE_SHOT_WAKE_UP,
         DAQ_function               = DAQ_function,
         critical_not_alive_count   = 1,
-        calc_DAQ_rate_every_N_iter = 5,
         debug                      = DEBUG)
     # fmt: on
     qdev.signal_DAQ_updated.connect(process_DAQ_updated)
@@ -176,8 +174,8 @@ def test_Worker_DAQ___SINGLE_SHOT_WAKE_UP(start_alive=True):
 
     # Simulate device runtime
     start_time = time.perf_counter()
-    QtCore.QTimer.singleShot(300, lambda: qdev.wake_up_DAQ())
-    QtCore.QTimer.singleShot(600, lambda: qdev.wake_up_DAQ())
+    QtCore.QTimer.singleShot(300, qdev.wake_up_DAQ)
+    QtCore.QTimer.singleShot(600, qdev.wake_up_DAQ)
     while time.perf_counter() - start_time < 1:
         app.processEvents()
         time.sleep(0.001)  # Do not hog the CPU
@@ -216,7 +214,6 @@ def test_Worker_DAQ___CONTINUOUS(start_alive=True):
         DAQ_trigger                = DAQ_TRIGGER.CONTINUOUS,
         DAQ_function               = DAQ_function,
         critical_not_alive_count   = 1,
-        calc_DAQ_rate_every_N_iter = 5,
         debug                      = DEBUG,
     )
     # fmt: on
@@ -229,10 +226,10 @@ def test_Worker_DAQ___CONTINUOUS(start_alive=True):
 
     # Simulate device runtime
     start_time = time.perf_counter()
-    QtCore.QTimer.singleShot(300, lambda: qdev.pause_DAQ())
-    QtCore.QTimer.singleShot(600, lambda: qdev.unpause_DAQ())
-    QtCore.QTimer.singleShot(900, lambda: qdev.pause_DAQ())
-    QtCore.QTimer.singleShot(1200, lambda: qdev.unpause_DAQ())
+    QtCore.QTimer.singleShot(300, qdev.pause_DAQ)
+    QtCore.QTimer.singleShot(600, qdev.unpause_DAQ)
+    QtCore.QTimer.singleShot(900, qdev.pause_DAQ)
+    QtCore.QTimer.singleShot(1200, qdev.unpause_DAQ)
     while time.perf_counter() - start_time < 1.6:
         app.processEvents()
         if dev.count_commands == 12:
@@ -273,12 +270,12 @@ def test_Worker_jobs(start_alive=True):
     # fmt: off
     # Simulate device runtime
     start_time = time.perf_counter()
-    QtCore.QTimer.singleShot(100, lambda: qdev.process_jobs_queue())
+    QtCore.QTimer.singleShot(100, qdev.process_jobs_queue)
     QtCore.QTimer.singleShot(200, lambda: qdev.send(dev.fake_query_2))
     QtCore.QTimer.singleShot(300, lambda: qdev.add_to_jobs_queue(dev.fake_command_with_argument, 0))
     QtCore.QTimer.singleShot(400, lambda: qdev.add_to_jobs_queue(dev.fake_command_with_argument, 0))
     QtCore.QTimer.singleShot(500, lambda: qdev.add_to_jobs_queue(dev.fake_command_with_argument, 0))
-    QtCore.QTimer.singleShot(600, lambda: qdev.process_jobs_queue())
+    QtCore.QTimer.singleShot(600, qdev.process_jobs_queue)
     QtCore.QTimer.singleShot(700, lambda: qdev.send("trigger_illegal_function_call_error"))
     # fmt: on
     while time.perf_counter() - start_time < 1:
@@ -453,7 +450,6 @@ def test_Worker_DAQ___rate():
         DAQ_function               = DAQ_function,
         DAQ_interval_ms            = 10,
         critical_not_alive_count   = 1,
-        calc_DAQ_rate_every_N_iter = 20,
         debug                      = DEBUG)
     # fmt: on
     assert qdev.start() == True
@@ -510,7 +506,6 @@ def test_Worker_DAQ___lose_connection():
         DAQ_function               = DAQ_function,
         DAQ_interval_ms            = 20,
         critical_not_alive_count   = 3,
-        calc_DAQ_rate_every_N_iter = 20,
         debug                      = DEBUG)
     # fmt: on
     qdev.create_worker_jobs(debug=DEBUG)
@@ -542,7 +537,6 @@ class QDeviceIO_subclassed(QDeviceIO):
             DAQ_function               = DAQ_function,
             DAQ_interval_ms            = 100,
             critical_not_alive_count   = 10,
-            calc_DAQ_rate_every_N_iter = 5,
             debug                      = DEBUG,
         )
         # fmt: on
