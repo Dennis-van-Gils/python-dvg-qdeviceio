@@ -1121,6 +1121,29 @@ class Worker_DAQ(QtCore.QObject):
                 self.debug_color,
             )
 
+        # Keep track of the obtained DAQ interval and DAQ rate
+        if not self._QET_interval.isValid():
+            self._QET_interval.start()
+            self._QET_rate.start()
+        else:
+            # Obtained DAQ interval
+            self.qdev.obtained_DAQ_interval_ms = self._QET_interval.restart()
+
+            # Obtained DAQ rate
+            self._rate_accumulator += 1
+            dT = self._QET_rate.elapsed()
+
+            if dT >= 1000:  # Evaluate every N elapsed milliseconds. Hard-coded.
+                self._QET_rate.restart()
+                try:
+                    self.qdev.obtained_DAQ_rate_Hz = (
+                        self._rate_accumulator / dT * 1e3
+                    )
+                except ZeroDivisionError:  # pragma: no cover
+                    self.qdev.obtained_DAQ_rate_Hz = np.nan  # pragma: no cover
+
+                self._rate_accumulator = 0
+
         # ----------------------------------
         #   User-supplied DAQ function
         # ----------------------------------
@@ -1154,29 +1177,6 @@ class Worker_DAQ(QtCore.QObject):
             )
 
         locker.unlock()
-
-        # Keep track of the obtained DAQ interval and DAQ rate
-        if not self._QET_interval.isValid():
-            self._QET_interval.start()
-            self._QET_rate.start()
-        else:
-            # Obtained DAQ interval
-            self.qdev.obtained_DAQ_interval_ms = self._QET_interval.restart()
-
-            # Obtained DAQ rate
-            self._rate_accumulator += 1
-            dT = self._QET_rate.elapsed()
-
-            if dT >= 1000:  # Evaluate every N elapsed milliseconds. Hard-coded.
-                self._QET_rate.restart()
-                try:
-                    self.qdev.obtained_DAQ_rate_Hz = (
-                        self._rate_accumulator / dT * 1e3
-                    )
-                except ZeroDivisionError:  # pragma: no cover
-                    self.qdev.obtained_DAQ_rate_Hz = np.nan  # pragma: no cover
-
-                self._rate_accumulator = 0
 
         # Check the not alive counter
         if self.qdev.not_alive_counter_DAQ >= self.critical_not_alive_count:
