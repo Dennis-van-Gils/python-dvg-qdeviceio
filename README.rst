@@ -2,8 +2,8 @@
     :target: https://pypi.org/project/dvg-qdeviceio
 .. image:: https://img.shields.io/pypi/pyversions/dvg-qdeviceio
     :target: https://pypi.org/project/dvg-qdeviceio
-.. image:: https://travis-ci.org/Dennis-van-Gils/python-dvg-qdeviceio.svg?branch=master
-    :target: https://travis-ci.org/Dennis-van-Gils/python-dvg-qdeviceio
+.. image:: https://travis-ci.com/Dennis-van-Gils/python-dvg-qdeviceio.svg?branch=master
+    :target: https://travis-ci.com/Dennis-van-Gils/python-dvg-qdeviceio
 .. image:: https://coveralls.io/repos/github/Dennis-van-Gils/python-dvg-qdeviceio/badge.svg?branch=master
     :target: https://coveralls.io/github/Dennis-van-Gils/python-dvg-qdeviceio?branch=master
 .. image:: https://requires.io/github/Dennis-van-Gils/python-dvg-qdeviceio/requirements.svg?branch=master
