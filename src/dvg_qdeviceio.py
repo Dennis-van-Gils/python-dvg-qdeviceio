@@ -237,7 +237,11 @@ class QDeviceIO(QtCore.QObject):
     """
 
     # Necessary for INTERNAL_TIMER
-    _signal_stop_worker_DAQ = QtCore.pyqtSignal()
+    _request_worker_DAQ_stop = QtCore.pyqtSignal()
+
+    # Necessary for CONTINUOUS
+    _request_worker_DAQ_pause = QtCore.pyqtSignal()
+    _request_worker_DAQ_unpause = QtCore.pyqtSignal()
 
     def __init__(self, dev=None, **kwargs):
         super().__init__(**kwargs)  # Pass **kwargs onto QtCore.QObject()
@@ -334,7 +338,9 @@ class QDeviceIO(QtCore.QObject):
             sys.exit(99)
 
         self.worker_DAQ = Worker_DAQ(qdev=self, **kwargs)
-        self._signal_stop_worker_DAQ.connect(self.worker_DAQ._stop)
+        self._request_worker_DAQ_stop.connect(self.worker_DAQ._stop)
+        self._request_worker_DAQ_pause.connect(self.worker_DAQ.pause)
+        self._request_worker_DAQ_unpause.connect(self.worker_DAQ.unpause)
 
         self._thread_DAQ = QtCore.QThread()
         self._thread_DAQ.setObjectName("%s_DAQ" % self.dev.name)
@@ -567,14 +573,14 @@ class QDeviceIO(QtCore.QObject):
                 # The QTimer inside the INTERNAL_TIMER '_do_work()'-routine
                 # /must/ be stopped from within the worker_DAQ thread. Hence,
                 # we must use a signal from out of this different thread.
-                self._signal_stop_worker_DAQ.emit()
+                self._request_worker_DAQ_stop.emit()
 
             elif (
                 self.worker_DAQ._DAQ_trigger == DAQ_TRIGGER.SINGLE_SHOT_WAKE_UP
             ):
                 # The QWaitCondition inside the SINGLE_SHOT_WAKE_UP '_do_work()'
                 # routine will likely have locked worker_DAQ. Hence, a
-                # '_signal_stop_worker_DAQ' signal as above might not get
+                # '_request_worker_DAQ_stop' signal as above might not get
                 # handled by worker_DAQ when emitted from out of this thread.
                 # Instead, we directly call '_stop()' from out of this different
                 # thread, which is perfectly fine for SINGLE_SHOT_WAKE_UP as per
@@ -632,7 +638,7 @@ class QDeviceIO(QtCore.QObject):
 
             # The QWaitCondition inside the SINGLE_SHOT_WAKE_UP '_do_work()'-
             # routine will likely have locked worker_DAQ. Hence, a
-            # '_signal_stop_worker_DAQ' signal might not get handled by
+            # '_request_worker_DAQ_stop' signal might not get handled by
             # worker_DAQ when emitted from out of this thread. Instead,
             # we directly call '_stop()' from out of this different thread,
             # which is perfectly fine as per my design.
@@ -659,6 +665,26 @@ class QDeviceIO(QtCore.QObject):
     # --------------------------------------------------------------------------
     #   worker_DAQ related
     # --------------------------------------------------------------------------
+
+    @QtCore.pyqtSlot()
+    def pause_DAQ(self):
+        """Only useful in mode :const:`DAQ_TRIGGER.CONTINUOUS`. Request
+        :attr:`worker_DAQ` to pause and stop listening for data. After
+        :attr:`worker_DAQ` has achieved the `paused` state, it will emit
+        :obj:`signal_DAQ_paused()`.
+        """
+        if self.worker_DAQ is not None:
+            self._request_worker_DAQ_pause.emit()
+
+    @QtCore.pyqtSlot()
+    def unpause_DAQ(self):
+        """Only useful in mode :const:`DAQ_TRIGGER.CONTINUOUS`. Request
+        :attr:`worker_DAQ` to resume listening for data. Once
+        :attr:`worker_DAQ` has successfully resumed, it will emit
+        :obj:`signal_DAQ_updated()` for every DAQ update.
+        """
+        if self.worker_DAQ is not None:
+            self._request_worker_DAQ_unpause.emit()
 
     @QtCore.pyqtSlot()
     def wake_up_DAQ(self):
@@ -1218,10 +1244,9 @@ class Worker_DAQ(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def pause(self):
-        """Only useful in mode :const:`DAQ_TRIGGER.CONTINUOUS`. Request
-        :attr:`worker_DAQ` to pause and stop listening for data. After
-        :attr:`worker_DAQ` has achieved the `paused` state, it will emit
-        :obj:`signal_DAQ_paused()`.
+        """Only useful in mode :const:`DAQ_TRIGGER.CONTINUOUS`. Pause
+        the worker to stop listening for data. After :attr:`worker_DAQ` has
+        achieved the `paused` state, it will emit :obj:`signal_DAQ_paused()`.
 
         This method should not be called from another thread. Connect this slot
         to a signal instead.
@@ -1240,10 +1265,10 @@ class Worker_DAQ(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def unpause(self):
-        """Only useful in mode :const:`DAQ_TRIGGER.CONTINUOUS`. Request
-        :attr:`worker_DAQ` to resume listening for data. Once
-        :attr:`worker_DAQ` has successfully resumed, it will emit
-        :obj:`signal_DAQ_updated()` for every DAQ update.
+        """Only useful in mode :const:`DAQ_TRIGGER.CONTINUOUS`. Unpause
+        the worker to resume listening for data. Once :attr:`worker_DAQ` has
+        successfully resumed, it will emit :obj:`signal_DAQ_updated()` for every
+        DAQ update.
 
         This method should not be called from another thread. Connect this slot
         to a signal instead.

@@ -1,6 +1,10 @@
 Changelog
 =========
 
+0.4.0 (2021-05-09)
+------------------
+* Fixed buggy ``worker_DAQ`` pause and unpause routines in ``CONTINUOUS`` mode
+
 0.3.0 (2020-07-23)
 -------------------
 * Updated start & stop machinery Workers

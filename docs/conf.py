@@ -18,11 +18,11 @@
 # -- Project information -----------------------------------------------------
 
 project = 'DvG_QDeviceIO'
-copyright = '2020, Dennis van Gils'
+copyright = '2021, Dennis van Gils'
 author = 'Dennis van Gils'
 
 # The full version, including alpha/beta/rc tags
-release = '0.3.0'
+release = '0.4.0'
 
 # -- General configuration ---------------------------------------------------
 
