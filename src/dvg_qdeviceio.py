@@ -6,8 +6,8 @@ I/O device.
 __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
-__date__ = "22-07-2020"
-__version__ = "0.3.0"
+__date__ = "09-05-2021"
+__version__ = "0.4.0"
 # pylint: disable=protected-access
 
 from enum import IntEnum, unique
@@ -225,7 +225,7 @@ class QDeviceIO(QtCore.QObject):
     signal_DAQ_paused = QtCore.pyqtSignal()
     """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by :class:`Worker_DAQ` to confirm
     the worker has entered the `paused` state in a response to
-    :meth:`pause_DAQ`. See also the tip at :obj:`signal_DAQ_updated()`.
+    :meth:`Worker_DAQ.pause`. See also the tip at :obj:`signal_DAQ_updated()`.
     """
 
     signal_connection_lost = QtCore.pyqtSignal()
@@ -661,26 +661,6 @@ class QDeviceIO(QtCore.QObject):
     # --------------------------------------------------------------------------
 
     @QtCore.pyqtSlot()
-    def pause_DAQ(self):
-        """Only useful in mode :const:`DAQ_TRIGGER.CONTINUOUS`. Request
-        :attr:`worker_DAQ` to pause and stop listening for data. After
-        :attr:`worker_DAQ` has achieved the `paused` state, it will emit
-        :obj:`signal_DAQ_paused()`.
-        """
-        if self.worker_DAQ is not None:
-            self.worker_DAQ.pause()
-
-    @QtCore.pyqtSlot()
-    def unpause_DAQ(self):
-        """Only useful in mode :const:`DAQ_TRIGGER.CONTINUOUS`. Request
-        :attr:`worker_DAQ` to resume listening for data. Once
-        :attr:`worker_DAQ` has successfully resumed, it will emit
-        :obj:`signal_DAQ_updated()` for every DAQ update.
-        """
-        if self.worker_DAQ is not None:
-            self.worker_DAQ.unpause()
-
-    @QtCore.pyqtSlot()
     def wake_up_DAQ(self):
         """Only useful in mode :const:`DAQ_TRIGGER.SINGLE_SHOT_WAKE_UP`.
         Request :attr:`worker_DAQ` to wake up and perform a single update,
@@ -972,6 +952,17 @@ class Worker_DAQ(QtCore.QObject):
     @_coverage_resolve_trace
     @QtCore.pyqtSlot()
     def _do_work(self):
+        # fmt: off
+        # Uncomment block to enable Visual Studio Code debugger to have access
+        # to this thread. DO NOT LEAVE BLOCK UNCOMMENTED: Running it outside of
+        # the debugger causes crashes.
+        """
+        if self.debug:
+            import pydevd
+            pydevd.settrace(suspend=False)
+        """
+        # fmt: on
+
         init = True
 
         def confirm_has_started(self):
@@ -1052,6 +1043,8 @@ class Worker_DAQ(QtCore.QObject):
         # CONTINUOUS
         elif self._DAQ_trigger == DAQ_TRIGGER.CONTINUOUS:
             while self._running:
+                QtCore.QCoreApplication.processEvents()  # Essential to fire and process signals
+
                 if init:
                     self._pause = True
                     self._paused = True
@@ -1108,9 +1101,6 @@ class Worker_DAQ(QtCore.QObject):
     @_coverage_resolve_trace
     @QtCore.pyqtSlot()
     def _perform_DAQ(self):
-        # if not self._has_started:  # TODO: Might be obsolete. Scheduled for remove.
-        #    return
-
         locker = QtCore.QMutexLocker(self.dev.mutex)
         self.qdev.update_counter_DAQ += 1
 
@@ -1228,10 +1218,13 @@ class Worker_DAQ(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def pause(self):
-        """Only useful in mode :const:`DAQ_TRIGGER.CONTINUOUS`. See the
-        description at :meth:`QDeviceIO.pause_DAQ`.
+        """Only useful in mode :const:`DAQ_TRIGGER.CONTINUOUS`. Request
+        :attr:`worker_DAQ` to pause and stop listening for data. After
+        :attr:`worker_DAQ` has achieved the `paused` state, it will emit
+        :obj:`signal_DAQ_paused()`.
 
-        This method can be called from another thread.
+        This method should not be called from another thread. Connect this slot
+        to a signal instead.
         """
         if self._DAQ_trigger == DAQ_TRIGGER.CONTINUOUS:
             if self.debug:
@@ -1247,10 +1240,13 @@ class Worker_DAQ(QtCore.QObject):
 
     @QtCore.pyqtSlot()
     def unpause(self):
-        """Only useful in mode :const:`DAQ_TRIGGER.CONTINUOUS`. See the
-        description at :meth:`QDeviceIO.unpause_DAQ`.
+        """Only useful in mode :const:`DAQ_TRIGGER.CONTINUOUS`. Request
+        :attr:`worker_DAQ` to resume listening for data. Once
+        :attr:`worker_DAQ` has successfully resumed, it will emit
+        :obj:`signal_DAQ_updated()` for every DAQ update.
 
-        This method can be called from another thread.
+        This method should not be called from another thread. Connect this slot
+        to a signal instead.
         """
         if self._DAQ_trigger == DAQ_TRIGGER.CONTINUOUS:
             if self.debug:
@@ -1437,6 +1433,17 @@ class Worker_jobs(QtCore.QObject):
     @_coverage_resolve_trace
     @QtCore.pyqtSlot()
     def _do_work(self):
+        # fmt: off
+        # Uncomment block to enable Visual Studio Code debugger to have access
+        # to this thread. DO NOT LEAVE BLOCK UNCOMMENTED: Running it outside of
+        # the debugger causes crashes.
+        """
+        if self.debug:
+            import pydevd
+            pydevd.settrace(suspend=False)
+        """
+        # fmt: on
+
         init = True
 
         def confirm_has_started(self):
@@ -1509,9 +1516,6 @@ class Worker_jobs(QtCore.QObject):
     @_coverage_resolve_trace
     @QtCore.pyqtSlot()
     def _perform_jobs(self):
-        # if not self._has_started:  # TODO: Might be obsolete. Scheduled for remove.
-        #    return
-
         locker = QtCore.QMutexLocker(self.dev.mutex)
         self.qdev.update_counter_jobs += 1
 

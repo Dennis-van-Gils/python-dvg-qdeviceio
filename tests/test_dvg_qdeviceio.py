@@ -206,9 +206,16 @@ def test_Worker_DAQ___CONTINUOUS(start_alive=True):
         reply = dev.fake_query_1()
         return reply[-4:] == "0101"
 
+    class QDeviceIO_with_pause_DAQ(QDeviceIO):
+        request_worker_DAQ_pause = QtCore.pyqtSignal()
+        request_worker_DAQ_unpause = QtCore.pyqtSignal()
+
+        def __init__(self, dev, **kwargs):
+            super().__init__(dev, **kwargs)
+
     app = create_QApplication()
     dev = FakeDevice(start_alive=start_alive)
-    qdev = QDeviceIO(dev)
+    qdev = QDeviceIO_with_pause_DAQ(dev)
     # fmt: off
     qdev.create_worker_DAQ(
         DAQ_trigger                = DAQ_TRIGGER.CONTINUOUS,
@@ -217,19 +224,23 @@ def test_Worker_DAQ___CONTINUOUS(start_alive=True):
         debug                      = DEBUG,
     )
     # fmt: on
+
     qdev.signal_DAQ_updated.connect(process_DAQ_updated)
     qdev.signal_DAQ_paused.connect(process_DAQ_paused)
+    qdev.request_worker_DAQ_pause.connect(qdev.worker_DAQ.pause)
+    qdev.request_worker_DAQ_unpause.connect(qdev.worker_DAQ.unpause)
+
     assert qdev.start() == start_alive
 
     # Immediately fire a call to test if the worker is ready for it
-    qdev.unpause_DAQ()
+    qdev.request_worker_DAQ_unpause.emit()
 
     # Simulate device runtime
     start_time = time.perf_counter()
-    QtCore.QTimer.singleShot(300, qdev.pause_DAQ)
-    QtCore.QTimer.singleShot(600, qdev.unpause_DAQ)
-    QtCore.QTimer.singleShot(900, qdev.pause_DAQ)
-    QtCore.QTimer.singleShot(1200, qdev.unpause_DAQ)
+    QtCore.QTimer.singleShot(300, qdev.request_worker_DAQ_pause.emit)
+    QtCore.QTimer.singleShot(600, qdev.request_worker_DAQ_unpause.emit)
+    QtCore.QTimer.singleShot(900, qdev.request_worker_DAQ_pause.emit)
+    QtCore.QTimer.singleShot(1200, qdev.request_worker_DAQ_unpause.emit)
     while time.perf_counter() - start_time < 1.6:
         app.processEvents()
         if dev.count_commands == 12:
@@ -627,7 +638,7 @@ def test_Worker_DAQ___ILLEGAL_DAQ_FUNCTION():
 
 
 if __name__ == "__main__":
-    ALL = True
+    ALL = False
     if ALL:
         test_Worker_DAQ___INTERNAL_TIMER()
         test_Worker_DAQ___INTERNAL_TIMER__start_dead()
@@ -663,7 +674,7 @@ if __name__ == "__main__":
                 break
         """
 
-        # test_Worker_DAQ___CONTINUOUS()
+        test_Worker_DAQ___CONTINUOUS()
         # test_Worker_DAQ___CONTINUOUS__start_dead()
 
         # test_Worker_DAQ___rate()
