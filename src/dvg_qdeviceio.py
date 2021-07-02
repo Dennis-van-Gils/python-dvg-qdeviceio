@@ -7,7 +7,7 @@ __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
 __date__ = "09-05-2021"
-__version__ = "0.4.0"
+__version__ = "1.0.0"
 # pylint: disable=protected-access
 
 from enum import IntEnum, unique

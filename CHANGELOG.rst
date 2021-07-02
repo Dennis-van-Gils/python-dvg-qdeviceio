@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.0.0 (2021-07-02)
+------------------
+* Stable release, identical to v0.4.0
+
 0.4.0 (2021-05-09)
 ------------------
 * Fixed buggy ``worker_DAQ`` pause and unpause routines in ``CONTINUOUS`` mode
