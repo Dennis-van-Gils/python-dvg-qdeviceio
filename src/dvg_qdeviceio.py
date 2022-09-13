@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""PyQt5 framework for multithreaded data acquisition and communication with an
-I/O device.
+"""PyQt/PySide framework for multithreaded data acquisition and communication
+with an I/O device.
 """
 __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
-__date__ = "09-05-2021"
-__version__ = "1.0.0"
+__date__ = "13-09-2022"
+__version__ = "1.1.0"
 # pylint: disable=protected-access
 
 from enum import IntEnum, unique
@@ -22,12 +22,70 @@ import time
 # method code with 'sys.settrace(threading._trace_hook)' when a code
 # coverage test is detected. When no coverage test is detected, it will just
 # pass the original method untouched.
-import sys
 import threading
 from functools import wraps
 
+# Mechanism to support both PyQt and PySide
+# -----------------------------------------
+import os
+import sys
+
+QT_LIB = os.getenv("PYQTGRAPH_QT_LIB")
+PYSIDE = "PySide"
+PYSIDE2 = "PySide2"
+PYSIDE6 = "PySide6"
+PYQT4 = "PyQt4"
+PYQT5 = "PyQt5"
+PYQT6 = "PyQt6"
+
+# pylint: disable=import-error, no-name-in-module
+# fmt: off
+if QT_LIB is None:
+    libOrder = [PYQT5, PYSIDE2, PYSIDE6, PYQT6]
+    for lib in libOrder:
+        if lib in sys.modules:
+            QT_LIB = lib
+            break
+
+if QT_LIB is None:
+    for lib in libOrder:
+        try:
+            __import__(lib)
+            QT_LIB = lib
+            break
+        except ImportError:
+            pass
+
+if QT_LIB is None:
+    raise Exception(
+        "DvG_QDeviceIO requires PyQt5, PyQt6, PySide2 or PySide6; none of "
+        "these packages could be imported."
+    )
+
+if QT_LIB == PYQT5:
+    from PyQt5 import QtCore                               # type: ignore
+    from PyQt5.QtCore import pyqtSlot as Slot              # type: ignore
+    from PyQt5.QtCore import pyqtSignal as Signal          # type: ignore
+elif QT_LIB == PYQT6:
+    from PyQt6 import QtCore                               # type: ignore
+    from PyQt6.QtCore import pyqtSlot as Slot              # type: ignore
+    from PyQt6.QtCore import pyqtSignal as Signal          # type: ignore
+elif QT_LIB == PYSIDE2:
+    from PySide2 import QtCore                             # type: ignore
+    from PySide2.QtCore import Slot                        # type: ignore
+    from PySide2.QtCore import Signal                      # type: ignore
+elif QT_LIB == PYSIDE6:
+    from PySide6 import QtCore                             # type: ignore
+    from PySide6.QtCore import Slot                        # type: ignore
+    from PySide6.QtCore import Signal                      # type: ignore
+
+# fmt: on
+# pylint: enable=import-error, no-name-in-module
+# \end[Mechanism to support both PyQt and PySide]
+# -----------------------------------------------
+
 import numpy as np
-from PyQt5 import QtCore
+
 from dvg_debug_functions import (
     print_fancy_traceback as pft,
     dprint,
@@ -193,7 +251,7 @@ class QDeviceIO(QtCore.QObject):
             :obj:`signal_connection_lost()` mechanism.
     """
 
-    signal_DAQ_updated = QtCore.pyqtSignal()
+    signal_DAQ_updated = Signal()
     """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by :class:`Worker_DAQ` when its
     :attr:`~Worker_DAQ.DAQ_function` has run and finished, either succesfully or
     not.
@@ -215,20 +273,20 @@ class QDeviceIO(QtCore.QObject):
         decorator.
     """
 
-    signal_jobs_updated = QtCore.pyqtSignal()
+    signal_jobs_updated = Signal()
     """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by :class:`Worker_jobs` when all
     pending jobs in the queue have been sent out to the device in a response to
     :meth:`send` or :meth:`process_jobs_queue`. See also the tip at
     :obj:`signal_DAQ_updated()`.
     """
 
-    signal_DAQ_paused = QtCore.pyqtSignal()
+    signal_DAQ_paused = Signal()
     """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by :class:`Worker_DAQ` to confirm
     the worker has entered the `paused` state in a response to
     :meth:`Worker_DAQ.pause`. See also the tip at :obj:`signal_DAQ_updated()`.
     """
 
-    signal_connection_lost = QtCore.pyqtSignal()
+    signal_connection_lost = Signal()
     """:obj:`PyQt5.QtCore.pyqtSignal`: Emitted by :class:`Worker_DAQ` to
     indicate that we have lost connection to the device. This happens when `N`
     consecutive device I/O operations have failed, where `N` equals the argument
@@ -237,11 +295,11 @@ class QDeviceIO(QtCore.QObject):
     """
 
     # Necessary for INTERNAL_TIMER
-    _request_worker_DAQ_stop = QtCore.pyqtSignal()
+    _request_worker_DAQ_stop = Signal()
 
     # Necessary for CONTINUOUS
-    _request_worker_DAQ_pause = QtCore.pyqtSignal()
-    _request_worker_DAQ_unpause = QtCore.pyqtSignal()
+    _request_worker_DAQ_pause = Signal()
+    _request_worker_DAQ_unpause = Signal()
 
     def __init__(self, dev=None, **kwargs):
         super().__init__(**kwargs)  # Pass **kwargs onto QtCore.QObject()
@@ -379,8 +437,8 @@ class QDeviceIO(QtCore.QObject):
 
     def start(
         self,
-        DAQ_priority=QtCore.QThread.InheritPriority,
-        jobs_priority=QtCore.QThread.InheritPriority,
+        DAQ_priority=QtCore.QThread.Priority.InheritPriority,
+        jobs_priority=QtCore.QThread.Priority.InheritPriority,
     ) -> bool:
         """Start the event loop of all of any created workers.
 
@@ -392,12 +450,12 @@ class QDeviceIO(QtCore.QObject):
                 :const:`PyQt5.QtCore.QThread.TimeCriticalPriority`. Be aware that this
                 is resource heavy, so use sparingly.
 
-                Default: :const:`PyQt5.QtCore.QThread.InheritPriority`.
+                Default: :const:`PyQt5.QtCore.QThread.Priority.InheritPriority`.
 
             jobs_priority (:obj:`PyQt5.QtCore.QThread.Priority`, optional):
                 Like `DAQ_priority`.
 
-                Default: :const:`PyQt5.QtCore.QThread.InheritPriority`.
+                Default: :const:`PyQt5.QtCore.QThread.Priority.InheritPriority`.
 
         Returns:
             True if successful, False otherwise.
@@ -412,12 +470,14 @@ class QDeviceIO(QtCore.QObject):
 
         return success
 
-    def start_worker_DAQ(self, priority=QtCore.QThread.InheritPriority) -> bool:
+    def start_worker_DAQ(
+        self, priority=QtCore.QThread.Priority.InheritPriority
+    ) -> bool:
         """Start the data acquisition with the device by starting the event loop
         of the :attr:`worker_DAQ` thread.
 
         Args:
-            priority (:const:`PyQt5.QtCore.QThread.Priority`, optional):
+            priority (:const:`PyQt5.QtCore.QThread.Priority.Priority`, optional):
                 See :meth:`start` for details.
 
         Returns:
@@ -476,7 +536,7 @@ class QDeviceIO(QtCore.QObject):
         return True
 
     def start_worker_jobs(
-        self, priority=QtCore.QThread.InheritPriority
+        self, priority=QtCore.QThread.Priority.InheritPriority
     ) -> bool:
         """Start maintaining the jobs queue by starting the event loop of the
         :attr:`worker_jobs` thread.
@@ -666,7 +726,7 @@ class QDeviceIO(QtCore.QObject):
     #   worker_DAQ related
     # --------------------------------------------------------------------------
 
-    @QtCore.pyqtSlot()
+    @Slot()
     def pause_DAQ(self):
         """Only useful in mode :const:`DAQ_TRIGGER.CONTINUOUS`. Request
         :attr:`worker_DAQ` to pause and stop listening for data. After
@@ -676,7 +736,7 @@ class QDeviceIO(QtCore.QObject):
         if self.worker_DAQ is not None:
             self._request_worker_DAQ_pause.emit()
 
-    @QtCore.pyqtSlot()
+    @Slot()
     def unpause_DAQ(self):
         """Only useful in mode :const:`DAQ_TRIGGER.CONTINUOUS`. Request
         :attr:`worker_DAQ` to resume listening for data. Once
@@ -686,7 +746,7 @@ class QDeviceIO(QtCore.QObject):
         if self.worker_DAQ is not None:
             self._request_worker_DAQ_unpause.emit()
 
-    @QtCore.pyqtSlot()
+    @Slot()
     def wake_up_DAQ(self):
         """Only useful in mode :const:`DAQ_TRIGGER.SINGLE_SHOT_WAKE_UP`.
         Request :attr:`worker_DAQ` to wake up and perform a single update,
@@ -701,7 +761,7 @@ class QDeviceIO(QtCore.QObject):
     #   worker_jobs related
     # --------------------------------------------------------------------------
 
-    @QtCore.pyqtSlot()
+    @Slot()
     def send(self, instruction, pass_args=()):
         """Put a job on the :attr:`worker_jobs` queue and send out the full
         queue first-in, first-out to the device until empty. Once finished, it
@@ -737,7 +797,7 @@ class QDeviceIO(QtCore.QObject):
         if self.worker_jobs is not None:
             self.worker_jobs.send(instruction, pass_args)
 
-    @QtCore.pyqtSlot()
+    @Slot()
     def add_to_jobs_queue(self, instruction, pass_args=()):
         """Put a job on the :attr:`worker_jobs` queue.
 
@@ -746,7 +806,7 @@ class QDeviceIO(QtCore.QObject):
         if self.worker_jobs is not None:
             self.worker_jobs.add_to_queue(instruction, pass_args)
 
-    @QtCore.pyqtSlot()
+    @Slot()
     def process_jobs_queue(self):
         """Send out the full :attr:`worker_jobs` queue first-in, first-out to
         the device until empty. Once finished, it will emit
@@ -862,14 +922,14 @@ class Worker_DAQ(QtCore.QObject):
             Only useful in mode :const:`DAQ_TRIGGER.INTERNAL_TIMER`.
             The update interval is timed to a :class:`PyQt5.QtCore.QTimer`
             running inside :class:`Worker_DAQ`. The default value
-            :const:`PyQt5.QtCore.Qt.PreciseTimer` tries to ensure the best
+            :const:`PyQt5.QtCore.Qt.TimerType.PreciseTimer` tries to ensure the best
             possible timer accuracy, usually ~1 ms granularity depending on the
             OS, but it is resource heavy so use sparingly. One can reduce the
             CPU load by setting it to less precise timer types
-            :const:`PyQt5.QtCore.Qt.CoarseTimer` or
-            :const:`PyQt5.QtCore.Qt.VeryCoarseTimer`.
+            :const:`PyQt5.QtCore.Qt.TimerType.CoarseTimer` or
+            :const:`PyQt5.QtCore.Qt.TimerType.VeryCoarseTimer`.
 
-            Default: :const:`PyQt5.QtCore.Qt.PreciseTimer`.
+            Default: :const:`PyQt5.QtCore.Qt.TimerType.PreciseTimer`.
 
             .. _`arg_critical_not_alive_count`:
 
@@ -918,7 +978,7 @@ class Worker_DAQ(QtCore.QObject):
         DAQ_trigger=DAQ_TRIGGER.INTERNAL_TIMER,
         DAQ_function=None,
         DAQ_interval_ms=100,
-        DAQ_timer_type=QtCore.Qt.PreciseTimer,
+        DAQ_timer_type=QtCore.Qt.TimerType.PreciseTimer,
         critical_not_alive_count=1,
         debug=False,
         **kwargs,
@@ -976,7 +1036,7 @@ class Worker_DAQ(QtCore.QObject):
             )
 
     @_coverage_resolve_trace
-    @QtCore.pyqtSlot()
+    @Slot()
     def _do_work(self):
         # fmt: off
         # Uncomment block to enable Visual Studio Code debugger to have access
@@ -1062,7 +1122,8 @@ class Worker_DAQ(QtCore.QObject):
             # Wait a tiny amount for the other thread to have entered the
             # QWaitCondition lock, before giving a wakingAll().
             QtCore.QTimer.singleShot(
-                100, self.qdev._qwc_worker_DAQ_stopped.wakeAll,
+                100,
+                self.qdev._qwc_worker_DAQ_stopped.wakeAll,
             )
             self._has_stopped = True
 
@@ -1120,12 +1181,13 @@ class Worker_DAQ(QtCore.QObject):
             # in a different thread than this one, to have entered the
             # QWaitCondition lock, before giving a wakingAll().
             QtCore.QTimer.singleShot(
-                100, self.qdev._qwc_worker_DAQ_stopped.wakeAll,
+                100,
+                self.qdev._qwc_worker_DAQ_stopped.wakeAll,
             )
             self._has_stopped = True
 
     @_coverage_resolve_trace
-    @QtCore.pyqtSlot()
+    @Slot()
     def _perform_DAQ(self):
         locker = QtCore.QMutexLocker(self.dev.mutex)
         self.qdev.update_counter_DAQ += 1
@@ -1170,7 +1232,8 @@ class Worker_DAQ(QtCore.QObject):
             except Exception as err:  # pylint: disable=broad-except
                 pft(err)
                 dprint(
-                    "@ Worker_DAQ %s\n" % self.dev.name, ANSI.RED,
+                    "@ Worker_DAQ %s\n" % self.dev.name,
+                    ANSI.RED,
                 )
             else:
                 if success:
@@ -1207,10 +1270,9 @@ class Worker_DAQ(QtCore.QObject):
 
         self.qdev.signal_DAQ_updated.emit()
 
-    @QtCore.pyqtSlot()
+    @Slot()
     def _stop(self):
-        """Stop the worker to prepare for quitting the worker thread.
-        """
+        """Stop the worker to prepare for quitting the worker thread."""
         if self.debug:
             tprint("Worker_DAQ  %s: stopping" % self.dev.name, self.debug_color)
 
@@ -1227,7 +1289,8 @@ class Worker_DAQ(QtCore.QObject):
             # Wait a tiny amount for the other thread to have entered the
             # QWaitCondition lock, before giving a wakingAll().
             QtCore.QTimer.singleShot(
-                100, self.qdev._qwc_worker_DAQ_stopped.wakeAll,
+                100,
+                self.qdev._qwc_worker_DAQ_stopped.wakeAll,
             )
             self._has_stopped = True
 
@@ -1242,7 +1305,7 @@ class Worker_DAQ(QtCore.QObject):
     #   pause / unpause
     # ----------------------------------------------------------------------
 
-    @QtCore.pyqtSlot()
+    @Slot()
     def pause(self):
         """Only useful in mode :const:`DAQ_TRIGGER.CONTINUOUS`. Pause
         the worker to stop listening for data. After :attr:`worker_DAQ` has
@@ -1263,7 +1326,7 @@ class Worker_DAQ(QtCore.QObject):
             # '_do_work()' as per my design.
             self._pause = True
 
-    @QtCore.pyqtSlot()
+    @Slot()
     def unpause(self):
         """Only useful in mode :const:`DAQ_TRIGGER.CONTINUOUS`. Unpause
         the worker to resume listening for data. Once :attr:`worker_DAQ` has
@@ -1289,7 +1352,7 @@ class Worker_DAQ(QtCore.QObject):
     #   wake_up
     # ----------------------------------------------------------------------
 
-    @QtCore.pyqtSlot()
+    @Slot()
     def wake_up(self):
         """Only useful in mode :const:`DAQ_TRIGGER.SINGLE_SHOT_WAKE_UP`. See the
         description at :meth:`QDeviceIO.wake_up_DAQ`.
@@ -1425,7 +1488,11 @@ class Worker_jobs(QtCore.QObject):
     """
 
     def __init__(
-        self, qdev, jobs_function=None, debug=False, **kwargs,
+        self,
+        qdev,
+        jobs_function=None,
+        debug=False,
+        **kwargs,
     ):
         super().__init__(**kwargs)  # Pass **kwargs onto QtCore.QObject()
         self.debug = debug
@@ -1456,7 +1523,7 @@ class Worker_jobs(QtCore.QObject):
             )
 
     @_coverage_resolve_trace
-    @QtCore.pyqtSlot()
+    @Slot()
     def _do_work(self):
         # fmt: off
         # Uncomment block to enable Visual Studio Code debugger to have access
@@ -1528,18 +1595,20 @@ class Worker_jobs(QtCore.QObject):
 
         if self.debug:
             tprint(
-                "Worker_jobs %s: has stopped" % self.dev.name, self.debug_color,
+                "Worker_jobs %s: has stopped" % self.dev.name,
+                self.debug_color,
             )
 
         # Wait a tiny amount for the other thread to have entered the
         # QWaitCondition lock, before giving a wakingAll().
         QtCore.QTimer.singleShot(
-            100, self.qdev._qwc_worker_jobs_stopped.wakeAll,
+            100,
+            self.qdev._qwc_worker_jobs_stopped.wakeAll,
         )
         self._has_stopped = True
 
     @_coverage_resolve_trace
-    @QtCore.pyqtSlot()
+    @Slot()
     def _perform_jobs(self):
         locker = QtCore.QMutexLocker(self.dev.mutex)
         self.qdev.update_counter_jobs += 1
@@ -1582,7 +1651,8 @@ class Worker_jobs(QtCore.QObject):
                     except Exception as err:  # pylint: disable=broad-except
                         pft(err)
                         dprint(
-                            "@ Worker_jobs %s\n" % self.dev.name, ANSI.RED,
+                            "@ Worker_jobs %s\n" % self.dev.name,
+                            ANSI.RED,
                         )
                 else:
                     # User-supplied job processing
@@ -1601,13 +1671,13 @@ class Worker_jobs(QtCore.QObject):
         locker.unlock()
         self.qdev.signal_jobs_updated.emit()
 
-    @QtCore.pyqtSlot()
+    @Slot()
     def _stop(self):
-        """Stop the worker to prepare for quitting the worker thread
-        """
+        """Stop the worker to prepare for quitting the worker thread"""
         if self.debug:
             tprint(
-                "Worker_jobs %s: stopping" % self.dev.name, self.debug_color,
+                "Worker_jobs %s: stopping" % self.dev.name,
+                self.debug_color,
             )
 
         self._running = False

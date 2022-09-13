@@ -1,6 +1,66 @@
-import sys
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
 import time
-from PyQt5 import QtCore
+
+# Mechanism to support both PyQt and PySide
+# -----------------------------------------
+import os
+import sys
+
+QT_LIB = os.getenv("PYQTGRAPH_QT_LIB")
+PYSIDE = "PySide"
+PYSIDE2 = "PySide2"
+PYSIDE6 = "PySide6"
+PYQT4 = "PyQt4"
+PYQT5 = "PyQt5"
+PYQT6 = "PyQt6"
+
+# pylint: disable=import-error, no-name-in-module
+# fmt: off
+if QT_LIB is None:
+    libOrder = [PYQT5, PYSIDE2, PYSIDE6, PYQT6]
+    for lib in libOrder:
+        if lib in sys.modules:
+            QT_LIB = lib
+            break
+
+if QT_LIB is None:
+    for lib in libOrder:
+        try:
+            __import__(lib)
+            QT_LIB = lib
+            break
+        except ImportError:
+            pass
+
+if QT_LIB is None:
+    raise Exception(
+        "DvG_QDeviceIO requires PyQt5, PyQt6, PySide2 or PySide6; none of "
+        "these packages could be imported."
+    )
+
+if QT_LIB == PYQT5:
+    from PyQt5 import QtCore                               # type: ignore
+    from PyQt5.QtCore import pyqtSlot as Slot              # type: ignore
+    from PyQt5.QtCore import pyqtSignal as Signal          # type: ignore
+elif QT_LIB == PYQT6:
+    from PyQt6 import QtCore                               # type: ignore
+    from PyQt6.QtCore import pyqtSlot as Slot              # type: ignore
+    from PyQt6.QtCore import pyqtSignal as Signal          # type: ignore
+elif QT_LIB == PYSIDE2:
+    from PySide2 import QtCore                             # type: ignore
+    from PySide2.QtCore import Slot                        # type: ignore
+    from PySide2.QtCore import Signal                      # type: ignore
+elif QT_LIB == PYSIDE6:
+    from PySide6 import QtCore                             # type: ignore
+    from PySide6.QtCore import Slot                        # type: ignore
+    from PySide6.QtCore import Signal                      # type: ignore
+
+# fmt: on
+# pylint: enable=import-error, no-name-in-module
+# \end[Mechanism to support both PyQt and PySide]
+# -----------------------------------------------
+
 from dvg_qdeviceio import QDeviceIO, DAQ_TRIGGER
 from dvg_debug_functions import dprint, tprint, ANSI
 
@@ -10,7 +70,7 @@ DEBUG = True
 global cnt_DAQ_updated, cnt_jobs_updated, cnt_DAQ_paused
 
 
-@QtCore.pyqtSlot()
+@Slot()
 def process_DAQ_updated():
     # In production code, your GUI update routine would go here
     tprint("---> received: DAQ_updated")
@@ -18,7 +78,7 @@ def process_DAQ_updated():
     cnt_DAQ_updated += 1
 
 
-@QtCore.pyqtSlot()
+@Slot()
 def process_DAQ_paused():
     # In production code, your GUI update routine would go here
     tprint("---> received: DAQ_paused")
@@ -26,7 +86,7 @@ def process_DAQ_paused():
     cnt_DAQ_paused += 1
 
 
-@QtCore.pyqtSlot()
+@Slot()
 def process_jobs_updated():
     # In production code, your GUI update routine would go here
     tprint("---> received: jobs_updated")
@@ -70,10 +130,15 @@ class FakeDevice:
 
 def create_QApplication():
     QtCore.QThread.currentThread().setObjectName("MAIN")  # For DEBUG info
-    app = 0  # Work-around for kernel crash when using Spyder IDE
+
     # QtWidgets are not needed for pytest and will fail standard Travis test
-    # app = QtWidgets.QApplication(sys.argv)
-    app = QtCore.QCoreApplication(sys.argv)  # Use QCoreApplication instead
+    # (X) app = QtWidgets.QApplication(sys.argv)
+    # Use QCoreApplication instead
+    if QtCore.QCoreApplication.instance():
+        # Use already existing application
+        app = QtCore.QCoreApplication.instance()
+    else:
+        app = QtCore.QCoreApplication(sys.argv)
 
     global cnt_DAQ_updated, cnt_DAQ_paused, cnt_jobs_updated
     cnt_DAQ_updated = 0
@@ -315,7 +380,8 @@ def test_Worker_jobs__jobs_function():
     dev = FakeDevice()
     qdev = QDeviceIO(dev)
     qdev.create_worker_jobs(
-        jobs_function=jobs_function, debug=DEBUG,
+        jobs_function=jobs_function,
+        debug=DEBUG,
     )
     qdev.signal_jobs_updated.connect(process_jobs_updated)
     assert qdev.start() == True
@@ -488,7 +554,7 @@ def test_Worker_DAQ___lose_connection():
     global go
     go = True
 
-    @QtCore.pyqtSlot()
+    @Slot()
     def process_connection_lost():
         tprint("---> received: connection_lost")
         global go
@@ -528,7 +594,11 @@ def test_Worker_DAQ___lose_connection():
 
 class QDeviceIO_subclassed(QDeviceIO):
     def __init__(
-        self, dev=None, DAQ_function=None, debug=False, **kwargs,
+        self,
+        dev=None,
+        DAQ_function=None,
+        debug=False,
+        **kwargs,
     ):
         # Pass `dev` onto QDeviceIO() and pass `**kwargs` onto QtCore.QObject()
         super().__init__(dev, **kwargs)
@@ -556,7 +626,9 @@ def test_Worker_DAQ___INTERNAL_TIMER__subclassed():
     app = create_QApplication()
     dev = FakeDevice()
     qdev = QDeviceIO_subclassed(
-        dev=dev, DAQ_function=DAQ_function, debug=DEBUG,
+        dev=dev,
+        DAQ_function=DAQ_function,
+        debug=DEBUG,
     )
     qdev.signal_DAQ_updated.connect(process_DAQ_updated)
     qdev.signal_jobs_updated.connect(process_jobs_updated)

@@ -24,9 +24,9 @@ def read(*names, **kwargs):
 
 setup(
     name="dvg-qdeviceio",
-    version="1.0.0",
+    version="1.1.0",
     license="MIT",
-    description="Hassle-free PyQt5 interface for multithreaded data acquisition and communication with an I/O device.",
+    description="Hassle-free PyQt/PySide interface for multithreaded data acquisition and communication with an I/O device.",
     long_description="%s\n%s"
     % (
         re.compile("^.. start-badges.*^.. end-badges", re.M | re.S).sub(
@@ -45,7 +45,7 @@ setup(
     zip_safe=False,
     classifiers=[
         # complete classifier list: http://pypi.python.org/pypi?%3Aaction=list_classifiers
-        #'Development Status :: 5 - Production/Stable',
+        "Development Status :: 5 - Production/Stable",
         "License :: OSI Approved :: MIT License",
         "Intended Audience :: Developers",
         "Intended Audience :: Science/Research",
@@ -55,6 +55,7 @@ setup(
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.9",
         "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
         "Topic :: Software Development :: Libraries :: Application Frameworks",
     ],
@@ -63,6 +64,9 @@ setup(
     },
     keywords=[
         "PyQt5",
+        "PyQt6",
+        "PySide2",
+        "PySide6",
         "multithread",
         "device I/O",
         "automation",
@@ -72,7 +76,6 @@ setup(
     python_requires=">=3.6",
     install_requires=[
         "dvg-debug-functions~=2.1",
-        "pyqt5~=5.12",
         "numpy~=1.15",
     ],
     extras_require={},

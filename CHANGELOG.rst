@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.1.0 (2022-09-13)
+------------------
+* Added support for PyQt5, PyQt6, PySide2 and PySide6
+
 1.0.0 (2021-07-02)
 ------------------
 * Stable release, identical to v0.4.0

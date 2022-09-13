@@ -18,7 +18,7 @@
 
 DvG_QDeviceIO
 =============
-*Hassle-free PyQt5 interface for multithreaded data acquisition and communication with an I/O device.*
+*Hassle-free PyQt/PySide interface for multithreaded data acquisition and communication with an I/O device.*
 
 It will manage many necessary components for proper multithreading -- creation
 and handling of the threads, workers, signals and mutexes -- *for you*, reducing
