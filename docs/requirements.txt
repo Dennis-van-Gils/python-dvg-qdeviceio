@@ -1,1 +1,1 @@
-sphinx-qt-documentation>=0.2
+sphinx-qt-documentation==0.3
