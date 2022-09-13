@@ -34,11 +34,11 @@ extensions = [
     "sphinx.ext.napoleon",
     "sphinx.ext.viewcode",
     "sphinx.ext.intersphinx",
-    "sphinx_qt_documentation",
+    #"sphinx_qt_documentation",
 ]
 
 intersphinx_mapping = {
-    "PyQt5": ("https://www.riverbankcomputing.com/static/Docs/PyQt5/", None),
+    #"PyQt5": ("https://www.riverbankcomputing.com/static/Docs/PyQt5/", None),
     "NumPy": ("https://numpy.org/doc/stable/", None),
     "python": ("https://docs.python.org/3", None),
 }
