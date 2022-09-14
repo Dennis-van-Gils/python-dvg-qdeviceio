@@ -6,8 +6,8 @@ with an I/O device.
 __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
-__date__ = "13-09-2022"
-__version__ = "1.1.0"
+__date__ = "14-09-2022"
+__version__ = "1.1.1"
 # pylint: disable=protected-access
 
 from enum import IntEnum, unique
