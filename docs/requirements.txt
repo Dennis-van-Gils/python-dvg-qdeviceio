@@ -1,1 +1,3 @@
-# sphinx-qt-documentation>=0.2
+sphinx~=4.1
+sphinx-qt-documentation~=0.4
+pyqt5~=5.12

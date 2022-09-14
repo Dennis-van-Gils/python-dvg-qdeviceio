@@ -9,6 +9,8 @@ and handling of the threads, workers, signals and mutexes -- *for you*, reducing
 it to just a few simple method calls of a QDeviceIO class instance to get set up
 and going.
 
+Supports PyQt5, PyQt6, PySide2 and PySide6.
+
 - Documentation: https://python-dvg-qdeviceio.readthedocs.io
 - Github: https://github.com/Dennis-van-Gils/python-dvg-qdeviceio
 - PyPI: https://pypi.org/project/dvg-qdeviceio
