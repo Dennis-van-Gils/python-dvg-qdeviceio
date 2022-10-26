@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.1.2 (2022-10-26)
+------------------
+* Minor refactor of mechanism to support PyQt5, PyQt6, PySide2 and PySide6
+
 1.1.1 (2022-09-14)
 ------------------
 * Forgot to bump requirement ``dvg-debug-functions~=2.2`` to ensure support for
