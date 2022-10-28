@@ -6,7 +6,7 @@ with an I/O device.
 __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
-__date__ = "26-10-2022"
+__date__ = "28-10-2022"
 __version__ = "1.1.2"
 # pylint: disable=protected-access
 
@@ -35,9 +35,8 @@ PYQT6 = "PyQt6"
 PYSIDE2 = "PySide2"
 PYSIDE6 = "PySide6"
 QT_LIB_ORDER = [PYQT5, PYSIDE2, PYSIDE6, PYQT6]
-QT_LIB = os.getenv("PYQTGRAPH_QT_LIB")
+QT_LIB = None
 
-# pylint: disable=import-error, no-name-in-module, c-extension-no-member
 if QT_LIB is None:
     for lib in QT_LIB_ORDER:
         if lib in sys.modules:
@@ -61,6 +60,7 @@ if QT_LIB is None:
     )
 
 # fmt: off
+# pylint: disable=import-error, no-name-in-module
 if QT_LIB == PYQT5:
     from PyQt5 import QtCore                               # type: ignore
     from PyQt5.QtCore import pyqtSlot as Slot              # type: ignore
@@ -77,9 +77,9 @@ elif QT_LIB == PYSIDE6:
     from PySide6 import QtCore                             # type: ignore
     from PySide6.QtCore import Slot                        # type: ignore
     from PySide6.QtCore import Signal                      # type: ignore
+# pylint: enable=import-error, no-name-in-module
 # fmt: on
 
-# pylint: enable=import-error, no-name-in-module, c-extension-no-member
 # \end[Mechanism to support both PyQt and PySide]
 # -----------------------------------------------
 
