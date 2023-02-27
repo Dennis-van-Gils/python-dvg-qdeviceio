@@ -76,7 +76,7 @@ setup(
     ],
     python_requires=">=3.6",
     install_requires=[
-        "dvg-debug-functions~=2.2",
+        "dvg-debug-functions~=2.4",
         "numpy~=1.15",
     ],
     extras_require={},
