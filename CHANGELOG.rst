@@ -1,6 +1,11 @@
 Changelog
 =========
 
+1.2.0 (2023-02-27)
+------------------
+* Deprecated `requires.io` and `travis`
+* Raise `ImportError` instead of general `Exception`
+
 1.1.2 (2022-10-26)
 ------------------
 * Minor refactor of mechanism to support PyQt5, PyQt6, PySide2 and PySide6
