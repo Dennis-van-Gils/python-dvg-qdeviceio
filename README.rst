@@ -4,6 +4,8 @@
     :target: https://pypi.org/project/dvg-qdeviceio
 .. image:: https://github.com/Dennis-van-Gils/python-dvg-qdeviceio/actions/workflows/python-package.yml/badge.svg
     :target: https://github.com/Dennis-van-Gils/python-dvg-qdeviceio/actions/workflows/python-package.yml
+.. image:: https://coveralls.io/repos/github/Dennis-van-Gils/python-dvg-qdeviceio/badge.svg
+    :target: https://coveralls.io/github/Dennis-van-Gils/python-dvg-qdeviceio
 .. image:: https://readthedocs.org/projects/python-dvg-qdeviceio/badge/?version=latest
     :target: https://python-dvg-qdeviceio.readthedocs.io/en/latest/?badge=latest
 .. image:: https://img.shields.io/badge/code%20style-black-000000.svg

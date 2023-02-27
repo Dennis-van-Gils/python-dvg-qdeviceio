@@ -701,61 +701,23 @@ def test_Worker_DAQ___ILLEGAL_DAQ_FUNCTION():
 
 
 if __name__ == "__main__":
-    ALL = True
-    if ALL:
-        test_Worker_DAQ___INTERNAL_TIMER()
-        test_Worker_DAQ___INTERNAL_TIMER__start_dead()
-        test_Worker_DAQ___SINGLE_SHOT_WAKE_UP()
-        test_Worker_DAQ___SINGLE_SHOT_WAKE_UP__start_dead()
-        test_Worker_DAQ___CONTINUOUS()
-        test_Worker_DAQ___CONTINUOUS__start_dead()
-        test_Worker_jobs()
-        test_Worker_jobs__start_dead()
-        test_Worker_jobs__jobs_function()
-        test_attach_device_twice()
-        test_Worker_DAQ___no_device_attached()
-        test_Worker_jobs__no_device_attached()
-        test_Worker_DAQ___start_without_create()
-        test_Worker_jobs__start_without_create()
-        test_Worker_DAQ___quit_without_start()
-        test_Worker_jobs__quit_without_start()
-        test_Worker_DAQ___rate()
-        test_Worker_DAQ___lose_connection()
-        test_Worker_DAQ___INTERNAL_TIMER__subclassed()
-        test_Worker_DAQ___ILLEGAL_DAQ_FUNCTION()
-    else:
-        # test_Worker_DAQ___INTERNAL_TIMER()
-        # test_Worker_DAQ___INTERNAL_TIMER__start_dead()
-        # test_Worker_DAQ___SINGLE_SHOT_WAKE_UP()
-        # test_Worker_DAQ___SINGLE_SHOT_WAKE_UP__start_dead()
-
-        """
-        import msvcrt
-        while True:
-            test_Worker_DAQ___CONTINUOUS()
-            if msvcrt.kbhit() and msvcrt.getch() == chr(27).encode():
-                break
-        """
-
-        test_Worker_DAQ___CONTINUOUS()
-        # test_Worker_DAQ___CONTINUOUS__start_dead()
-
-        # test_Worker_DAQ___rate()
-        # test_Worker_DAQ___lose_connection()
-        # test_Worker_DAQ___no_device_attached()
-        # test_Worker_DAQ___start_without_create()
-
-        # test_Worker_jobs()
-        # test_Worker_jobs__start_dead()
-        # test_Worker_jobs__jobs_function()
-        # test_Worker_jobs__no_device_attached()
-        # test_Worker_jobs__start_without_create()
-
-        # test_Worker_DAQ___quit_without_start()
-        # test_Worker_jobs__quit_without_start()
-
-        # test_attach_device_twice()
-
-        # test_Worker_DAQ___INTERNAL_TIMER__subclassed()
-        # test_Worker_DAQ___lose_connection()
-        # test_Worker_DAQ___ILLEGAL_DAQ_FUNCTION()
+    test_Worker_DAQ___INTERNAL_TIMER()
+    test_Worker_DAQ___INTERNAL_TIMER__start_dead()
+    test_Worker_DAQ___SINGLE_SHOT_WAKE_UP()
+    test_Worker_DAQ___SINGLE_SHOT_WAKE_UP__start_dead()
+    test_Worker_DAQ___CONTINUOUS()
+    test_Worker_DAQ___CONTINUOUS__start_dead()
+    test_Worker_jobs()
+    test_Worker_jobs__start_dead()
+    test_Worker_jobs__jobs_function()
+    test_attach_device_twice()
+    test_Worker_DAQ___no_device_attached()
+    test_Worker_jobs__no_device_attached()
+    test_Worker_DAQ___start_without_create()
+    test_Worker_jobs__start_without_create()
+    test_Worker_DAQ___quit_without_start()
+    test_Worker_jobs__quit_without_start()
+    test_Worker_DAQ___rate()
+    test_Worker_DAQ___lose_connection()
+    test_Worker_DAQ___INTERNAL_TIMER__subclassed()
+    test_Worker_DAQ___ILLEGAL_DAQ_FUNCTION()
