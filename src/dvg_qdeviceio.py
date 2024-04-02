@@ -8,7 +8,7 @@ __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
 __date__ = "02-04-2024"
 __version__ = "1.2.0"
-# pylint: disable=protected-access, wrong-import-position
+# pylint: disable=protected-access, wrong-import-position, too-many-lines
 
 import os
 import sys
@@ -53,7 +53,7 @@ if QT_LIB is None:
             pass
 
 if QT_LIB is None:
-    this_file = __file__.split(os.sep)[-1]
+    this_file = __file__.rsplit(os.sep, maxsplit=1)[-1]
     raise ImportError(
         f"{this_file} requires PyQt5, PyQt6, PySide2 or PySide6; "
         "none of these packages could be imported."
