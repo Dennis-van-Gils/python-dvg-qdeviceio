@@ -7,7 +7,6 @@ Stick to Google style:
 https://pythonhosted.org/an_example_pypi_project/sphinx.html
 https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html#module-sphinx.ext.napoleon
 
-
 http://openalea.gforge.inria.fr/doc/openalea/doc/_build/html/source/sphinx/rest_syntax.html
 
 
