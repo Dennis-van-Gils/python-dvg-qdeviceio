@@ -24,7 +24,7 @@ def read(*names, **kwargs):
 
 setup(
     name="dvg-qdeviceio",
-    version="1.2.0",
+    version="1.3.0",
     license="MIT",
     description="Hassle-free PyQt/PySide interface for multithreaded data acquisition and communication with an I/O device.",
     long_description="%s\n%s"
@@ -57,6 +57,7 @@ setup(
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: 3.9",
         "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
         "Topic :: Scientific/Engineering :: Electronic Design Automation (EDA)",
         "Topic :: Software Development :: Libraries :: Application Frameworks",
     ],

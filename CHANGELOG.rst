@@ -1,6 +1,12 @@
 Changelog
 =========
 
+1.3.0 (2024-04-02)
+------------------
+* Support Python 3.11
+* All f-strings
+* Type checking via `isinstance()`, not type == ...
+
 1.2.0 (2023-02-27)
 ------------------
 * Deprecated `requires.io` and `travis`

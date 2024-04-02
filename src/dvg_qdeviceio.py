@@ -7,7 +7,7 @@ __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
 __date__ = "02-04-2024"
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 # pylint: disable=protected-access, wrong-import-position, too-many-lines
 
 import os
