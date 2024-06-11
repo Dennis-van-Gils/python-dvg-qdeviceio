@@ -1,73 +1,31 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
+"""Tests near 100% code coverage"""
+# pylint: disable=missing-function-docstring, global-statement
 
-import os
 import sys
 import time
 
-# Mechanism to support both PyQt and PySide
-# -----------------------------------------
+import pytest
 
-PYQT5 = "PyQt5"
-PYQT6 = "PyQt6"
-PYSIDE2 = "PySide2"
-PYSIDE6 = "PySide6"
-QT_LIB_ORDER = [PYQT5, PYSIDE2, PYSIDE6, PYQT6]
-QT_LIB = None
+from qtpy import QtCore
+from qtpy.QtCore import Slot  # type: ignore
 
-if QT_LIB is None:
-    for lib in QT_LIB_ORDER:
-        if lib in sys.modules:
-            QT_LIB = lib
-            break
-
-if QT_LIB is None:
-    for lib in QT_LIB_ORDER:
-        try:
-            __import__(lib)
-            QT_LIB = lib
-            break
-        except ImportError:
-            pass
-
-if QT_LIB is None:
-    this_file = __file__.split(os.sep)[-1]
-    raise ImportError(
-        f"{this_file} requires PyQt5, PyQt6, PySide2 or PySide6; "
-        "none of these packages could be imported."
-    )
-
-# fmt: off
-# pylint: disable=import-error, no-name-in-module
-if QT_LIB == PYQT5:
-    from PyQt5 import QtCore                               # type: ignore
-    from PyQt5.QtCore import pyqtSlot as Slot              # type: ignore
-    from PyQt5.QtCore import pyqtSignal as Signal          # type: ignore
-elif QT_LIB == PYQT6:
-    from PyQt6 import QtCore                               # type: ignore
-    from PyQt6.QtCore import pyqtSlot as Slot              # type: ignore
-    from PyQt6.QtCore import pyqtSignal as Signal          # type: ignore
-elif QT_LIB == PYSIDE2:
-    from PySide2 import QtCore                             # type: ignore
-    from PySide2.QtCore import Slot                        # type: ignore
-    from PySide2.QtCore import Signal                      # type: ignore
-elif QT_LIB == PYSIDE6:
-    from PySide6 import QtCore                             # type: ignore
-    from PySide6.QtCore import Slot                        # type: ignore
-    from PySide6.QtCore import Signal                      # type: ignore
-# pylint: enable=import-error, no-name-in-module
-# fmt: on
-
-# \end[Mechanism to support both PyQt and PySide]
-# -----------------------------------------------
-
-from dvg_qdeviceio import QDeviceIO, DAQ_TRIGGER
 from dvg_debug_functions import dprint, tprint, ANSI
+from dvg_qdeviceio import QDeviceIO, DAQ_TRIGGER
 
 # Show extra debug info in terminal?
 DEBUG = True
 
-global cnt_DAQ_updated, cnt_jobs_updated, cnt_DAQ_paused
+# GLobals
+cnt_DAQ_updated = 0
+cnt_jobs_updated = 0
+cnt_DAQ_paused = 0
+
+# NOTE: The global 'go' mechanism used here is a quick and dirty way to
+# pytest. In production, it should be implemented by an boolean external
+# class member.
+go = True
 
 
 @Slot()
@@ -124,11 +82,11 @@ class FakeDevice:
         return self._send("-> reply ~~~~")
 
     def fake_command_with_argument(self, val: int):
-        tprint_tab("-> command(arg=%i)" % val)
+        tprint_tab(f"-> command(arg={val:d})")
         self.count_commands += 1
 
 
-def create_QApplication():
+def create_QApplication() -> QtCore.QCoreApplication:
     QtCore.QThread.currentThread().setObjectName("MAIN")  # For DEBUG info
 
     # QtWidgets are not needed for pytest and will fail standard Travis test
@@ -140,6 +98,9 @@ def create_QApplication():
     else:
         app = QtCore.QCoreApplication(sys.argv)
 
+    if app is None:
+        sys.exit(0)
+
     global cnt_DAQ_updated, cnt_DAQ_paused, cnt_jobs_updated
     cnt_DAQ_updated = 0
     cnt_DAQ_paused = 0
@@ -149,12 +110,12 @@ def create_QApplication():
 
 
 def print_title(title):
-    dprint("\n%s" % title, ANSI.PURPLE)
+    dprint(f"\n{title}", ANSI.PURPLE)
     dprint("-" * 50, ANSI.PURPLE)
 
 
-def tprint_tab(str_msg, ANSI_color=None):
-    dprint(" " * 60 + "%.4f %s" % (time.perf_counter(), str_msg), ANSI_color)
+def tprint_tab(str_msg):
+    dprint(" " * 60 + f"{time.perf_counter():.4f} {str_msg}")
 
 
 # ------------------------------------------------------------------------------
@@ -195,7 +156,7 @@ def test_Worker_DAQ___INTERNAL_TIMER(start_alive=True):
 
     tprint("About to quit")
     app.processEvents()
-    assert qdev.quit() == True
+    assert qdev.quit() is True
     app.quit()
 
     if start_alive:
@@ -247,7 +208,7 @@ def test_Worker_DAQ___SINGLE_SHOT_WAKE_UP(start_alive=True):
 
     tprint("About to quit")
     app.processEvents()
-    assert qdev.quit() == True
+    assert qdev.quit() is True
     app.quit()
 
     if start_alive:
@@ -305,7 +266,7 @@ def test_Worker_DAQ___CONTINUOUS(start_alive=True):
 
     tprint("About to quit")
     app.processEvents()
-    assert qdev.quit() == True
+    assert qdev.quit() is True
     app.quit()
 
     if start_alive:
@@ -351,7 +312,7 @@ def test_Worker_jobs(start_alive=True):
 
     tprint("About to quit")
     app.processEvents()
-    assert qdev.quit() == True
+    assert qdev.quit() is True
     app.quit()
 
     if start_alive:
@@ -384,7 +345,7 @@ def test_Worker_jobs__jobs_function():
         debug=DEBUG,
     )
     qdev.signal_jobs_updated.connect(process_jobs_updated)
-    assert qdev.start() == True
+    assert qdev.start() is True
 
     # Immediately fire a call to test if the worker is ready for it
     qdev.send(dev.fake_query_2)
@@ -401,7 +362,7 @@ def test_Worker_jobs__jobs_function():
 
     tprint("About to quit")
     app.processEvents()
-    assert qdev.quit() == True
+    assert qdev.quit() is True
     app.quit()
 
     assert dev.count_commands == 3
@@ -411,66 +372,56 @@ def test_Worker_jobs__jobs_function():
 
 def test_attach_device_twice():
     print_title("Attach device twice")
-    import pytest
 
     qdev = QDeviceIO(FakeDevice())
-
     with pytest.raises(SystemExit) as pytest_wrapped_e:
         qdev.attach_device(FakeDevice())
     assert pytest_wrapped_e.type == SystemExit
-    dprint("Exit code: %i" % pytest_wrapped_e.value.code)
+    dprint(f"Exit code: {pytest_wrapped_e.value.code}")
     assert pytest_wrapped_e.value.code == 22
 
 
 def test_Worker_DAQ___no_device_attached():
     print_title("Worker_DAQ - no device attached")
-    import pytest
 
     qdev = QDeviceIO()
-
     with pytest.raises(SystemExit) as pytest_wrapped_e:
         qdev.create_worker_DAQ()
     assert pytest_wrapped_e.type == SystemExit
-    dprint("Exit code: %i" % pytest_wrapped_e.value.code)
+    dprint(f"Exit code: {pytest_wrapped_e.value.code}")
     assert pytest_wrapped_e.value.code == 99
 
 
 def test_Worker_jobs__no_device_attached():
     print_title("Worker_jobs - no device attached")
-    import pytest
 
     qdev = QDeviceIO()
-
     with pytest.raises(SystemExit) as pytest_wrapped_e:
         qdev.create_worker_jobs()
     assert pytest_wrapped_e.type == SystemExit
-    dprint("Exit code: %i" % pytest_wrapped_e.value.code)
+    dprint(f"Exit code: {pytest_wrapped_e.value.code}")
     assert pytest_wrapped_e.value.code == 99
 
 
 def test_Worker_DAQ___start_without_create():
     print_title("Worker_DAQ - start without create")
-    import pytest
 
     qdev = QDeviceIO(FakeDevice())
-
     with pytest.raises(SystemExit) as pytest_wrapped_e:
         qdev.start_worker_DAQ()
     assert pytest_wrapped_e.type == SystemExit
-    dprint("Exit code: %i" % pytest_wrapped_e.value.code)
+    dprint(f"Exit code: {pytest_wrapped_e.value.code}")
     assert pytest_wrapped_e.value.code == 404
 
 
 def test_Worker_jobs__start_without_create():
     print_title("Worker_jobs - start without create")
-    import pytest
 
     qdev = QDeviceIO(FakeDevice())
-
     with pytest.raises(SystemExit) as pytest_wrapped_e:
         qdev.start_worker_jobs()
     assert pytest_wrapped_e.type == SystemExit
-    dprint("Exit code: %i" % pytest_wrapped_e.value.code)
+    dprint(f"Exit code: {pytest_wrapped_e.value.code}")
     assert pytest_wrapped_e.value.code == 404
 
 
@@ -483,7 +434,7 @@ def test_Worker_DAQ___quit_without_start():
 
     tprint("About to quit")
     app.processEvents()
-    assert qdev.quit() == True
+    assert qdev.quit() is True
     app.quit()
 
 
@@ -496,7 +447,7 @@ def test_Worker_jobs__quit_without_start():
 
     tprint("About to quit")
     app.processEvents()
-    assert qdev.quit() == True
+    assert qdev.quit() is True
     app.quit()
 
 
@@ -506,7 +457,7 @@ def test_Worker_DAQ___rate():
     def DAQ_function():
         # Must return True when successful, False otherwise
         reply = dev.fake_query_1()
-        dprint(" " * 50 + "%.1f Hz" % qdev.obtained_DAQ_rate_Hz)
+        dprint(" " * 50 + f"{qdev.obtained_DAQ_rate_Hz:.1f} Hz")
         return reply[-4:] == "0101"
 
     app = create_QApplication()
@@ -520,7 +471,7 @@ def test_Worker_DAQ___rate():
         critical_not_alive_count   = 1,
         debug                      = DEBUG)
     # fmt: on
-    assert qdev.start() == True
+    assert qdev.start() is True
 
     # Simulate device runtime
     start_time = time.perf_counter()
@@ -530,7 +481,7 @@ def test_Worker_DAQ___rate():
 
     tprint("About to quit")
     app.processEvents()
-    assert qdev.quit() == True
+    assert qdev.quit() is True
     app.quit()
 
     assert 9 <= qdev.obtained_DAQ_interval_ms <= 11
@@ -547,12 +498,6 @@ def test_Worker_DAQ___lose_connection():
 
         reply = dev.fake_query_1()
         return reply[-4:] == "0101"
-
-    # NOTE: The global 'go' mechanism used here is a quick and dirty way to
-    # pytest. In production, it should be implemented by an boolean external
-    # class member.
-    global go
-    go = True
 
     @Slot()
     def process_connection_lost():
@@ -578,7 +523,7 @@ def test_Worker_DAQ___lose_connection():
     # fmt: on
     qdev.create_worker_jobs(debug=DEBUG)
     qdev.signal_connection_lost.connect(process_connection_lost)
-    assert qdev.start() == True
+    assert qdev.start() is True
 
     # Simulate device runtime
     while go:
@@ -587,8 +532,8 @@ def test_Worker_DAQ___lose_connection():
 
     tprint("About to quit")
     app.processEvents()
-    assert qdev.quit() == True
-    assert qdev.quit() == True  # Twice, to check for msg 'already closed'.
+    assert qdev.quit() is True
+    assert qdev.quit() is True  # Twice, to check for msg 'already closed'.
     app.quit()
 
 
@@ -597,7 +542,7 @@ class QDeviceIO_subclassed(QDeviceIO):
         self,
         dev=None,
         DAQ_function=None,
-        debug=False,
+        debug=DEBUG,
         **kwargs,
     ):
         # Pass `dev` onto QDeviceIO() and pass `**kwargs` onto QtCore.QObject()
@@ -609,10 +554,10 @@ class QDeviceIO_subclassed(QDeviceIO):
             DAQ_function               = DAQ_function,
             DAQ_interval_ms            = 100,
             critical_not_alive_count   = 10,
-            debug                      = DEBUG,
+            debug                      = debug,
         )
         # fmt: on
-        self.create_worker_jobs(debug=DEBUG)
+        self.create_worker_jobs(debug=debug)
 
 
 def test_Worker_DAQ___INTERNAL_TIMER__subclassed():
@@ -646,7 +591,7 @@ def test_Worker_DAQ___INTERNAL_TIMER__subclassed():
 
     tprint("About to quit")
     app.processEvents()
-    assert qdev.quit() == True
+    assert qdev.quit() is True
     app.quit()
 
     assert dev.count_commands >= 11
@@ -664,10 +609,10 @@ def test_Worker_DAQ___ILLEGAL_DAQ_FUNCTION():
         # Must return True when successful, False otherwise
 
         if qdev.update_counter_DAQ == 2:
-            0 / 0
-        else:
-            reply = dev.fake_query_1()
-            return reply[-4:] == "0101"
+            raise ZeroDivisionError
+
+        reply = dev.fake_query_1()
+        return reply[-4:] == "0101"
 
     app = create_QApplication()
     dev = FakeDevice()
@@ -680,7 +625,7 @@ def test_Worker_DAQ___ILLEGAL_DAQ_FUNCTION():
         debug                      = DEBUG)
     # fmt: on
     qdev.signal_DAQ_updated.connect(process_DAQ_updated)
-    assert qdev.start() == True
+    assert qdev.start() is True
 
     # Simulate device runtime
     start_time = time.perf_counter()
@@ -692,7 +637,7 @@ def test_Worker_DAQ___ILLEGAL_DAQ_FUNCTION():
 
     tprint("About to quit")
     app.processEvents()
-    assert qdev.quit() == True
+    assert qdev.quit() is True
     app.quit()
 
 
