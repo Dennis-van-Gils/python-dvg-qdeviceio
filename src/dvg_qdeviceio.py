@@ -428,7 +428,7 @@ class QDeviceIO(QtCore.QObject):
         Returns:
             True if successful, False otherwise.
         """
-        if self._thread_DAQ is None:
+        if self._thread_DAQ is None or self.worker_DAQ is None:
             pft(
                 f"Worker_DAQ  {self.dev.name}: Can't start thread, because it "
                 "does not exist. Did you forget to call 'create_worker_DAQ()' "
@@ -493,7 +493,7 @@ class QDeviceIO(QtCore.QObject):
         Returns:
             True if successful, False otherwise.
         """
-        if self._thread_jobs is None:
+        if self._thread_jobs is None or self.worker_jobs is None:
             pft(
                 f"Worker_jobs {self.dev.name}: Can't start thread because it "
                 "does not exist. Did you forget to call 'create_worker_jobs()' "
@@ -555,7 +555,11 @@ class QDeviceIO(QtCore.QObject):
             True if successful, False otherwise.
         """
 
-        if self._thread_DAQ is None or not self.worker_DAQ._has_started:
+        if (
+            self._thread_DAQ is None
+            or self.worker_DAQ is None
+            or not self.worker_DAQ._has_started
+        ):
             return True
 
         if self._thread_DAQ.isFinished():
@@ -618,7 +622,11 @@ class QDeviceIO(QtCore.QObject):
             True if successful, False otherwise.
         """
 
-        if self._thread_jobs is None or not self.worker_jobs._has_started:
+        if (
+            self._thread_jobs is None
+            or self.worker_jobs is None
+            or not self.worker_jobs._has_started
+        ):
             return True
 
         if self._thread_jobs.isFinished():
