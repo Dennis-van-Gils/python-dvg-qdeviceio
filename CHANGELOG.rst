@@ -1,6 +1,13 @@
 Changelog
 =========
 
+1.4.0 (2024-06-11)
+------------------
+* Using `qtpy` library instead of my own Qt5/6 mechanism
+* Improved code quality of the pytest
+* Removed Python 3.6 support
+* ...
+
 1.3.0 (2024-04-02)
 ------------------
 * Support Python 3.11
