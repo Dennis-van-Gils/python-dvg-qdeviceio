@@ -14,6 +14,7 @@ import sys
 import queue
 import time
 from enum import IntEnum, unique
+from typing import Union, Callable
 
 # Code coverage tools 'coverage' and 'pytest-cov' don't seem to correctly trace
 # code which is inside methods called from within QThreads, see
@@ -1451,7 +1452,7 @@ class Worker_jobs(QtCore.QObject):
     def __init__(
         self,
         qdev,
-        jobs_function=None,
+        jobs_function: Union[Callable, None] = None,
         debug=False,
         **kwargs,
     ):
@@ -1606,16 +1607,25 @@ class Worker_jobs(QtCore.QObject):
                         )
 
                 if self.jobs_function is None:
-                    # Default job processing:
-                    # Send I/O operation to the device
-                    try:
-                        func(*args)
-                    except Exception as err:  # pylint: disable=broad-except
-                        pft(err)
+                    if callable(func):
+                        # Default job processing:
+                        # Send I/O operation to the device
+                        try:
+                            func(*args)
+                        except Exception as err:  # pylint: disable=broad-except
+                            pft(err)
+                            dprint(
+                                f"@ Worker_jobs {self.dev.name}\n",
+                                ANSI.RED,
+                            )
+                    else:
+                        # `func` can not be called. Illegal.
+                        pft(f"Received a job that is not a callable: {func}.")
                         dprint(
                             f"@ Worker_jobs {self.dev.name}\n",
                             ANSI.RED,
                         )
+
                 else:
                     # User-supplied job processing
                     self.jobs_function(func, args)

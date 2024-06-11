@@ -5,8 +5,11 @@ Changelog
 ------------------
 * Using `qtpy` library instead of my own Qt5/6 mechanism
 * Improved code quality of the pytest
+* Using singletons `Uninitialized_Worker_DAQ/jobs` as default attribute
+  values instead of using `None`. This solves pylint warnings on '... is not a
+  known attribute of None'.
+* Extra check in `Worker_jobs` if `func` is actually a callable.
 * Removed Python 3.6 support
-* ...
 
 1.3.0 (2024-04-02)
 ------------------

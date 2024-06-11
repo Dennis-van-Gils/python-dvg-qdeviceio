@@ -67,11 +67,11 @@ class FakeDevice:
             self.count_replies += 1
             tprint_tab(data_to_be_send)
             return data_to_be_send
-        else:
-            # Simulate device failure
-            time.sleep(0.1)
-            tprint_tab("SIMULATED I/O ERROR")
-            return "SIMULATED I/O ERROR"
+
+        # Simulate device failure
+        time.sleep(0.1)
+        tprint_tab("SIMULATED I/O ERROR")
+        return "SIMULATED I/O ERROR"
 
     def fake_query_1(self):
         self.count_commands += 1
@@ -82,8 +82,8 @@ class FakeDevice:
         return self._send("-> reply ~~~~")
 
     def fake_command_with_argument(self, val: int):
-        tprint_tab(f"-> command(arg={val:d})")
         self.count_commands += 1
+        tprint_tab(f"-> command(arg={val:d})")
 
 
 def create_QApplication() -> QtCore.QCoreApplication:
@@ -304,9 +304,15 @@ def test_Worker_jobs(start_alive=True):
     QtCore.QTimer.singleShot(400, lambda: qdev.add_to_jobs_queue(dev.fake_command_with_argument, 0))
     QtCore.QTimer.singleShot(500, lambda: qdev.add_to_jobs_queue(dev.fake_command_with_argument, 0))
     QtCore.QTimer.singleShot(600, qdev.process_jobs_queue)
+    # Trigger an exception because we send a string instead of a callable and we
+    # did not set up our own custom `jobs_function()` to handle such string
+    # messages.
     QtCore.QTimer.singleShot(700, lambda: qdev.send("trigger_illegal_function_call_error"))
+    # Trigger an exception because the supplied argument `None` is invalid for
+    # function `fake_command_with_argument()`.
+    QtCore.QTimer.singleShot(900, lambda: qdev.send(dev.fake_command_with_argument, None))
     # fmt: on
-    while time.perf_counter() - start_time < 1:
+    while time.perf_counter() - start_time < 1.2:
         app.processEvents()
         time.sleep(0.001)  # Do not hog the CPU
 
@@ -316,9 +322,9 @@ def test_Worker_jobs(start_alive=True):
     app.quit()
 
     if start_alive:
-        assert dev.count_commands == 5
+        assert dev.count_commands == 6
         assert dev.count_replies == 2
-        assert cnt_jobs_updated == 4
+        assert cnt_jobs_updated == 5
 
 
 def test_Worker_jobs__start_dead():
