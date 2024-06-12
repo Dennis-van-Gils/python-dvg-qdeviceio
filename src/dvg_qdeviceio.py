@@ -205,8 +205,8 @@ class QDeviceIO(QtCore.QObject):
 
     signal_DAQ_updated = Signal()
     """:obj:`PySide6.QtCore.pyqtSignal`: Emitted by :class:`Worker_DAQ` when its
-    :attr:`~Worker_DAQ.DAQ_function` has run and finished, either succesfully or
-    not.
+    :ref:`DAQ_function <arg_DAQ_function>` has run and finished, either
+    succesfully or not.
 
     Tip:
         It can be useful to connect this signal to a slot containing, e.g.,
@@ -235,7 +235,7 @@ class QDeviceIO(QtCore.QObject):
     signal_DAQ_paused = Signal()
     """:obj:`PySide6.QtCore.pyqtSignal`: Emitted by :class:`Worker_DAQ` to confirm
     the worker has entered the `paused` state in a response to
-    :meth:`Worker_DAQ.pause`. See also the tip at :obj:`signal_DAQ_updated()`.
+    :meth:`pause_DAQ`. See also the tip at :obj:`signal_DAQ_updated()`.
     """
 
     signal_connection_lost = Signal()
@@ -887,8 +887,8 @@ class QDeviceIO(QtCore.QObject):
     def wake_up_DAQ(self):
         """Only useful in mode :const:`DAQ_TRIGGER.SINGLE_SHOT_WAKE_UP`.
         Request :attr:`worker_DAQ` to wake up and perform a single update,
-        i.e. run :attr:`~Worker_DAQ.DAQ_function` once. It will emit
-        :obj:`signal_DAQ_updated()` after :attr:`~Worker_DAQ.DAQ_function` has
+        i.e. run its :ref:`DAQ_function <arg_DAQ_function>` once. It will emit
+        :obj:`signal_DAQ_updated()` after the DAQ_function has
         run, either successful or not.
         """
         if self.worker_DAQ is not Uninitialized_Worker_DAQ:
@@ -960,7 +960,7 @@ class QDeviceIO(QtCore.QObject):
 
 class Worker_DAQ(QtCore.QObject):
     """An instance of this worker will be created and placed inside a new thread
-    when :meth:`QDeviceIO.create_worker_DAQ` gets called. See there for more
+    when :meth:`QDeviceIO.create_worker_DAQ` gets called. See there for extended
     information.
 
     Args:
@@ -1010,10 +1010,10 @@ class Worker_DAQ(QtCore.QObject):
             :obj:`self.qdev.dev`.
 
         DAQ_function (:obj:`Callable` | :obj:`None`):
-            See :meth:`QDeviceIO.create_worker_DAQ`.
+            See :ref:`DAQ_function <arg_DAQ_function>`.
 
         critical_not_alive_count (:obj:`int`):
-            See :meth:`QDeviceIO.create_worker_DAQ`.
+            See :ref:`critical_not_alive_count <arg_critical_not_alive_count>`.
     """
 
     def __init__(
@@ -1084,6 +1084,10 @@ class Worker_DAQ(QtCore.QObject):
                 f"init @ thread {_cur_thread_name()}",
                 self.debug_color,
             )
+
+    # --------------------------------------------------------------------------
+    #   _do_work
+    # --------------------------------------------------------------------------
 
     @_coverage_resolve_trace
     @Slot()
@@ -1235,6 +1239,10 @@ class Worker_DAQ(QtCore.QObject):
             )
             self._has_stopped = True
 
+    # --------------------------------------------------------------------------
+    #   _perform_DAQ
+    # --------------------------------------------------------------------------
+
     @_coverage_resolve_trace
     @Slot()
     def _perform_DAQ(self):
@@ -1321,6 +1329,10 @@ class Worker_DAQ(QtCore.QObject):
             return
 
         self.qdev.signal_DAQ_updated.emit()
+
+    # --------------------------------------------------------------------------
+    #   _stop
+    # --------------------------------------------------------------------------
 
     @Slot()
     def _stop(self):
@@ -1430,8 +1442,8 @@ class Worker_DAQ(QtCore.QObject):
 
 class Worker_jobs(QtCore.QObject):
     """An instance of this worker will be created and placed inside a new thread
-    when :meth:`QDeviceIO.create_worker_jobs` gets called. See there for more
-    information.
+    when :meth:`QDeviceIO.create_worker_jobs` gets called. See there for
+    extended information.
 
     Args:
         qdev (:class:`QDeviceIO`):
@@ -1501,6 +1513,10 @@ class Worker_jobs(QtCore.QObject):
                 f"init @ thread {_cur_thread_name()}",
                 self.debug_color,
             )
+
+    # --------------------------------------------------------------------------
+    #   _do_work
+    # --------------------------------------------------------------------------
 
     @_coverage_resolve_trace
     @Slot()
@@ -1586,6 +1602,10 @@ class Worker_jobs(QtCore.QObject):
         )
         self._has_stopped = True
 
+    # --------------------------------------------------------------------------
+    #   _perform_jobs
+    # --------------------------------------------------------------------------
+
     @_coverage_resolve_trace
     @Slot()
     def _perform_jobs(self):
@@ -1660,6 +1680,10 @@ class Worker_jobs(QtCore.QObject):
 
         locker.unlock()
         self.qdev.signal_jobs_updated.emit()
+
+    # --------------------------------------------------------------------------
+    #   _stop
+    # --------------------------------------------------------------------------
 
     @Slot()
     def _stop(self):
