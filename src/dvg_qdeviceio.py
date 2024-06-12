@@ -1054,7 +1054,7 @@ class Worker_DAQ(QtCore.QObject):
 
     def __init__(
         self,
-        qdev,
+        qdev: QDeviceIO,
         DAQ_trigger=DAQ_TRIGGER.INTERNAL_TIMER,
         DAQ_function=None,
         DAQ_interval_ms=100,
@@ -1454,9 +1454,11 @@ class Worker_DAQ(QtCore.QObject):
             self._qwc.wakeAll()
 
 
-Uninitialized_Worker_DAQ = Worker_DAQ(None)
+# fmt: off
+Uninitialized_Worker_DAQ = Worker_DAQ(None)  # pyright: ignore [reportArgumentType]
 """Singleton to compare against to test for an uninitialized `Worker_DAQ`
 instance."""
+# fmt: on
 
 
 # ------------------------------------------------------------------------------
@@ -1752,6 +1754,8 @@ class Worker_jobs(QtCore.QObject):
         self._qwc.wakeAll()
 
 
-Uninitialized_Worker_jobs = Worker_jobs(None)
+# fmt: off
+Uninitialized_Worker_jobs = Worker_jobs(None)  # pyright: ignore [reportArgumentType]
 """Singleton to compare against to test for an uninitialized `Worker_jobs`
 instance."""
+# fmt: on
