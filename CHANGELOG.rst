@@ -25,7 +25,7 @@ Potential code breaks:
   methods available at the root level of ``QDeviceIO()``. Specifically::
 
     Worker_DAQ.pause()        --> Worker_DAQ._set_pause_true()   , should use pause_DAQ()
-    Worker_DAQ.unpause()      --> Worker_DAQ._set_pause_untrue() , should use unpause_DAQ()
+    Worker_DAQ.unpause()      --> Worker_DAQ._set_pause_false()  , should use unpause_DAQ()
     Worker_DAQ.wake_up()      --> Worker_DAQ._wake_up()          , should use wake_up_DAQ()
     Worker_jobs.send()        --> Worker_jobs._send()            , should use send()
     Worker_jobs.add_to_queue  --> Worker_jobs._add_to_queue()    , should use add_to_queue()
