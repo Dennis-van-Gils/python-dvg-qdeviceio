@@ -23,8 +23,6 @@ Installation::
 .. toctree::
    :caption: Introduction
 
-   features
-   usage
    example
 
 
