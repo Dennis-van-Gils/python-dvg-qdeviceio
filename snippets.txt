@@ -38,7 +38,3 @@ DAQ_trigger.CONTINUOUS
     receive this data stream.
     
 """
-
-
-
-Either periodical or aperiodical
