@@ -8,7 +8,7 @@ __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
 __date__ = "12-06-2024"
 __version__ = "1.4.0"
-# pylint: disable=protected-access, wrong-import-position, too-many-lines
+# pylint: disable=protected-access, too-many-lines
 
 import sys
 import queue
@@ -863,7 +863,7 @@ class QDeviceIO(QtCore.QObject):
     #   worker_DAQ related
     # --------------------------------------------------------------------------
 
-    @Slot()
+    # @Slot()  # Commented out: Decorator not needed, it hides linter docstring
     def pause_DAQ(self):
         """Only useful in mode :const:`DAQ_TRIGGER.CONTINUOUS`. Request
         :attr:`worker_DAQ` to pause and stop listening for data. After
@@ -873,7 +873,7 @@ class QDeviceIO(QtCore.QObject):
         if self.worker_DAQ is not Uninitialized_Worker_DAQ:
             self._request_worker_DAQ_pause.emit()
 
-    @Slot()
+    # @Slot()  # Commented out: Decorator not needed, it hides linter docstring
     def unpause_DAQ(self):
         """Only useful in mode :const:`DAQ_TRIGGER.CONTINUOUS`. Request
         :attr:`worker_DAQ` to resume listening for data. Once
@@ -883,7 +883,7 @@ class QDeviceIO(QtCore.QObject):
         if self.worker_DAQ is not Uninitialized_Worker_DAQ:
             self._request_worker_DAQ_unpause.emit()
 
-    @Slot()
+    # @Slot()  # Commented out: Decorator not needed, it hides linter docstring
     def wake_up_DAQ(self):
         """Only useful in mode :const:`DAQ_TRIGGER.SINGLE_SHOT_WAKE_UP`.
         Request :attr:`worker_DAQ` to wake up and perform a single update,
@@ -898,7 +898,7 @@ class QDeviceIO(QtCore.QObject):
     #   worker_jobs related
     # --------------------------------------------------------------------------
 
-    @Slot()
+    # @Slot()  # Commented out: Decorator not needed, it hides linter docstring
     def send(self, instruction, pass_args=()):
         """Put a job on the :attr:`worker_jobs` queue and send out the full
         queue first-in, first-out to the device until empty. Once finished, it
@@ -934,7 +934,7 @@ class QDeviceIO(QtCore.QObject):
         if self.worker_jobs is not Uninitialized_Worker_jobs:
             self.worker_jobs.send(instruction, pass_args)
 
-    @Slot()
+    # @Slot()  # Commented out: Decorator not needed, it hides linter docstring
     def add_to_jobs_queue(self, instruction, pass_args=()):
         """Put a job on the :attr:`worker_jobs` queue.
 
@@ -943,7 +943,7 @@ class QDeviceIO(QtCore.QObject):
         if self.worker_jobs is not Uninitialized_Worker_jobs:
             self.worker_jobs.add_to_queue(instruction, pass_args)
 
-    @Slot()
+    # @Slot()  # Commented out: Decorator not needed, it hides linter docstring
     def process_jobs_queue(self):
         """Send out the full :attr:`worker_jobs` queue first-in, first-out to
         the device until empty. Once finished, it will emit
@@ -1324,7 +1324,11 @@ class Worker_DAQ(QtCore.QObject):
 
     @Slot()
     def _stop(self):
-        """Stop the worker to prepare for quitting the worker thread."""
+        """Stop the worker to prepare for quitting the worker thread.
+
+        This method should not be called from another thread when using
+        `DAQ_TRIGGER.INTERNAL_TIMER`.
+        """
         if self.debug:
             tprint(f"Worker_DAQ  {self.dev.name}: stopping", self.debug_color)
 
@@ -1363,8 +1367,7 @@ class Worker_DAQ(QtCore.QObject):
         the worker to stop listening for data. After :attr:`worker_DAQ` has
         achieved the `paused` state, it will emit :obj:`signal_DAQ_paused()`.
 
-        This method should not be called from another thread. Connect this slot
-        to a signal instead.
+        This method should not be called from another thread.
         """
         if self._DAQ_trigger == DAQ_TRIGGER.CONTINUOUS:
             if self.debug:
@@ -1385,8 +1388,7 @@ class Worker_DAQ(QtCore.QObject):
         successfully resumed, it will emit :obj:`signal_DAQ_updated()` for every
         DAQ update.
 
-        This method should not be called from another thread. Connect this slot
-        to a signal instead.
+        This method should not be called from another thread.
         """
         if self._DAQ_trigger == DAQ_TRIGGER.CONTINUOUS:
             if self.debug:
