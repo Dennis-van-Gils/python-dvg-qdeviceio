@@ -3,24 +3,26 @@ Changelog
 
 1.4.0 (2024-06-11)
 ------------------
-* Using `qtpy` library instead of my own Qt5/6 mechanism
-* Improved code quality of the pytest
-* Using singletons `Uninitialized_Worker_DAQ/jobs` as default attribute
-  values instead of using `None`. This solves pylint warnings on '... is not a
+* Using ``qtpy`` library instead of my own Qt5/6 mechanism
+* Extra check in ``Worker_jobs`` if ``func`` is actually a callable.
+* Using singletons ``Uninitialized_Worker_DAQ/jobs`` as default attribute
+  values instead of using ``None``. This solves pylint warnings on '... is not a
   known attribute of None'.
-* Extra check in `Worker_jobs` if `func` is actually a callable.
+* Docstring improvements. ``create_worker_DAQ/jobs()`` show full info now.
+  And linking against PySide6, instead of PyQt5.
+* Improved code quality of the pytest
 * Removed Python 3.6 support
 
 1.3.0 (2024-04-02)
 ------------------
 * Support Python 3.11
 * All f-strings
-* Type checking via `isinstance()`, not type == ...
+* Type checking via ``isinstance()``, not ``type == ...``
 
 1.2.0 (2023-02-27)
 ------------------
 * Deprecated `requires.io` and `travis`
-* Raise `ImportError` instead of general `Exception`
+* Raise ``ImportError`` instead of general ``Exception``
 
 1.1.2 (2022-10-26)
 ------------------
