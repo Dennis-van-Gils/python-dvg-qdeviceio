@@ -1,9 +1,11 @@
 Changelog
 =========
 
-1.4.0 (2024-06-11)
+1.4.0 (2024-06-12)
 ------------------
 * Using ``qtpy`` library instead of my own Qt5/6 mechanism
+* Improved ``_NoDevice`` mechanism
+* Removed redundant ``attach_device()``
 * Extra check in ``Worker_jobs`` if ``func`` is actually a callable.
 * Using singletons ``Uninitialized_Worker_DAQ/jobs`` as default attribute
   values instead of using ``None``. This solves pylint warnings on '... is not a

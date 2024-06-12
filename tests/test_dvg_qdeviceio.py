@@ -376,17 +376,6 @@ def test_Worker_jobs__jobs_function():
     assert cnt_jobs_updated == 3
 
 
-def test_attach_device_twice():
-    print_title("Attach device twice")
-
-    qdev = QDeviceIO(FakeDevice())
-    with pytest.raises(SystemExit) as pytest_wrapped_e:
-        qdev.attach_device(FakeDevice())
-    assert pytest_wrapped_e.type == SystemExit
-    dprint(f"Exit code: {pytest_wrapped_e.value.code}")
-    assert pytest_wrapped_e.value.code == 22
-
-
 def test_Worker_DAQ___no_device_attached():
     print_title("Worker_DAQ - no device attached")
 
@@ -661,7 +650,6 @@ if __name__ == "__main__":
     test_Worker_jobs()
     test_Worker_jobs__start_dead()
     test_Worker_jobs__jobs_function()
-    test_attach_device_twice()
     test_Worker_DAQ___no_device_attached()
     test_Worker_jobs__no_device_attached()
     test_Worker_DAQ___start_without_create()

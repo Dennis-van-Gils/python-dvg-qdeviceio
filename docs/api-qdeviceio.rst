@@ -16,7 +16,6 @@ Signals
 Methods
 --------------------
 
-.. automethod:: dvg_qdeviceio.QDeviceIO.attach_device
 .. automethod:: dvg_qdeviceio.QDeviceIO.create_worker_DAQ
 .. automethod:: dvg_qdeviceio.QDeviceIO.create_worker_jobs
 .. automethod:: dvg_qdeviceio.QDeviceIO.start

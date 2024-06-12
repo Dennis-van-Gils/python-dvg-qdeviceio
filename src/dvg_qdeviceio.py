@@ -72,6 +72,12 @@ class DAQ_TRIGGER(IntEnum):
     # fmt: on
 
 
+class _NoDevice:
+    name = "NoDevice"
+    is_alive = False
+    mutex = QtCore.QMutex()
+
+
 # ------------------------------------------------------------------------------
 #   QDeviceIO
 # ------------------------------------------------------------------------------
@@ -137,7 +143,7 @@ class QDeviceIO(QtCore.QObject):
     .. _`QDeviceIO_args`:
 
     Args:
-        dev (:obj:`object` | :obj:`None`, optional):
+        dev (:obj:`object` | :obj:`_NoDevice`, optional):
             Reference to a user-supplied *device* class instance containing
             I/O methods. In addition, `dev` should also have the following
             members. If not, they will be injected into the `dev` instance for
@@ -153,7 +159,7 @@ class QDeviceIO(QtCore.QObject):
                 * **dev.is_alive** (:obj:`bool`) -- Device is up and \
                     communicatable? Default: :const:`True`.
 
-            Default: :obj:`None`
+            Default: :obj:`_NoDevice`
 
         **kwargs:
             All remaining keyword arguments will be passed onto inherited class
@@ -163,7 +169,7 @@ class QDeviceIO(QtCore.QObject):
     .. rubric:: Attributes:
 
     Attributes:
-        dev (:obj:`object` | :obj:`None`):
+        dev (:obj:`object` | :obj:`_NoDevice`):
             Reference to a user-supplied *device* class instance containing
             I/O methods.
 
@@ -247,12 +253,19 @@ class QDeviceIO(QtCore.QObject):
     _request_worker_DAQ_pause = Signal()
     _request_worker_DAQ_unpause = Signal()
 
-    def __init__(self, dev=None, **kwargs):
+    def __init__(self, dev=_NoDevice(), **kwargs):
         super().__init__(**kwargs)  # Pass **kwargs onto QtCore.QObject()
 
-        self.dev = self._NoDevice()
-        if dev is not None:
-            self.attach_device(dev)
+        if not hasattr(dev, "name"):
+            dev.name = "myDevice"
+
+        if not hasattr(dev, "mutex"):
+            dev.mutex = QtCore.QMutex()
+
+        if not hasattr(dev, "is_alive"):
+            dev.is_alive = True  # Assume the device is alive from the start
+
+        self.dev = dev
 
         self._thread_DAQ = None
         self._thread_jobs = None
@@ -274,54 +287,6 @@ class QDeviceIO(QtCore.QObject):
         self._qwc_worker_jobs_stopped = QtCore.QWaitCondition()
         self._mutex_wait_worker_DAQ = QtCore.QMutex()
         self._mutex_wait_worker_jobs = QtCore.QMutex()
-
-    class _NoDevice:
-        name = "NoDevice"
-        is_alive = False
-        mutex = QtCore.QMutex()
-
-    # --------------------------------------------------------------------------
-    #   attach_device
-    # --------------------------------------------------------------------------
-
-    def attach_device(self, dev):
-        """Attach a reference to a user-supplied *device* class instance
-        containing I/O methods. In addition, `dev` should also have the
-        following members. If not, they will be injected into the `dev`
-        instance for you:
-
-            * **dev.name** (:obj:`str`) -- Short display name for the \
-                device. Default: "myDevice".
-
-            * **dev.mutex** (:class:`PySide6.QtCore.QMutex`) -- To allow \
-                for properly multithreaded device I/O operations. It will \
-                be used by :class:`Worker_DAQ` and :class:`Worker_jobs`.
-
-            * **dev.is_alive** (:obj:`bool`) -- Device is up and \
-                communicatable? Default: :const:`True`.
-
-        Args:
-            dev (:obj:`object`):
-                Reference to a user-supplied *device* class instance containing
-                I/O methods.
-        """
-        if not hasattr(dev, "name"):
-            dev.name = "myDevice"
-
-        if not hasattr(dev, "mutex"):
-            dev.mutex = QtCore.QMutex()
-
-        if not hasattr(dev, "is_alive"):
-            dev.is_alive = True  # Assume the device is alive from the start
-
-        if isinstance(self.dev, self._NoDevice):
-            self.dev = dev
-        else:
-            pft(
-                "Device can be attached only once. Already attached to "
-                f"'{self.dev.name}'."
-            )
-            sys.exit(22)
 
     # --------------------------------------------------------------------------
     #   Create workers
@@ -457,11 +422,8 @@ class QDeviceIO(QtCore.QObject):
                 All remaining keyword arguments will be passed onto inherited class
                 :class:`PySide6.QtCore.QObject`.
         """
-        if isinstance(self.dev, self._NoDevice):
-            pft(
-                "Can't create worker_DAQ, because there is no device attached."
-                " Did you forget to call 'attach_device()' first?"
-            )
+        if isinstance(self.dev, _NoDevice):
+            pft("Can't create worker_DAQ, because there is no device attached.")
             sys.exit(99)
 
         self.worker_DAQ = Worker_DAQ(
@@ -582,10 +544,9 @@ class QDeviceIO(QtCore.QObject):
                 All remaining keyword arguments will be passed onto inherited
                 class :class:`PySide6.QtCore.QObject`.
         """
-        if isinstance(self.dev, self._NoDevice):
+        if isinstance(self.dev, _NoDevice):
             pft(
                 "Can't create worker_jobs, because there is no device attached."
-                " Did you forget to call 'attach_device()' first?"
             )
             sys.exit(99)
 
@@ -1071,7 +1032,7 @@ class Worker_DAQ(QtCore.QObject):
         self.debug_color = ANSI.CYAN
 
         self.qdev = qdev
-        self.dev = None if qdev is None else qdev.dev
+        self.dev = _NoDevice() if qdev is None else qdev.dev
 
         self._DAQ_trigger = DAQ_trigger
         self.DAQ_function = DAQ_function
@@ -1460,13 +1421,6 @@ class Worker_DAQ(QtCore.QObject):
             self._qwc.wakeAll()
 
 
-# fmt: off
-Uninitialized_Worker_DAQ = Worker_DAQ(None)  # pyright: ignore [reportArgumentType]
-"""Singleton to compare against to test for an uninitialized `Worker_DAQ`
-instance."""
-# fmt: on
-
-
 # ------------------------------------------------------------------------------
 #   Worker_jobs
 # ------------------------------------------------------------------------------
@@ -1523,7 +1477,7 @@ class Worker_jobs(QtCore.QObject):
         self.debug_color = ANSI.YELLOW
 
         self.qdev = qdev
-        self.dev = None if qdev is None else qdev.dev
+        self.dev = _NoDevice() if qdev is None else qdev.dev
 
         self.jobs_function = jobs_function
         self._has_started = False
@@ -1759,6 +1713,16 @@ class Worker_jobs(QtCore.QObject):
 
         self._qwc.wakeAll()
 
+
+# ------------------------------------------------------------------------------
+#   Singletons
+# ------------------------------------------------------------------------------
+
+# fmt: off
+Uninitialized_Worker_DAQ = Worker_DAQ(None)  # pyright: ignore [reportArgumentType]
+"""Singleton to compare against to test for an uninitialized `Worker_DAQ`
+instance."""
+# fmt: on
 
 # fmt: off
 Uninitialized_Worker_jobs = Worker_jobs(None)  # pyright: ignore [reportArgumentType]
