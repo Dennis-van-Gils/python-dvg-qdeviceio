@@ -277,6 +277,8 @@ class QDeviceIO(QtCore.QObject):
 
     class _NoDevice:
         name = "NoDevice"
+        is_alive = False
+        mutex = QtCore.QMutex()
 
     # --------------------------------------------------------------------------
     #   attach_device
