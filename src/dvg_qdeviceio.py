@@ -442,7 +442,8 @@ class QDeviceIO(QtCore.QObject):
                 The worker will allow for up to a certain number of consecutive
                 communication failures with the device, before hope is given up
                 and a :meth:`QDeviceIO.signal_connection_lost` is emitted. Use at
-                your own discretion.
+                your own discretion. Setting the value to 0 will never give up
+                on communication failures.
 
                 Default: :const:`1`.
 
@@ -1345,7 +1346,10 @@ class Worker_DAQ(QtCore.QObject):
         locker.unlock()
 
         # Check the not alive counter
-        if self.qdev.not_alive_counter_DAQ >= self.critical_not_alive_count:
+        if (
+            self.critical_not_alive_count > 0
+            and self.qdev.not_alive_counter_DAQ >= self.critical_not_alive_count
+        ):
             dprint(
                 f"Worker_DAQ  {self.dev.name}: " f"Lost connection to device.",
                 ANSI.RED,
