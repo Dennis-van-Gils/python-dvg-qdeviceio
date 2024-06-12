@@ -6,7 +6,7 @@ with an I/O device.
 __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
-__date__ = "11-06-2024"
+__date__ = "12-06-2024"
 __version__ = "1.4.0"
 # pylint: disable=protected-access, wrong-import-position, too-many-lines
 
@@ -166,11 +166,11 @@ class QDeviceIO(QtCore.QObject):
             Reference to a user-supplied *device* class instance containing
             I/O methods.
 
-        worker_DAQ (:class:`Worker_DAQ` | :obj:`None`):
+        worker_DAQ (:class:`Worker_DAQ`):
             Instance of :class:`Worker_DAQ` as created by
             :meth:`create_worker_DAQ`. This worker runs in a dedicated thread.
 
-        worker_jobs (:class:`Worker_jobs` | :obj:`None`):
+        worker_jobs (:class:`Worker_jobs`):
             Instance of :class:`Worker_jobs` as created by
             :meth:`create_worker_jobs`. This worker runs in a dedicated thread.
 
@@ -256,8 +256,8 @@ class QDeviceIO(QtCore.QObject):
         self._thread_DAQ = None
         self._thread_jobs = None
 
-        self.worker_DAQ = None
-        self.worker_jobs = None
+        self.worker_DAQ = Uninitialized_Worker_DAQ
+        self.worker_jobs = Uninitialized_Worker_jobs
 
         self.update_counter_DAQ = 0
         self.update_counter_jobs = 0
@@ -428,7 +428,10 @@ class QDeviceIO(QtCore.QObject):
         Returns:
             True if successful, False otherwise.
         """
-        if self._thread_DAQ is None or self.worker_DAQ is None:
+        if (
+            self._thread_DAQ is None
+            or self.worker_DAQ is Uninitialized_Worker_DAQ
+        ):
             pft(
                 f"Worker_DAQ  {self.dev.name}: Can't start thread, because it "
                 "does not exist. Did you forget to call 'create_worker_DAQ()' "
@@ -493,7 +496,10 @@ class QDeviceIO(QtCore.QObject):
         Returns:
             True if successful, False otherwise.
         """
-        if self._thread_jobs is None or self.worker_jobs is None:
+        if (
+            self._thread_jobs is None
+            or self.worker_jobs is Uninitialized_Worker_jobs
+        ):
             pft(
                 f"Worker_jobs {self.dev.name}: Can't start thread because it "
                 "does not exist. Did you forget to call 'create_worker_jobs()' "
@@ -557,7 +563,7 @@ class QDeviceIO(QtCore.QObject):
 
         if (
             self._thread_DAQ is None
-            or self.worker_DAQ is None
+            or self.worker_DAQ is Uninitialized_Worker_DAQ
             or not self.worker_DAQ._has_started
         ):
             return True
@@ -624,7 +630,7 @@ class QDeviceIO(QtCore.QObject):
 
         if (
             self._thread_jobs is None
-            or self.worker_jobs is None
+            or self.worker_jobs is Uninitialized_Worker_jobs
             or not self.worker_jobs._has_started
         ):
             return True
@@ -678,7 +684,7 @@ class QDeviceIO(QtCore.QObject):
         :attr:`worker_DAQ` has achieved the `paused` state, it will emit
         :obj:`signal_DAQ_paused()`.
         """
-        if self.worker_DAQ is not None:
+        if self.worker_DAQ is not Uninitialized_Worker_DAQ:
             self._request_worker_DAQ_pause.emit()
 
     @Slot()
@@ -688,7 +694,7 @@ class QDeviceIO(QtCore.QObject):
         :attr:`worker_DAQ` has successfully resumed, it will emit
         :obj:`signal_DAQ_updated()` for every DAQ update.
         """
-        if self.worker_DAQ is not None:
+        if self.worker_DAQ is not Uninitialized_Worker_DAQ:
             self._request_worker_DAQ_unpause.emit()
 
     @Slot()
@@ -699,7 +705,7 @@ class QDeviceIO(QtCore.QObject):
         :obj:`signal_DAQ_updated()` after :attr:`~Worker_DAQ.DAQ_function` has
         run, either successful or not.
         """
-        if self.worker_DAQ is not None:
+        if self.worker_DAQ is not Uninitialized_Worker_DAQ:
             self.worker_DAQ.wake_up()
 
     # --------------------------------------------------------------------------
@@ -739,7 +745,7 @@ class QDeviceIO(QtCore.QObject):
         where ``qdev`` is your :class:`QDeviceIO` class instance and ``dev`` is
         your *device* class instance containing I/O methods.
         """
-        if self.worker_jobs is not None:
+        if self.worker_jobs is not Uninitialized_Worker_jobs:
             self.worker_jobs.send(instruction, pass_args)
 
     @Slot()
@@ -748,7 +754,7 @@ class QDeviceIO(QtCore.QObject):
 
         See :meth:`send` for details on the parameters.
         """
-        if self.worker_jobs is not None:
+        if self.worker_jobs is not Uninitialized_Worker_jobs:
             self.worker_jobs.add_to_queue(instruction, pass_args)
 
     @Slot()
@@ -757,7 +763,7 @@ class QDeviceIO(QtCore.QObject):
         the device until empty. Once finished, it will emit
         :obj:`signal_jobs_updated()`.
         """
-        if self.worker_jobs is not None:
+        if self.worker_jobs is not Uninitialized_Worker_jobs:
             self.worker_jobs.process_queue()
 
 
@@ -1319,6 +1325,11 @@ class Worker_DAQ(QtCore.QObject):
             self._qwc.wakeAll()
 
 
+Uninitialized_Worker_DAQ = Worker_DAQ(None)
+"""Singleton to compare against to test for an uninitialized `Worker_DAQ`
+instance."""
+
+
 # ------------------------------------------------------------------------------
 #   Worker_jobs
 # ------------------------------------------------------------------------------
@@ -1675,3 +1686,8 @@ class Worker_jobs(QtCore.QObject):
             )
 
         self._qwc.wakeAll()
+
+
+Uninitialized_Worker_jobs = Worker_jobs(None)
+"""Singleton to compare against to test for an uninitialized `Worker_jobs`
+instance."""
