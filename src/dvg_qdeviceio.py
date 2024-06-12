@@ -438,8 +438,10 @@ class QDeviceIO(QtCore.QObject):
         )
 
         self._request_worker_DAQ_stop.connect(self.worker_DAQ._stop)
-        self._request_worker_DAQ_pause.connect(self.worker_DAQ.pause)
-        self._request_worker_DAQ_unpause.connect(self.worker_DAQ.unpause)
+        self._request_worker_DAQ_pause.connect(self.worker_DAQ._set_pause_true)
+        self._request_worker_DAQ_unpause.connect(
+            self.worker_DAQ._set_pause_false
+        )
 
         self._thread_DAQ = QtCore.QThread()
         self._thread_DAQ.setObjectName(f"{self.dev.name}_DAQ")
@@ -892,7 +894,7 @@ class QDeviceIO(QtCore.QObject):
         run, either successful or not.
         """
         if self.worker_DAQ is not Uninitialized_Worker_DAQ:
-            self.worker_DAQ.wake_up()
+            self.worker_DAQ._wake_up()
 
     # --------------------------------------------------------------------------
     #   worker_jobs related
@@ -932,7 +934,7 @@ class QDeviceIO(QtCore.QObject):
         your *device* class instance containing I/O methods.
         """
         if self.worker_jobs is not Uninitialized_Worker_jobs:
-            self.worker_jobs.send(instruction, pass_args)
+            self.worker_jobs._send(instruction, pass_args)
 
     # @Slot()  # Commented out: Decorator not needed, it hides linter docstring
     def add_to_jobs_queue(self, instruction, pass_args=()):
@@ -941,7 +943,7 @@ class QDeviceIO(QtCore.QObject):
         See :meth:`send` for details on the parameters.
         """
         if self.worker_jobs is not Uninitialized_Worker_jobs:
-            self.worker_jobs.add_to_queue(instruction, pass_args)
+            self.worker_jobs._add_to_queue(instruction, pass_args)
 
     # @Slot()  # Commented out: Decorator not needed, it hides linter docstring
     def process_jobs_queue(self):
@@ -950,7 +952,7 @@ class QDeviceIO(QtCore.QObject):
         :obj:`signal_jobs_updated()`.
         """
         if self.worker_jobs is not Uninitialized_Worker_jobs:
-            self.worker_jobs.process_queue()
+            self.worker_jobs._process_queue()
 
 
 # ------------------------------------------------------------------------------
@@ -1370,11 +1372,11 @@ class Worker_DAQ(QtCore.QObject):
             self._running = False
 
     # --------------------------------------------------------------------------
-    #   pause / unpause
+    #   _set_pause_true / _set_pause_false
     # --------------------------------------------------------------------------
 
     @Slot()
-    def pause(self):
+    def _set_pause_true(self):
         """Only useful in mode :const:`DAQ_TRIGGER.CONTINUOUS`. Pause
         the worker to stop listening for data. After :attr:`worker_DAQ` has
         achieved the `paused` state, it will emit :obj:`signal_DAQ_paused()`.
@@ -1394,7 +1396,7 @@ class Worker_DAQ(QtCore.QObject):
             self._pause = True
 
     @Slot()
-    def unpause(self):
+    def _set_pause_false(self):
         """Only useful in mode :const:`DAQ_TRIGGER.CONTINUOUS`. Unpause
         the worker to resume listening for data. Once :attr:`worker_DAQ` has
         successfully resumed, it will emit :obj:`signal_DAQ_updated()` for every
@@ -1415,11 +1417,11 @@ class Worker_DAQ(QtCore.QObject):
             self._pause = False
 
     # --------------------------------------------------------------------------
-    #   wake_up
+    #   _wake_up
     # --------------------------------------------------------------------------
 
     @Slot()
-    def wake_up(self):
+    def _wake_up(self):
         """Only useful in mode :const:`DAQ_TRIGGER.SINGLE_SHOT_WAKE_UP`. See the
         description at :meth:`QDeviceIO.wake_up_DAQ`.
 
@@ -1698,22 +1700,22 @@ class Worker_jobs(QtCore.QObject):
         self._qwc.wakeAll()  # Wake up for the final time
 
     # --------------------------------------------------------------------------
-    #   send
+    #   _send
     # --------------------------------------------------------------------------
 
-    def send(self, instruction, pass_args=()):
+    def _send(self, instruction, pass_args=()):
         """See the description at :meth:`QDeviceIO.send`.
 
         This method can be called from another thread.
         """
-        self.add_to_queue(instruction, pass_args)
-        self.process_queue()
+        self._add_to_queue(instruction, pass_args)
+        self._process_queue()
 
     # --------------------------------------------------------------------------
-    #   add_to_queue
+    #   _add_to_queue
     # --------------------------------------------------------------------------
 
-    def add_to_queue(self, instruction, pass_args=()):
+    def _add_to_queue(self, instruction, pass_args=()):
         """See the description at :meth:`QDeviceIO.add_to_jobs_queue`.
 
         This method can be called from another thread.
@@ -1723,10 +1725,10 @@ class Worker_jobs(QtCore.QObject):
         self._queue.put((instruction, *pass_args))
 
     # --------------------------------------------------------------------------
-    #   process_queue
+    #   _process_queue
     # --------------------------------------------------------------------------
 
-    def process_queue(self):
+    def _process_queue(self):
         """See the description at :meth:`QDeviceIO.process_jobs_queue`.
 
         This method can be called from another thread.

@@ -3,17 +3,33 @@ Changelog
 
 1.4.0 (2024-06-12)
 ------------------
+Major code quality improvements:
+
 * Using ``qtpy`` library instead of my own Qt5/6 mechanism
 * Improved ``_NoDevice`` mechanism
 * Removed redundant ``attach_device()``
-* Extra check in ``Worker_jobs`` if ``func`` is actually a callable.
+* Extra check in ``Worker_jobs`` if ``func`` is actually a callable
 * Using singletons ``Uninitialized_Worker_DAQ/jobs`` as default attribute
   values instead of using ``None``. This solves pylint warnings on '... is not a
   known attribute of None'.
-* Docstring improvements. ``create_worker_DAQ/jobs()`` show full info now.
-  And linking against PySide6, instead of PyQt5.
+* Docstring improvement: ``create_worker_DAQ/jobs()`` show full info now
+* Docstring improvement: Linking against PySide6, instead of PyQt5
 * Improved code quality of the pytest
+
+Potential code breaks:
+
 * Removed Python 3.6 support
+* The methods of ``Worker_DAQ`` and ``Worker_jobs`` have been hidden from the
+  API and are dundered now. You should not have been calling them anyhow outside
+  of this module. Their functionality was and is still available as safer
+  methods available at the root level of ``QDeviceIO()``. Specifically::
+
+    Worker_DAQ.pause()        --> Worker_DAQ._set_pause_true()   , should use pause_DAQ()
+    Worker_DAQ.unpause()      --> Worker_DAQ._set_pause_untrue() , should use unpause_DAQ()
+    Worker_DAQ.wake_up()      --> Worker_DAQ._wake_up()          , should use wake_up_DAQ()
+    Worker_jobs.send()        --> Worker_jobs._send()            , should use send()
+    Worker_jobs.add_to_queue  --> Worker_jobs._add_to_queue()    , should use add_to_queue()
+    Worker_jobs.process_queue --> Worker_jobs._process_queue()   , should use process_queue()
 
 1.3.0 (2024-04-02)
 ------------------
