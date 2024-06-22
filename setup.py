@@ -71,7 +71,7 @@ setup(
     ],
     python_requires=">=3.7",
     install_requires=[
-        "dvg-debug-functions~=2.4",
+        "dvg-debug-functions~=2.5",
         "numpy>=1.15,<3.0",
         "qtpy",
     ],
