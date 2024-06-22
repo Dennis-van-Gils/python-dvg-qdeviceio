@@ -1,6 +1,10 @@
 Changelog
 =========
 
+1.5.0 (2024-06-22)
+------------------
+* Support for Numpy 2.0
+
 1.4.0 (2024-06-12)
 ------------------
 Major code quality improvements:
