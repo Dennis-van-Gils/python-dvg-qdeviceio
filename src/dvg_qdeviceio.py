@@ -6,8 +6,8 @@ with an I/O device.
 __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
-__date__ = "22-06-2024"
-__version__ = "1.5.0"
+__date__ = "24-06-2024"
+__version__ = "1.6.0"
 # pylint: disable=protected-access, too-many-lines
 
 import sys

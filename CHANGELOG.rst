@@ -1,6 +1,12 @@
 Changelog
 =========
 
+1.6.0 (2024-06-24)
+------------------
+* Restore support for Python 3.6. Was removed by mistake. Versions 1.4.0
+  and 1.5.0 do support it actually, but only in combination with PyQt5 or
+  PySide2.
+
 1.5.0 (2024-06-22)
 ------------------
 * Support for Numpy 2.0
