@@ -1,6 +1,13 @@
 Changelog
 =========
 
+1.7.0 (2026-08-13)
+------------------
+* Removed the sentinel-based queue iteration pattern in ``Worker_jobs``.
+  The queue now uses a straightforward while-loop with ``queue.Empty`` exception
+  to drain jobs, eliminating the need for a sentinel value and the
+  double-iteration workaround.
+
 1.6.0 (2024-06-24)
 ------------------
 * Restore support for Python 3.6. Was removed by mistake. Versions 1.4.0

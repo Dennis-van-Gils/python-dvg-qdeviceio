@@ -6,8 +6,8 @@ with an I/O device.
 __author__ = "Dennis van Gils"
 __authoremail__ = "vangils.dennis@gmail.com"
 __url__ = "https://github.com/Dennis-van-Gils/python-dvg-qdeviceio"
-__date__ = "24-06-2024"
-__version__ = "1.6.0"
+__date__ = "13-08-2026"
+__version__ = "1.7.0"
 # pylint: disable=protected-access, too-many-lines
 
 import sys
@@ -1502,12 +1502,7 @@ class Worker_jobs(QtCore.QObject):
         self._running = True
         self._qwc = QtCore.QWaitCondition()
         self._mutex_wait = QtCore.QMutex()
-
-        # Use a 'sentinel' value to signal the start and end of the queue
-        # to ensure proper multithreaded operation.
-        self._sentinel = None
         self._queue = queue.Queue()
-        self._queue.put(self._sentinel)
 
         if self.debug:
             tprint(
@@ -1621,57 +1616,53 @@ class Worker_jobs(QtCore.QObject):
                 self.debug_color,
             )
 
-        # Process all jobs until the queue is empty. We must iterate 2 times
-        # because we use a sentinel in a FIFO queue. First iter removes the old
-        # sentinel. Second iter processes the remaining queue items and will put
-        # back a new sentinel again.
-        for _i in range(2):
-            for job in iter(self._queue.get_nowait, self._sentinel):
-                func = job[0]
-                args = job[1:]
+        # Process all jobs until the queue is empty.
+        while True:
+            try:
+                job = self._queue.get_nowait()
+            except queue.Empty:
+                break
 
-                if self.debug:
-                    if isinstance(func, str):
-                        tprint(
-                            f"Worker_jobs {self.dev.name}: "
-                            f"{func} "
-                            f"{args}",
-                            self.debug_color,
-                        )
-                    else:
-                        tprint(
-                            f"Worker_jobs {self.dev.name}: "
-                            f"{func.__name__} "
-                            f"{args}",
-                            self.debug_color,
-                        )
+            func = job[0]
+            args = job[1:]
 
-                if self.jobs_function is None:
-                    if callable(func):
-                        # Default job processing:
-                        # Send I/O operation to the device
-                        try:
-                            func(*args)
-                        except Exception as err:  # pylint: disable=broad-except
-                            pft(err)
-                            dprint(
-                                f"@ Worker_jobs {self.dev.name}\n",
-                                ANSI.RED,
-                            )
-                    else:
-                        # `func` can not be called. Illegal.
-                        pft(f"Received a job that is not a callable: {func}.")
+            if self.debug:
+                if isinstance(func, str):
+                    tprint(
+                        f"Worker_jobs {self.dev.name}: " f"{func} " f"{args}",
+                        self.debug_color,
+                    )
+                else:
+                    tprint(
+                        f"Worker_jobs {self.dev.name}: "
+                        f"{func.__name__} "
+                        f"{args}",
+                        self.debug_color,
+                    )
+
+            if self.jobs_function is None:
+                if callable(func):
+                    # Default job processing:
+                    # Send I/O operation to the device
+                    try:
+                        func(*args)
+                    except Exception as err:  # pylint: disable=broad-except
+                        pft(err)
                         dprint(
                             f"@ Worker_jobs {self.dev.name}\n",
                             ANSI.RED,
                         )
-
                 else:
-                    # User-supplied job processing
-                    self.jobs_function(func, args)
+                    # `func` can not be called. Illegal.
+                    pft(f"Received a job that is not a callable: {func}.")
+                    dprint(
+                        f"@ Worker_jobs {self.dev.name}\n",
+                        ANSI.RED,
+                    )
 
-            # Put sentinel back in
-            self._queue.put(self._sentinel)
+            else:
+                # User-supplied job processing
+                self.jobs_function(func, args)
 
         if self.debug:
             tprint(
